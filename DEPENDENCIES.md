@@ -43,7 +43,7 @@ installs only from the lockfile. Base images are pinned by `@sha256:` digest.
 | Item | Version | Why |
 |---|---|---|
 | Python | **3.12** | FreeMoCap 1.8.2 needs `>=3.10,<3.13`; skellytracker `<3.13`. Use the same minor everywhere. |
-| Base image | `ubuntu:24.04@sha256:…` (digest pinned when the first Dockerfile is written) | System Python is 3.12, and it matches the `nvidia/cuda:…-ubuntu24.04` base of `mocap-extract`. |
+| Base image | `ubuntu:24.04@sha256:…` (digest pinned when the first Dockerfile is written) | System Python is 3.12. Same base for every image, `mocap-extract` included (the CUDA runtime comes inside the torch wheels). |
 | FFmpeg + ffprobe | apt, version from the base image | Recording (`-c:v copy`), per-frame timestamps, resampling |
 | `v4l-utils` (`v4l2-ctl`) | apt | Camera enumeration and format probing (capture) |
 | `pytest` | lockfile | Test suite in every Python repo |
@@ -65,10 +65,14 @@ installs only from the lockfile. Base images are pinned by `@sha256:` digest.
   rewrite, Blender 5 support) for a stable release whenever we touch
   `mocap-extract`. We'll probably patch FreeMoCap, so a newer line on the horizon
   matters: a patch may be easier to make, or already made, on 2.0.
-- **The processing PC has an NVIDIA GPU** and does the heavy lifting. The `mocap-extract`
-  image uses the CUDA build of `torch==2.8.*` on an `nvidia/cuda:<12.x>-runtime-ubuntu24.04`
-  base (system Python 3.12). **?** CUDA minor (12.6 / 12.8 / 12.9 are all torch 2.8 wheels):
-  pick it from the GPU model and driver version of that PC.
+- **Processing PC GPU: NVIDIA GeForce RTX 4080, 16 GB VRAM** (Ada, `sm_89`), Windows
+  driver 591.86, which supports up to CUDA 13.1.
+  **`mocap-extract` uses the CUDA 12.8 build of torch:** `torch==2.8.*+cu128` and
+  `torchvision==0.23.*+cu128` from `https://download.pytorch.org/whl/cu128`,
+  on the shared `ubuntu:24.04` base. The torch wheels bundle the CUDA runtime, so
+  no `nvidia/cuda` base image is needed. The only host requirement is a Windows
+  NVIDIA driver that supports CUDA ≥ 12.8 (driver ≥ 570), and 591.86 does.
+  Don't drop the driver below that.
 - The processing PC runs **Windows**, so the containers run in Docker Desktop on
   WSL2 with GPU passthrough (NVIDIA Windows driver + `--gpus all`). No Linux CUDA
   driver inside WSL.
