@@ -29,6 +29,8 @@ touching the rest.
 - Body and hands through FreeMoCap. Face, emotion and gaze are left for phase 2.
 - A single PC in the baseline. Future parallelism = one take per worker.
 - Work process: the `mocap-workflow` skill (copied into `.claude/skills/` of each repository).
+- Software dependencies, pinned versions and where each one lives (submodule /
+  Dockerfile / `/mnt/g/mocap-studio-downloads`): `DEPENDENCIES.md`.
 
 ## Repositories
 
