@@ -11,5 +11,3 @@ __pycache__/
 .venv*/
 *.drawio.bkp
 
-# Sub-repositories are independent git repos (not submodules)
-/mocap-*/

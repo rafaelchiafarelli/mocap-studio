@@ -1,0 +1,18 @@
+[submodule "mocap-adapt"]
+	path = mocap-adapt
+	url = git@github.com:rafaelchiafarelli/mocap-adapt.git
+[submodule "mocap-blender"]
+	path = mocap-blender
+	url = git@github.com:rafaelchiafarelli/mocap-blender.git
+[submodule "mocap-capture"]
+	path = mocap-capture
+	url = git@github.com:rafaelchiafarelli/mocap-capture.git
+[submodule "mocap-contracts"]
+	path = mocap-contracts
+	url = git@github.com:rafaelchiafarelli/mocap-contracts.git
+[submodule "mocap-extract"]
+	path = mocap-extract
+	url = git@github.com:rafaelchiafarelli/mocap-extract.git
+[submodule "mocap-sync-fw"]
+	path = mocap-sync-fw
+	url = git@github.com:rafaelchiafarelli/mocap-sync-fw.git
