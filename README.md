@@ -1,2 +1,1 @@
-# mocap-organizer
 # mocap-studio
