@@ -1,0 +1,13 @@
+# Large capture/processing outputs stay out of git (see mocap-workflow skill)
+*.mkv
+*.mp4
+*.npy
+*.task
+*.h5
+*.blend1
+takes/
+renders/
+__pycache__/
+.venv*/
+*.drawio.bkp
+

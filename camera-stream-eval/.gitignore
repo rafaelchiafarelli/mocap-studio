@@ -1,0 +1,9 @@
+build/
+app/build/
+.gradle/
+.gradle-home/
+.home/
+local.properties
+measurements/
+results/
+__pycache__/
