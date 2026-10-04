@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+# Everything runs in Docker: nothing (JDK, Android SDK, Gradle, adb) is installed on the host.
+set -euo pipefail
+cd "$(dirname "$0")"
+
+IMAGE=tablet-stream-dev
+ADB_CONTAINER=tablet-stream-adb
+PKG=dev.mocapstudio.tabletstream
+APK=app/build/outputs/apk/debug/app-debug.apk
+PORT=8080
+
+image() { docker build -t "$IMAGE" docker/; }
+ensure_image() { docker image inspect "$IMAGE" >/dev/null 2>&1 || image; }
+
+# Build as the host user so build outputs aren't root-owned.
+as_user() {
+    ensure_image
+    mkdir -p .home .gradle-home
+    docker run --rm -u "$(id -u):$(id -g)" \
+        -e HOME=/work/.home -e GRADLE_USER_HOME=/work/.gradle-home \
+        -v "$PWD:/work" -w /work --network host "$IMAGE" "$@"
+}
+
+# A long-lived adb server container, so forwards and authorization survive between commands.
+up() {
+    ensure_image
+    if [ "$(docker inspect -f '{{.State.Running}}' "$ADB_CONTAINER" 2>/dev/null)" = "true" ]; then return; fi
+    docker rm -f "$ADB_CONTAINER" >/dev/null 2>&1 || true
+    local usb=()
+    if [ -d /dev/bus/usb ]; then
+        usb=(--privileged -v /dev/bus/usb:/dev/bus/usb)
+    else
+        echo "note: /dev/bus/usb not present (WSL without usbipd) — only wireless adb will work" >&2
+    fi
+    docker run -d --name "$ADB_CONTAINER" --network host "${usb[@]}" \
+        -v tablet-stream-adb-keys:/root/.android -v "$PWD:/work" -w /work \
+        "$IMAGE" adb nodaemon server >/dev/null
+    for _ in $(seq 20); do
+        docker exec "$ADB_CONTAINER" adb devices >/dev/null 2>&1 && return
+        sleep 0.5
+    done
+    echo "adb server did not come up" >&2; docker logs "$ADB_CONTAINER" >&2; exit 1
+}
+
+# T=<serial> picks a device when more than one is connected.
+adb() { up; docker exec -i ${T:+-e ANDROID_SERIAL="$T"} "$ADB_CONTAINER" adb "$@"; }
+serials() { adb devices | awk 'NR>1 && $2=="device" {print $1}'; }
+ip_of() { T="$1" adb shell ip -4 addr show wlan0 | awk '/inet /{sub(/\/.*/,"",$2); print $2}'; }
+
+usage() {
+    cat <<EOF
+usage: [T=<serial>] ./dev <command>      (T selects the device when several are connected)
+
+  image                      build the Docker toolchain image
+  build                      build the debug APK
+  up | down                  start / stop the adb server container
+  devices                    list connected devices
+  pair <ip:port> <code>      wireless debugging pairing (Android 11+)
+  connect <ip[:port]>        connect over Wi-Fi (default port 5555)
+  tcpip                      switch a USB-connected device to Wi-Fi adb on 5555
+  install                    install the APK (grants camera permission)
+  launch [w h fps mode q]    (re)start the app; mode h264|mjpeg, q = kbps (h264) or JPEG quality (mjpeg)
+                             e.g. ./dev launch 1600 1200 30 h264 8000
+  provision <ip> [port] [pair-port code]
+                             new tablet over Wi-Fi: pair (if code given), connect, pin adb to :5555,
+                             install, launch at 1600x1200/30/h264/20 Mbps, check the stream
+  wadb <ip>                  find the Wireless debugging port by scanning, connect, pin to :5555 (works
+                             without pairing if the tablet once authorized this PC over USB)
+  install-all                install on every connected device
+  launch-all [same as launch] launch on every connected device
+  ips                        serial, model and Wi-Fi IP of every connected device
+  ctl <ip|all> [k=v ...]     change settings over HTTP, no adb (width height fps mode bitrate[kbps] quality)
+                             e.g. ./dev ctl all bitrate=10000   ;  no k=v: show current settings
+  found                      tablets running the app on \$SUBNET (default 192.168.7)
+  forward                    forward localhost:$PORT -> tablet:$PORT over adb
+  measure [seconds] [host] [--save-stream]
+                             pull the stream and record stats (default 60s, localhost)
+  probe <file>               ffprobe a saved stream (resolution, frame count)
+  logs                       follow the app's log
+  info                       device model, Android version, camera list
+  adb <args...>              raw adb
+EOF
+}
+
+cmd="${1:-help}"; shift || true
+case "$cmd" in
+    image)   image ;;
+    build)   as_user gradle --no-daemon -q assembleDebug && ls -l "$APK" ;;
+    up)      up; echo "adb server running in container $ADB_CONTAINER" ;;
+    down)    docker rm -f "$ADB_CONTAINER" >/dev/null 2>&1 || true ;;
+    devices) adb devices -l ;;
+    pair)    adb pair "$@" ;;
+    connect) target="$1"; [[ "$target" == *:* ]] || target="$target:5555"; adb connect "$target" ;;
+    tcpip)   adb tcpip 5555 ;;
+    install) [ -f "$APK" ] || "$0" build; adb install -r -g "$APK" ;;
+    launch)
+        mode="${4:-h264}"; q="${5:-}"
+        extra=(--ei quality "${q:-80}")
+        [ "$mode" = h264 ] && extra=(--ei bitrate "$(( ${q:-20000} * 1000 ))")
+        adb shell am start -S -n "$PKG/.MainActivity" \
+            --ei width "${1:-1600}" --ei height "${2:-1200}" --ei fps "${3:-30}" \
+            --es mode "$mode" "${extra[@]}" --es facing back
+        ;;
+    provision)
+        ip="$1"; port="${2:-5555}"
+        [ -n "${4:-}" ] && adb pair "$ip:$3" "$4"
+        adb connect "$ip:$port"
+        if [ "$port" != 5555 ]; then
+            T="$ip:$port" adb tcpip 5555
+            sleep 3
+            adb connect "$ip:5555"
+        fi
+        T="$ip:5555" "$0" install
+        T="$ip:5555" "$0" launch
+        sleep 6
+        curl -s --max-time 5 "http://$ip:$PORT/stats" | grep -oE '"(device|config|encoded_fps|mbps|error)":("[^"]*"|[0-9.]+)' | tr '\n' ' '; echo
+        ;;
+    wadb)
+        ports=$(python3 scripts/findadb.py "$1")
+        [ -n "$ports" ] || { echo "no wireless debugging port open on $1 (is Wireless debugging on?)"; exit 1; }
+        for p in $ports; do adb connect "$1:$p" | grep -q "^connected\|already" && break; done
+        T="$1:$p" adb tcpip 5555 && sleep 3 && adb connect "$1:5555"
+        ;;
+    install-all) [ -f "$APK" ] || "$0" build
+             for s in $(serials); do echo "== $s"; T="$s" adb install -r -g "$APK"; done ;;
+    launch-all) for s in $(serials); do echo "== $s"; T="$s" "$0" launch "$@"; done ;;
+    ips)     for s in $(serials); do echo "$s $(T="$s" adb shell getprop ro.product.model | tr -d '\r') $(ip_of "$s")"; done ;;
+    found)   python3 scripts/discover.py --subnet "${SUBNET:-192.168.7}" ;;
+    ctl)
+        target="$1"; shift
+        q=$(IFS='&'; echo "$*")
+        if [ "$target" = all ]; then hosts=$("$0" found | awk '/^[0-9]/{print $1}'); else hosts="$target"; fi
+        for h in $hosts; do echo "$h $(curl -s --max-time 5 "http://$h:$PORT/control?$q")"; done
+        ;;
+    forward) adb forward tcp:$PORT tcp:$PORT && echo "open http://localhost:$PORT/" ;;
+    measure) up; docker exec $([ -t 0 ] && echo -it || echo -i) -u "$(id -u):$(id -g)" "$ADB_CONTAINER" \
+                 python3 scripts/measure.py --seconds "${1:-60}" --host "${2:-127.0.0.1}" --port $PORT "${@:3}" ;;
+    probe)   as_user ffprobe -v error -count_frames -select_streams v:0 \
+                 -show_entries stream=codec_name,profile,width,height,nb_read_frames -of default=nw=1 "$1" ;;
+    logs)    adb logcat -s TabletStream:* AndroidRuntime:E ;;
+    info)
+        adb shell getprop ro.product.model
+        adb shell getprop ro.build.version.release
+        adb shell getprop ro.build.version.sdk
+        adb shell dumpsys media.camera | grep -iE "^Camera [0-9]|facing|hardware level" | head -20 || true
+        ;;
+    adb)     adb "$@" ;;
+    *)       usage ;;
+esac

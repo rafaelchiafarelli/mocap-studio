@@ -1,0 +1,7 @@
+build/
+app/build/
+.gradle/
+.gradle-home/
+.home/
+local.properties
+measurements/
