@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *   /             viewer page
  *   /stream       multipart/x-mixed-replace; one part per frame, with X-Frame-Seq, X-Timestamp-Ns,
  *                 X-Wall-Ms and X-Kind (jpeg | config | key | delta). MJPEG mode: plays in a browser.
- *   /h264.raw     H.264 Annex-B elementary stream (h264 mode), e.g. ffplay -f h264 http://host:8080/h264.raw
+ *   /h264.raw     H.264 Annex-B elementary stream (h264 mode), watch live with: ffplay -fflags nobuffer -flags low_delay -framedrop -probesize 32 -analyzeduration 0 -sync ext -vf setpts=0 -f h264 http://host:8080/h264.raw
  *   /snapshot.jpg latest frame (mjpeg mode)
  *   /stats        JSON counters
  *   /info         device capabilities (cameras, sizes, fps ranges, H.264 encoders)
@@ -301,5 +301,5 @@ final class StreamServer {
     private static final String INDEX_MJPEG = HEAD + "<img src='/stream'>" + STATS_SCRIPT;
     private static final String INDEX_H264 = HEAD
             + "<p>H.264 mode — browsers can't play the raw stream. Watch with:<br>"
-            + "<b>ffplay -fflags nobuffer -f h264 http://&lt;host&gt;:8080/h264.raw</b></p>" + STATS_SCRIPT;
+            + "<b>ffplay -fflags nobuffer -flags low_delay -framedrop -probesize 32 -analyzeduration 0 -sync ext -vf setpts=0 -f h264 http://&lt;host&gt;:8080/h264.raw</b></p>" + STATS_SCRIPT;
 }
