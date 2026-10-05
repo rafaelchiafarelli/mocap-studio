@@ -114,8 +114,8 @@ Each repository has its own `initiatives/` folder and `.claude/` skill. Create
 
 Critical path to the camera decision (adapt and blender are **not** on it):
 
-1. `mocap-contracts`: bootstrap → messages-v0 → tag `v0.1.0`.
-2. In parallel: `mocap-capture` (all baseline epics; devices/5 needs stream
+1. `mocap-contracts`: bootstrap → messages-v0 → tag `v0.1.0`. **Done 2026-10-05** (`v0.1.0` tagged on `dev`; see its `CHANGELOG.md`). Consumers pin `mocap-contracts[zmq] @ git+…@v0.1.0`.
+2. **Can start now.** In parallel: `mocap-capture` (all baseline epics; devices/5 needs stream
    protocol v1 from `mocap-contracts` camera-protocol), `mocap-camera-app`
    (all epics; control needs `mocap-contracts` camera-messages) and
    `mocap-studio/bootstrap` (includes the hardware inventory, manual).
