@@ -32,7 +32,7 @@ links) and `docs/diagrams/pipeline.drawio` (P1–P5, numbered steps with
   **session folder layout**. None imports code from another.
 - **Contracts** live in `.harpia`, **one module per owner** (whoever produces the data
   defines the message, and the others only import it). They're generated into Python
-  by **Harpia V4's Python target** (a black box: used only through its documented
+  by **Harpia V4's Python target** (and Java target, for the camera app) (a black box: used only through its documented
   interface), and the generated code is **committed** in `mocap-contracts`, so
   consumers need neither Harpia nor Docker.
 - **Two PCs.**
@@ -43,10 +43,17 @@ links) and `docs/diagrams/pipeline.drawio` (P1–P5, numbered steps with
   - **Processing PC** (Windows + WSL2, RTX 4080): all neural-net work.
     Parallelism later = one take per worker.
 - **Camera sources:** `UVC` (webcam via FFmpeg, `-c:v copy`, MKV, wall-clock
-  timestamps) and `STREAM` (tablets/phones running the camera app: H.264 over
-  Wi-Fi with each frame's capture time in SEI, mapped to the host clock by a
-  clock sync before and after the take, as measured in `camera-stream-eval`).
+  timestamps) and `STREAM` (tablets/phones running **`mocap-camera-app`**).
   **No internal recording and no `adb` import.**
+- **Camera app** (`mocap-camera-app`, Java, started from the
+  `camera-stream-eval` app, which stays as the evaluation tool):
+  - Video follows **stream protocol v1**: H.264 with each frame's capture time
+    in SEI, plus a UDP clock sync before and after the take. It's a binary
+    spec with fixtures in `mocap-contracts`, since Harpia can't express it.
+  - **Control, info and stats** are `camera.harpia` messages over **Harpia
+    ZeroMQ**: the recorder sends the stream settings and locked exposure/ISO/
+    focus/white balance, and the app replies with what it actually applied.
+  - The contracts are generated for **Java** as well as Python.
 - **Sync** on the **recorder's host clock**: per-frame timestamps from every camera
   plus software START/END sync markers. No sync hardware. The LED flash (ESP32) is
   **parked**, to revisit only if timestamp sync proves too imprecise and a flash
@@ -71,6 +78,8 @@ links) and `docs/diagrams/pipeline.drawio` (P1–P5, numbered steps with
   `CalibrationBoard`, locked camera controls, guided calibration take, quick check).
 - **Live director monitor:** `mocap-capture/initiatives/live-monitor/`, fed by
   the STREAM source.
+- **Compliance profile** (Harpia, `mocap-contracts/schema/project.harpia.yaml`):
+  class_a, networked, no PHI. No hardened transport on the closed studio LAN.
 - Work process: the `mocap-workflow` skill (copied into `.claude/skills/` of each repository).
 - Software dependencies, pinned versions and where each one lives (submodule /
   Dockerfile / `/mnt/g/mocap-studio-downloads`): `DEPENDENCIES.md`.
@@ -79,7 +88,8 @@ links) and `docs/diagrams/pipeline.drawio` (P1–P5, numbered steps with
 
 | Repository | Role | Baseline tasks |
 |---|---|---|
-| `mocap-contracts` | `.harpia` messages, generated Python package (Harpia V4), hand-off event transport (ZeroMQ), session layout | 10 |
+| `mocap-contracts` | `.harpia` messages, generated Python + Java (Harpia V4), hand-off event transport (ZeroMQ), session layout; **camera-protocol**: stream protocol v1, `camera.harpia` | 10 + 5 |
+| `mocap-camera-app` | Android STREAM camera (Java): protocol v1, foreground service, ZeroMQ control, Camera2 manual controls. **Local only so far: no remote, not yet a submodule.** | 7 |
 | `mocap-capture` | Recorder PC: P1 + P2, cameras (UVC + STREAM), recording, sync markers, take report, per-role preprocessing, per-file hand-off + events | 18 |
 | `mocap-sync-fw` | ESP32 LED flash firmware — **parked**, not scheduled | 3 |
 | `mocap-extract` | Processing PC: P3, intake + `watch` listener, alignment, calibration, FreeMoCap, **per-camera metrics** | 14 |
@@ -95,27 +105,27 @@ Each repository has its own `initiatives/` folder and `.claude/` skill. Create
 Critical path to the camera decision (adapt and blender are **not** on it):
 
 1. `mocap-contracts`: bootstrap → messages-v0 → tag `v0.1.0`.
-2. In parallel: `mocap-capture` (all baseline epics; devices/5 needs the camera
-   app, see open question 1) and `mocap-studio/bootstrap` (includes the hardware
-   inventory, manual).
+2. In parallel: `mocap-capture` (all baseline epics; devices/5 needs stream
+   protocol v1 from `mocap-contracts` camera-protocol), `mocap-camera-app`
+   (bootstrap and streaming; its control epic waits on Harpia's ZeroMQ docs) and
+   `mocap-studio/bootstrap` (includes the hardware inventory, manual).
 3. `mocap-extract`: bootstrap → alignment → calibration → body → quality.
 4. `mocap-studio/camera-study`: protocol → baseline session (manual) → analysis → decision (manual).
 5. After, or in parallel with step 4: `mocap-adapt` → `mocap-blender` → `mocap-studio/pipeline`.
 
 ## Ask Rafael before implementing (open questions)
 
-1. **Production camera app** for STREAM devices. `camera-stream-eval`'s app is a
-   decision tool, not the product. Which repo does it live in? Proposal: a new
-   `mocap-camera-app` submodule, starting from the eval app, with its stream
-   and `/control` protocol written down as a contract. This blocks `mocap-capture`
-   devices/5, `studio-setup` cameras/3 and `live-monitor` preview-tap/3.
-2. **Harpia's Python ZeroMQ transport isn't documented.** V4 documents the
-   Python target itself (USAGE §5.1–5.4, so `mocap-contracts` bootstrap/2 is
-   unblocked), but ZeroMQ (§7.6) and `critical` delivery (§7.9) are still
-   C++-only in the docs. That blocks messages-v0/6, and it's Harpia's backlog.
-3. **Compliance profile for the studio LAN** (`mocap-contracts` messages-v0/6):
-   the `project.harpia.yaml` values (risk class, topology). Declared explicitly,
-   never left to Harpia's defaults, which turn on mTLS/CURVE/RBAC.
+1. **`mocap-camera-app` needs a GitHub remote** (`rafaelchiafarelli/mocap-camera-app`).
+   Once it exists, it gets pushed and registered as a submodule here.
+2. **Harpia's ZeroMQ transport isn't documented for Python or Java.** V4
+   documents the Python and Java targets (USAGE §5.1–5.4), but ZeroMQ (§7.6)
+   and `critical` delivery (§7.9) are C++-only in the docs. That blocks
+   `mocap-contracts` messages-v0/6 and camera-messages/3, and through them
+   `mocap-camera-app` control/1–2 and `mocap-capture` studio-setup cameras/3.
+   It's Harpia's backlog.
+3. **Stream protocol v1 video transport** (`mocap-contracts` camera-protocol
+   stream-protocol/1). Proposal: raw Annex-B H.264 over HTTP, with the
+   timestamps only in the SEI, and the multipart `/stream` dropped.
 4. **Preprocessing output codec** (`mocap-capture` preprocess/2). Proposal: FFV1
    lossless. Recorder "clean-up" beyond crop/rescale is undefined. Each
    operation gets its own task once it's declared.

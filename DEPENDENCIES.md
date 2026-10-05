@@ -20,7 +20,7 @@ Raw takes and other large data also go on `/mnt/g/mocap-studio-downloads/`
 
 | Software | Used for | Submodule of | Pin | Notes |
 |---|---|---|---|---|
-| **Harpia** (`rafaelchiafarelli/harpia`) | `.harpia` → Python package (Harpia's Python target), including the ZeroMQ transport for the hand-off events; used as a black box | `mocap-contracts` (`third_party/harpia`) | **`V4`** (2026-10-05: V3's code + the Python target documented, USAGE §5.1–5.4) | Used only through its documented interface. V4's `USAGE.md` still documents ZeroMQ (§7.6) and `critical` delivery (§7.9) for C++ only, which blocks `mocap-contracts` messages-v0/6. |
+| **Harpia** (`rafaelchiafarelli/harpia`) | `.harpia` → Python package and Java Gradle project (Harpia's Python and Java targets), including the ZeroMQ transport for the hand-off events and the camera control channel (JeroMQ on Android); used as a black box | `mocap-contracts` (`third_party/harpia`) | **`V4`** (2026-10-05: V3's code + the Python target documented, USAGE §5.1–5.4) | Used only through its documented interface. V4's `USAGE.md` still documents ZeroMQ (§7.6) and `critical` delivery (§7.9) for C++ only, which blocks `mocap-contracts` messages-v0/6 and camera-messages/3. |
 
 Nothing else is planned to be compiled from source. FFmpeg, OpenCV and
 MediaPipe all come as prebuilt packages (B). **We'll probably have to patch
@@ -58,6 +58,7 @@ installs only from the lockfile. Base images are pinned by `@sha256:` digest.
 | `mocap-adapt` | `mocap_contracts`, `numpy<2`, `scipy` (Butterworth), One Euro filter (small, can be vendored) | Keep `numpy<2` so it matches extract. |
 | `mocap-studio` | stdlib + `pyyaml` (CLI and study report) | `shellcheck` (apt) for `bootstrap.sh` |
 | Streaming tests | already have their own Dockerfiles (JDK 17, Android SDK 34, Gradle 8.7, adb) | Base image and SDK packages aren't pinned by digest yet. |
+| `mocap-camera-app` | Android SDK 34, JDK 17, Gradle (as `camera-stream-eval`); `mocap-contracts` generated Java (protobuf, gRPC, JeroMQ via Harpia's Java target) | Base image pinned by digest from the start (bootstrap/1). `minSdk` 21 unless the generated Java needs more. |
 
 **Decisions for B**
 - **FreeMoCap 1.8.2 for the baseline** (decided).
