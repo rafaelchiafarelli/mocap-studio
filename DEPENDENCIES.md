@@ -20,7 +20,7 @@ Raw takes and other large data also go on `/mnt/g/mocap-studio-downloads/`
 
 | Software | Used for | Submodule of | Pin | Notes |
 |---|---|---|---|---|
-| **Harpia** (`rafaelchiafarelli/harpia`) | `.harpia` → Python package (Harpia's Python target), used as a black box | `mocap-contracts` | **`V3`** (2026-10-05, first release with the Python target) | Used only through its documented interface. V3's `USAGE.md` doesn't document the Python target yet, which blocks `mocap-contracts` bootstrap/2 until Harpia documents it. |
+| **Harpia** (`rafaelchiafarelli/harpia`) | `.harpia` → Python package (Harpia's Python target), including the ZeroMQ transport for the hand-off events; used as a black box | `mocap-contracts` | **`V3`** (2026-10-05, first release with the Python target) | Used only through its documented interface. V3's `USAGE.md` documents neither the Python target nor its Python ZeroMQ transport yet, which blocks `mocap-contracts` bootstrap/2 and messages-v0/6. |
 
 Nothing else is planned to be compiled from source. FFmpeg, OpenCV and
 MediaPipe all come as prebuilt packages (B). **We'll probably have to patch
@@ -53,8 +53,8 @@ installs only from the lockfile. Base images are pinned by `@sha256:` digest.
 | Repo | Direct dependencies | Version constraints we already know |
 |---|---|---|
 | `mocap-contracts` | the generated Python package's own runtime deps (protobuf among them), `hatchling`. Generation needs only Harpia's Docker image, no `protoc` of ours. | **protobuf 4.25.x**: MediaPipe 0.10.14 needs `protobuf>=4.25.3,<5`. `mocap-extract` imports both, so the range the generated package declares must include 4.25.x (checked in bootstrap/2). |
-| `mocap-capture` | `mocap_contracts`, `pyyaml` + `pydantic` 2 (config validation), `typer`, `pyudev` | Runs on the recorder PC; the container needs `--device /dev/video*`. |
-| `mocap-extract` | `mocap_contracts`, `freemocap==1.8.2`, `opencv-contrib-python==4.8.*` | FreeMoCap pins `skellytracker[all]==2025.10.1024`, which pulls in `mediapipe==0.10.14`, `torch==2.8.*`, `torchvision==0.23.*`, `ultralytics~=8.3.132` and `numpy<2`. |
+| `mocap-capture` | `mocap_contracts`, `pyyaml` + `pydantic` 2 (config validation), `typer`, `pyudev` | Runs on the recorder PC. `rsync` + `openssh-client` (apt) for the hand-off; the container needs `--device /dev/video*`. |
+| `mocap-extract` | `mocap_contracts` (incl. its ZeroMQ receiver), `freemocap==1.8.2`, `opencv-contrib-python==4.8.*` | FreeMoCap pins `skellytracker[all]==2025.10.1024`, which pulls in `mediapipe==0.10.14`, `torch==2.8.*`, `torchvision==0.23.*`, `ultralytics~=8.3.132` and `numpy<2`. |
 | `mocap-adapt` | `mocap_contracts`, `numpy<2`, `scipy` (Butterworth), One Euro filter (small, can be vendored) | Keep `numpy<2` so it matches extract. |
 | `mocap-studio` | stdlib + `pyyaml` (CLI and study report) | `shellcheck` (apt) for `bootstrap.sh` |
 | Streaming tests | already have their own Dockerfiles (JDK 17, Android SDK 34, Gradle 8.7, adb) | Base image and SDK packages aren't pinned by digest yet. |
