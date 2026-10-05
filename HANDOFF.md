@@ -50,9 +50,19 @@ links) and `docs/diagrams/pipeline.drawio` (P1–P5, numbered steps with
   - Video follows **stream protocol v1**: H.264 with each frame's capture time
     in SEI, plus a UDP clock sync before and after the take. It's a binary
     spec with fixtures in `mocap-contracts`, since Harpia can't express it.
+  - Video transport: raw Annex-B H.264 over HTTP, with the timestamps only in
+    the SEI.
   - **Control, info and stats** are `camera.harpia` messages over **Harpia
-    ZeroMQ**: the recorder sends the stream settings and locked exposure/ISO/
-    focus/white balance, and the app replies with what it actually applied.
+    ZeroMQ**.
+- **Camera controls: every control a camera offers can be listed and set from
+  the recorder**, for both camera types: V4L2 on webcams, Camera2 on tablets.
+  - One vocabulary (`camera_control.harpia`: `ControlCapability`,
+    `ControlSetting`, `ControlResult`) with native key names.
+  - Values are always read back from the device. Clamped or unsupported
+    settings are reported, never hidden.
+  - Operator CLI: `mocap-capture camera controls|set|save`. Declared controls
+    are applied before every take, and every result is recorded in
+    `take.json`.
   - The contracts are generated for **Java** as well as Python.
 - **Sync** on the **recorder's host clock**: per-frame timestamps from every camera
   plus software START/END sync markers. No sync hardware. The LED flash (ESP32) is
@@ -88,9 +98,9 @@ links) and `docs/diagrams/pipeline.drawio` (P1–P5, numbered steps with
 
 | Repository | Role | Baseline tasks |
 |---|---|---|
-| `mocap-contracts` | `.harpia` messages, generated Python + Java (Harpia V5), hand-off event transport (ZeroMQ), session layout; **camera-protocol**: stream protocol v1, `camera.harpia` | 10 + 5 |
-| `mocap-camera-app` | Android STREAM camera (Java): protocol v1, foreground service, ZeroMQ control, Camera2 manual controls. **Local only so far: no remote, not yet a submodule.** | 7 |
-| `mocap-capture` | Recorder PC: P1 + P2, cameras (UVC + STREAM), recording, sync markers, take report, per-role preprocessing, per-file hand-off + events | 18 |
+| `mocap-contracts` | `.harpia` messages, generated Python + Java (Harpia V5), hand-off event transport (ZeroMQ), session layout; **camera-protocol**: stream protocol v1, `camera.harpia` | 11 + 5 |
+| `mocap-camera-app` | Android STREAM camera (Java): protocol v1, foreground service, ZeroMQ control, every Camera2 control | 8 |
+| `mocap-capture` | Recorder PC: P1 + P2, cameras (UVC + STREAM), recording, sync markers, take report, per-role preprocessing, per-file hand-off + events | 18 (+ studio-setup, live-monitor) |
 | `mocap-sync-fw` | ESP32 LED flash firmware — **parked**, not scheduled | 3 |
 | `mocap-extract` | Processing PC: P3, intake + `watch` listener, alignment, calibration, FreeMoCap, **per-camera metrics** | 14 |
 | `mocap-adapt` | P4: smoothing, feet on the floor, `MocapTake` | 7 |
@@ -115,28 +125,23 @@ Critical path to the camera decision (adapt and blender are **not** on it):
 
 ## Ask Rafael before implementing (open questions)
 
-1. **`mocap-camera-app` needs a GitHub remote** (`rafaelchiafarelli/mocap-camera-app`).
-   Once it exists, it gets pushed and registered as a submodule here.
-2. **Stream protocol v1 video transport** (`mocap-contracts` camera-protocol
-   stream-protocol/1). Proposal: raw Annex-B H.264 over HTTP, with the
-   timestamps only in the SEI, and the multipart `/stream` dropped.
-3. **Preprocessing output codec** (`mocap-capture` preprocess/2). Proposal: FFV1
+1. **Preprocessing output codec** (`mocap-capture` preprocess/2). Proposal: FFV1
    lossless. Recorder "clean-up" beyond crop/rescale is undefined. Each
    operation gets its own task once it's declared.
-4. **Are `raw/` videos handed off?** (`mocap-capture` handoff/3). Proposal: no.
+2. **Are `raw/` videos handed off?** (`mocap-capture` handoff/3). Proposal: no.
    They stay on the recorder as the archive. Timestamps always travel.
-5. **Hand-off network and SSH target** (`mocap-capture` handoff/2): wired LAN
+3. **Hand-off network and SSH target** (`mocap-capture` handoff/2): wired LAN
    proposed. The processing PC runs WSL2 behind NAT, so how it accepts rsync
    over SSH and the ZeroMQ events (Windows OpenSSH / port forward into WSL) is
    still to be decided.
-6. **Per-camera 2D in FreeMoCap** (`mocap-extract` body/1 pre-work): can headless
+4. **Per-camera 2D in FreeMoCap** (`mocap-extract` body/1 pre-work): can headless
    FreeMoCap 1.8.2 run 2D per camera, separately from triangulation? If not,
    2D waits for every role (or we patch FreeMoCap).
-7. Sync precision target: how many ms of inter-camera error is acceptable with
+5. Sync precision target: how many ms of inter-camera error is acceptable with
    timestamp-only sync (decides whether the parked LED flash ever comes back).
-8. Python/FreeMoCap and Blender versions (see `DEPENDENCIES.md` for what's pinned).
-9. Study decision thresholds (detection rate, reprojection error, bone stability).
-10. Initiative-level decisions listed in `studio-setup.md` and `live-monitor.md`.
+6. Python/FreeMoCap and Blender versions (see `DEPENDENCIES.md` for what's pinned).
+7. Study decision thresholds (detection rate, reprojection error, bone stability).
+8. Initiative-level decisions listed in `studio-setup.md` and `live-monitor.md`.
 
 ## Known risks the study must confirm or rule out
 

@@ -16,3 +16,6 @@
 [submodule "mocap-sync-fw"]
 	path = mocap-sync-fw
 	url = git@github.com:rafaelchiafarelli/mocap-sync-fw.git
+[submodule "mocap-camera-app"]
+	path = mocap-camera-app
+	url = git@github.com:rafaelchiafarelli/mocap-camera-app.git
