@@ -20,7 +20,7 @@ Raw takes and other large data also go on `/mnt/g/mocap-studio-downloads/`
 
 | Software | Used for | Submodule of | Pin | Notes |
 |---|---|---|---|---|
-| **Harpia** (`rafaelchiafarelli/harpia`) | `.harpia` → Python package (Harpia's Python target), including the ZeroMQ transport for the hand-off events; used as a black box | `mocap-contracts` | **`V3`** (2026-10-05, first release with the Python target) | Used only through its documented interface. V3's `USAGE.md` documents neither the Python target nor its Python ZeroMQ transport yet, which blocks `mocap-contracts` bootstrap/2 and messages-v0/6. |
+| **Harpia** (`rafaelchiafarelli/harpia`) | `.harpia` → Python package (Harpia's Python target), including the ZeroMQ transport for the hand-off events; used as a black box | `mocap-contracts` (`third_party/harpia`) | **`V4`** (2026-10-05: V3's code + the Python target documented, USAGE §5.1–5.4) | Used only through its documented interface. V4's `USAGE.md` still documents ZeroMQ (§7.6) and `critical` delivery (§7.9) for C++ only, which blocks `mocap-contracts` messages-v0/6. |
 
 Nothing else is planned to be compiled from source. FFmpeg, OpenCV and
 MediaPipe all come as prebuilt packages (B). **We'll probably have to patch

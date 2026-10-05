@@ -32,7 +32,7 @@ links) and `docs/diagrams/pipeline.drawio` (P1–P5, numbered steps with
   **session folder layout**. None imports code from another.
 - **Contracts** live in `.harpia`, **one module per owner** (whoever produces the data
   defines the message, and the others only import it). They're generated into Python
-  by **Harpia V3's Python target** (a black box: used only through its documented
+  by **Harpia V4's Python target** (a black box: used only through its documented
   interface), and the generated code is **committed** in `mocap-contracts`, so
   consumers need neither Harpia nor Docker.
 - **Two PCs.**
@@ -79,7 +79,7 @@ links) and `docs/diagrams/pipeline.drawio` (P1–P5, numbered steps with
 
 | Repository | Role | Baseline tasks |
 |---|---|---|
-| `mocap-contracts` | `.harpia` messages, generated Python package (Harpia V3), hand-off event transport (ZeroMQ), session layout | 10 |
+| `mocap-contracts` | `.harpia` messages, generated Python package (Harpia V4), hand-off event transport (ZeroMQ), session layout | 10 |
 | `mocap-capture` | Recorder PC: P1 + P2, cameras (UVC + STREAM), recording, sync markers, take report, per-role preprocessing, per-file hand-off + events | 18 |
 | `mocap-sync-fw` | ESP32 LED flash firmware — **parked**, not scheduled | 3 |
 | `mocap-extract` | Processing PC: P3, intake + `watch` listener, alignment, calibration, FreeMoCap, **per-camera metrics** | 14 |
@@ -109,10 +109,10 @@ Critical path to the camera decision (adapt and blender are **not** on it):
    `mocap-camera-app` submodule, starting from the eval app, with its stream
    and `/control` protocol written down as a contract. This blocks `mocap-capture`
    devices/5, `studio-setup` cameras/3 and `live-monitor` preview-tap/3.
-2. **Harpia's Python output isn't in V3's documented interface.** `USAGE.md`
-   covers only the C++ project. Harpia has to document the Python target
-   (blocks `mocap-contracts` bootstrap/2) and its Python **ZeroMQ** transport
-   with `critical` delivery (blocks messages-v0/6). That's Harpia's backlog.
+2. **Harpia's Python ZeroMQ transport isn't documented.** V4 documents the
+   Python target itself (USAGE §5.1–5.4, so `mocap-contracts` bootstrap/2 is
+   unblocked), but ZeroMQ (§7.6) and `critical` delivery (§7.9) are still
+   C++-only in the docs. That blocks messages-v0/6, and it's Harpia's backlog.
 3. **Compliance profile for the studio LAN** (`mocap-contracts` messages-v0/6):
    the `project.harpia.yaml` values (risk class, topology). Declared explicitly,
    never left to Harpia's defaults, which turn on mTLS/CURVE/RBAC.
@@ -153,5 +153,5 @@ workers; camera replacement according to the study's decision.
 ## First action of the session
 
 Read the skill, then `mocap-contracts/initiatives/baseline/` and the two
-diagrams in `docs/diagrams/`. Check open question 2 (Harpia's Python output documented), and only then create the branch
+diagrams in `docs/diagrams/`. Check open question 2 (Harpia's Python ZeroMQ transport documented), and only then create the branch
 chain for the task `bootstrap/1-package-skeleton`.
