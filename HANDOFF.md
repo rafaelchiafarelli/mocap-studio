@@ -84,6 +84,10 @@ Rafael's direction; how much of the baseline plan it changes is still open.
   copy, network share, stream) — new contract in `mocap-contracts`.
 - Face moves from phase 2 into the camera count; the face pipeline itself is
   still phase 2.
+- **Studio setup (P1)**: setup checklist, declared and printed ChArUco board,
+  locked camera controls, guided calibration take and a quick pass/fail check
+  before the actors start: `mocap-capture/initiatives/studio-setup/`. The board
+  is declared in `mocap-contracts` (`CalibrationBoard`), never hard-coded.
 - **Live director monitor** (real-time view of every camera, milliseconds of
   delay): planned as `mocap-capture/initiatives/live-monitor/`. It needs the
   streaming camera source from this re-plan.
