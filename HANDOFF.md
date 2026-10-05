@@ -114,10 +114,10 @@ Each repository has its own `initiatives/` folder and `.claude/` skill. Create
 
 Critical path to the camera decision (adapt and blender are **not** on it):
 
-1. `mocap-contracts`: bootstrap → messages-v0 → tag `v0.1.0`. **Done 2026-10-05** (`v0.1.0` tagged on `dev`; see its `CHANGELOG.md`). Consumers pin `mocap-contracts[zmq] @ git+…@v0.1.0`.
+1. `mocap-contracts`: bootstrap → messages-v0 → tag `v0.1.0`. **Done 2026-10-05** (`v0.1.0` tagged on `dev`; see its `CHANGELOG.md`). Consumers pin `mocap-contracts[zmq] @ git+…@v0.1.0`. The `camera-protocol` initiative is **done too: `v0.2.0`** (stream protocol v1 spec + reference reader + fixtures, `camera.harpia`, Java generation, the camera ZeroMQ channel). mocap-capture's STREAM source and the camera app pin `v0.2.0`.
 2. **Can start now.** In parallel: `mocap-capture` (all baseline epics; devices/5 needs stream
    protocol v1 from `mocap-contracts` camera-protocol), `mocap-camera-app`
-   (all epics; control needs `mocap-contracts` camera-messages) and
+   (all epics; `minSdk 24`, contracts `v0.2.0`) and
    `mocap-studio/bootstrap` (includes the hardware inventory, manual).
 3. `mocap-extract`: bootstrap → alignment → calibration → body → quality.
 4. `mocap-studio/camera-study`: protocol → baseline session (manual) → analysis → decision (manual).
