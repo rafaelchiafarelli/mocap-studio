@@ -20,7 +20,7 @@ Raw takes and other large data also go on `/mnt/g/mocap-studio-downloads/`
 
 | Software | Used for | Submodule of | Pin | Notes |
 |---|---|---|---|---|
-| **Harpia** (`rafaelchiafarelli/harpia`) | `.harpia` → Python package and Java Gradle project (Harpia's Python and Java targets), including the ZeroMQ transport for the hand-off events and the camera control channel (pyzmq / JeroMQ on Android); used as a black box | `mocap-contracts` (`third_party/harpia`) | **`V5`** (2026-10-05: V4's code + ZeroMQ documented for Python and Java, USAGE §7.6–7.9, §11) | Used only through its documented interface. The pin moves V4 → V5 in `mocap-contracts` messages-v0/6 (same generated code). |
+| **Harpia** (`rafaelchiafarelli/harpia`) | `.harpia` → Python package and Java Gradle project (Harpia's Python and Java targets), including the ZeroMQ transport for the hand-off events and the camera control channel (pyzmq / JeroMQ on Android); used as a black box | `mocap-contracts` (`third_party/harpia`) | **`V5`** (2026-10-05: V4's code + ZeroMQ documented for Python and Java, USAGE §7.6–7.9, §11) | Used only through its documented interface. The pin moves V4 → V5 in `mocap-contracts` messages-v0/7 (same generated code). |
 
 Nothing else is planned to be compiled from source. FFmpeg, OpenCV and
 MediaPipe all come as prebuilt packages (B). **We'll probably have to patch
