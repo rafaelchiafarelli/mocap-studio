@@ -32,7 +32,7 @@ links) and `docs/diagrams/pipeline.drawio` (P1–P5, numbered steps with
   **session folder layout**. None imports code from another.
 - **Contracts** live in `.harpia`, **one module per owner** (whoever produces the data
   defines the message, and the others only import it). They're generated into Python
-  by **Harpia V4's Python target** (and Java target, for the camera app) (a black box: used only through its documented
+  by **Harpia V5's Python target** (and Java target, for the camera app) (a black box: used only through its documented
   interface), and the generated code is **committed** in `mocap-contracts`, so
   consumers need neither Harpia nor Docker.
 - **Two PCs.**
@@ -63,7 +63,7 @@ links) and `docs/diagrams/pipeline.drawio` (P1–P5, numbered steps with
   `TakeClosed`, so the processing PC can align right away. As each camera
   finishes preprocessing, its video is copied (rsync over SSH, wired LAN) and
   then announced with `CameraFileReady` (size, sha256, frames). The events are
-  **Harpia messages over Harpia's ZeroMQ transport** (`critical` delivery),
+  **Harpia messages over Harpia's ZeroMQ transport** (`push`/`pull`),
   owned by `mocap-capture` in `capture.harpia`. Each event is also written as a
   JSON sidecar next to its file (`closed.json`, `<file>.ready.json`). The
   session folder stays the record, the event is the nudge, and
@@ -88,7 +88,7 @@ links) and `docs/diagrams/pipeline.drawio` (P1–P5, numbered steps with
 
 | Repository | Role | Baseline tasks |
 |---|---|---|
-| `mocap-contracts` | `.harpia` messages, generated Python + Java (Harpia V4), hand-off event transport (ZeroMQ), session layout; **camera-protocol**: stream protocol v1, `camera.harpia` | 10 + 5 |
+| `mocap-contracts` | `.harpia` messages, generated Python + Java (Harpia V5), hand-off event transport (ZeroMQ), session layout; **camera-protocol**: stream protocol v1, `camera.harpia` | 10 + 5 |
 | `mocap-camera-app` | Android STREAM camera (Java): protocol v1, foreground service, ZeroMQ control, Camera2 manual controls. **Local only so far: no remote, not yet a submodule.** | 7 |
 | `mocap-capture` | Recorder PC: P1 + P2, cameras (UVC + STREAM), recording, sync markers, take report, per-role preprocessing, per-file hand-off + events | 18 |
 | `mocap-sync-fw` | ESP32 LED flash firmware — **parked**, not scheduled | 3 |
@@ -107,7 +107,7 @@ Critical path to the camera decision (adapt and blender are **not** on it):
 1. `mocap-contracts`: bootstrap → messages-v0 → tag `v0.1.0`.
 2. In parallel: `mocap-capture` (all baseline epics; devices/5 needs stream
    protocol v1 from `mocap-contracts` camera-protocol), `mocap-camera-app`
-   (bootstrap and streaming; its control epic waits on Harpia's ZeroMQ docs) and
+   (all epics; control needs `mocap-contracts` camera-messages) and
    `mocap-studio/bootstrap` (includes the hardware inventory, manual).
 3. `mocap-extract`: bootstrap → alignment → calibration → body → quality.
 4. `mocap-studio/camera-study`: protocol → baseline session (manual) → analysis → decision (manual).
@@ -117,32 +117,26 @@ Critical path to the camera decision (adapt and blender are **not** on it):
 
 1. **`mocap-camera-app` needs a GitHub remote** (`rafaelchiafarelli/mocap-camera-app`).
    Once it exists, it gets pushed and registered as a submodule here.
-2. **Harpia's ZeroMQ transport isn't documented for Python or Java.** V4
-   documents the Python and Java targets (USAGE §5.1–5.4), but ZeroMQ (§7.6)
-   and `critical` delivery (§7.9) are C++-only in the docs. That blocks
-   `mocap-contracts` messages-v0/6 and camera-messages/3, and through them
-   `mocap-camera-app` control/1–2 and `mocap-capture` studio-setup cameras/3.
-   It's Harpia's backlog.
-3. **Stream protocol v1 video transport** (`mocap-contracts` camera-protocol
+2. **Stream protocol v1 video transport** (`mocap-contracts` camera-protocol
    stream-protocol/1). Proposal: raw Annex-B H.264 over HTTP, with the
    timestamps only in the SEI, and the multipart `/stream` dropped.
-4. **Preprocessing output codec** (`mocap-capture` preprocess/2). Proposal: FFV1
+3. **Preprocessing output codec** (`mocap-capture` preprocess/2). Proposal: FFV1
    lossless. Recorder "clean-up" beyond crop/rescale is undefined. Each
    operation gets its own task once it's declared.
-5. **Are `raw/` videos handed off?** (`mocap-capture` handoff/3). Proposal: no.
+4. **Are `raw/` videos handed off?** (`mocap-capture` handoff/3). Proposal: no.
    They stay on the recorder as the archive. Timestamps always travel.
-6. **Hand-off network and SSH target** (`mocap-capture` handoff/2): wired LAN
+5. **Hand-off network and SSH target** (`mocap-capture` handoff/2): wired LAN
    proposed. The processing PC runs WSL2 behind NAT, so how it accepts rsync
    over SSH and the ZeroMQ events (Windows OpenSSH / port forward into WSL) is
    still to be decided.
-7. **Per-camera 2D in FreeMoCap** (`mocap-extract` body/1 pre-work): can headless
+6. **Per-camera 2D in FreeMoCap** (`mocap-extract` body/1 pre-work): can headless
    FreeMoCap 1.8.2 run 2D per camera, separately from triangulation? If not,
    2D waits for every role (or we patch FreeMoCap).
-8. Sync precision target: how many ms of inter-camera error is acceptable with
+7. Sync precision target: how many ms of inter-camera error is acceptable with
    timestamp-only sync (decides whether the parked LED flash ever comes back).
-9. Python/FreeMoCap and Blender versions (see `DEPENDENCIES.md` for what's pinned).
-10. Study decision thresholds (detection rate, reprojection error, bone stability).
-11. Initiative-level decisions listed in `studio-setup.md` and `live-monitor.md`.
+8. Python/FreeMoCap and Blender versions (see `DEPENDENCIES.md` for what's pinned).
+9. Study decision thresholds (detection rate, reprojection error, bone stability).
+10. Initiative-level decisions listed in `studio-setup.md` and `live-monitor.md`.
 
 ## Known risks the study must confirm or rule out
 
@@ -163,5 +157,5 @@ workers; camera replacement according to the study's decision.
 ## First action of the session
 
 Read the skill, then `mocap-contracts/initiatives/baseline/` and the two
-diagrams in `docs/diagrams/`. Check open question 2 (Harpia's Python ZeroMQ transport documented), and only then create the branch
+diagrams in `docs/diagrams/`. Harpia is pinned to V5, which documents everything the plan uses, and only then create the branch
 chain for the task `bootstrap/1-package-skeleton`.
