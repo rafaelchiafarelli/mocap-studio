@@ -97,7 +97,7 @@ For reference, on a 2.4 GHz access point, 4 tablets × 20 Mbps (73.6 Mbps total)
 | `TimestampSei.java` | builds the SEI NAL: UUID `MOCAPSTUDIO-TS01` + frame seq + sensor ns + device Unix ns |
 | `SensorClock.java` | works out which clock camera timestamps use (monotonic vs boottime) |
 | `TimeSyncServer.java` | UDP :8081 time server on the sensor clock (NTP-style) |
-| `StreamServer.java` | HTTP :8080: `/stream` (multipart, one part per frame + headers), `/h264.raw` (play with `ffplay -f h264`), `/stats`, `/info`, `/control?width=&height=&fps=&mode=&bitrate=&quality=&facing=` |
+| `StreamServer.java` | HTTP :8080: `/stream` (multipart, one part per frame + headers), `/h264.raw` (watch live with `ffplay -fflags nobuffer -flags low_delay -framedrop -probesize 32 -analyzeduration 0 -sync ext -vf setpts=0 -f h264 http://<ip>:8080/h264.raw` from Windows, not WSL; `setpts=0` shows each frame on arrival instead of pacing it, which removes the 2–3 s player delay), `/stats`, `/info`, `/control?width=&height=&fps=&mode=&bitrate=&quality=&facing=` |
 | `Stats.java` | per-second counters, battery temperature, thermal status |
 | `DeviceInfo.java` | `/info`: cameras, sizes, fps ranges, hardware level, timestamp source, H.264 encoders |
 
