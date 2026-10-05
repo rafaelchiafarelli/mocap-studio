@@ -13,12 +13,17 @@ touching the rest.
 ## Architecture (closed 2026-10-05)
 
 ```
-cameras ──live──▶ RECORDER PC ───────────────────────────▶ PROCESSING PC ──▶ Blender
- UVC (USB)        P1 setup, P2 record (one file per        P3 extract (all neural
- STREAM (Wi-Fi    camera, host clock), report,             nets: body, hands,
- H.264 + capture  preprocess (crop/rescale, CPU only),     later face) → P4 adapt
- time in SEI)     manifest ── rsync of the take folder ──▶ intake check → P5
+cameras ──live──▶ RECORDER PC ──── rsync, file by file ────▶ PROCESSING PC ──▶ Blender
+ UVC (USB)        P1 setup, P2 record (one file per   ──▶    watch: verify each file,
+ STREAM (Wi-Fi    camera, host clock), report,               start each step when its
+ H.264 + capture  preprocess per role (CPU only),            inputs are in → P3 extract
+ time in SEI)     hand-off per file ── Harpia ZeroMQ ──▶     (all neural nets) → P4 → P5
+                  events: TakeClosed, CameraFileReady
 ```
+
+Diagrams (draw.io): `docs/diagrams/architecture.drawio` (machines, cameras,
+links) and `docs/diagrams/pipeline.drawio` (P1–P5, numbered steps with
+▶ In / ◀ Out). Task files trace back to the step numbers there.
 
 - **Repositories.** This one (`mocap-studio`) is the organizer and holds no mocap
   logic. The `mocap-*` repositories are git submodules of this one
@@ -46,10 +51,17 @@ cameras ──live──▶ RECORDER PC ─────────────�
   plus software START/END sync markers. No sync hardware. The LED flash (ESP32) is
   **parked**, to revisit only if timestamp sync proves too imprecise and a flash
   gives a measured, clear improvement (`mocap-capture/initiatives/future/README.md`).
-- **Hand-off:** once a take is finished, the recorder writes `manifest.json`
-  (sha256 of every file handed off) **last**, then copies the take folder to
-  the same `layout` path on the processing PC with `rsync`, the manifest last
-  again. `mocap-extract` refuses any take that doesn't match its manifest.
+- **Hand-off: per file, as soon as each one is ready, never a take-level gate.**
+  At END the recorder sends `take.json` and the timestamp files, then publishes
+  `TakeClosed`, so the processing PC can align right away. As each camera
+  finishes preprocessing, its video is copied (rsync over SSH, wired LAN) and
+  then announced with `CameraFileReady` (size, sha256, frames). The events are
+  **Harpia messages over Harpia's ZeroMQ transport** (`critical` delivery),
+  owned by `mocap-capture` in `capture.harpia`. Each event is also written as a
+  JSON sidecar next to its file (`closed.json`, `<file>.ready.json`). The
+  session folder stays the record, the event is the nudge, and
+  `mocap-extract watch` rescans the sidecars after any restart. Video bytes
+  never go through Harpia.
 - **7 cameras planned:** 4 body (full body incl. feet, hands, arms, head),
   1 face, 1 per hand (2). The two hand cameras are still in doubt. Face moves
   into the camera count; the face pipeline itself is still phase 2.
@@ -67,10 +79,10 @@ cameras ──live──▶ RECORDER PC ─────────────�
 
 | Repository | Role | Baseline tasks |
 |---|---|---|
-| `mocap-contracts` | `.harpia` messages, generated Python package (Harpia V3), session layout | 9 |
-| `mocap-capture` | Recorder PC: P1 + P2, cameras (UVC + STREAM), recording, sync markers, take report, preprocessing, hand-off | 17 |
+| `mocap-contracts` | `.harpia` messages, generated Python package (Harpia V3), hand-off event transport (ZeroMQ), session layout | 10 |
+| `mocap-capture` | Recorder PC: P1 + P2, cameras (UVC + STREAM), recording, sync markers, take report, per-role preprocessing, per-file hand-off + events | 18 |
 | `mocap-sync-fw` | ESP32 LED flash firmware — **parked**, not scheduled | 3 |
-| `mocap-extract` | Processing PC: P3, take intake, alignment, calibration, FreeMoCap, **per-camera metrics** | 13 |
+| `mocap-extract` | Processing PC: P3, intake + `watch` listener, alignment, calibration, FreeMoCap, **per-camera metrics** | 14 |
 | `mocap-adapt` | P4: smoothing, feet on the floor, `MocapTake` | 7 |
 | `mocap-blender` | P5: add-on, animated empties, NLA | 5 |
 | `mocap-studio` | environment, per-take CLI, **bottleneck study** | 8 |
@@ -97,22 +109,30 @@ Critical path to the camera decision (adapt and blender are **not** on it):
    `mocap-camera-app` submodule, starting from the eval app, with its stream
    and `/control` protocol written down as a contract. This blocks `mocap-capture`
    devices/5, `studio-setup` cameras/3 and `live-monitor` preview-tap/3.
-2. **Harpia's Python target isn't in V3's documented interface** (`USAGE.md`
-   covers only the C++ project). It needs documenting on Harpia's side before
-   `mocap-contracts` bootstrap/2 starts.
-3. **Preprocessing output codec** (`mocap-capture` preprocess/2). Proposal: FFV1
+2. **Harpia's Python output isn't in V3's documented interface.** `USAGE.md`
+   covers only the C++ project. Harpia has to document the Python target
+   (blocks `mocap-contracts` bootstrap/2) and its Python **ZeroMQ** transport
+   with `critical` delivery (blocks messages-v0/6). That's Harpia's backlog.
+3. **Compliance profile for the studio LAN** (`mocap-contracts` messages-v0/6):
+   the `project.harpia.yaml` values (risk class, topology). Declared explicitly,
+   never left to Harpia's defaults, which turn on mTLS/CURVE/RBAC.
+4. **Preprocessing output codec** (`mocap-capture` preprocess/2). Proposal: FFV1
    lossless. Recorder "clean-up" beyond crop/rescale is undefined. Each
    operation gets its own task once it's declared.
-4. **Is `raw/` handed off?** (`mocap-capture` handoff/1). Proposal: no. It stays
-   on the recorder as the archive, and only `prep/` + metadata travel.
-5. **Hand-off network and SSH target** (`mocap-capture` handoff/2): wired LAN
-   proposed. The processing PC runs WSL2 behind NAT, so how it accepts rsync over
-   SSH (Windows OpenSSH vs. a port forward into WSL) is still to be decided.
-6. Sync precision target: how many ms of inter-camera error is acceptable with
+5. **Are `raw/` videos handed off?** (`mocap-capture` handoff/3). Proposal: no.
+   They stay on the recorder as the archive. Timestamps always travel.
+6. **Hand-off network and SSH target** (`mocap-capture` handoff/2): wired LAN
+   proposed. The processing PC runs WSL2 behind NAT, so how it accepts rsync
+   over SSH and the ZeroMQ events (Windows OpenSSH / port forward into WSL) is
+   still to be decided.
+7. **Per-camera 2D in FreeMoCap** (`mocap-extract` body/1 pre-work): can headless
+   FreeMoCap 1.8.2 run 2D per camera, separately from triangulation? If not,
+   2D waits for every role (or we patch FreeMoCap).
+8. Sync precision target: how many ms of inter-camera error is acceptable with
    timestamp-only sync (decides whether the parked LED flash ever comes back).
-7. Python/FreeMoCap and Blender versions (see `DEPENDENCIES.md` for what's pinned).
-8. Study decision thresholds (detection rate, reprojection error, bone stability).
-9. Initiative-level decisions listed in `studio-setup.md` and `live-monitor.md`.
+9. Python/FreeMoCap and Blender versions (see `DEPENDENCIES.md` for what's pinned).
+10. Study decision thresholds (detection rate, reprojection error, bone stability).
+11. Initiative-level decisions listed in `studio-setup.md` and `live-monitor.md`.
 
 ## Known risks the study must confirm or rule out
 
@@ -126,12 +146,12 @@ Critical path to the camera decision (adapt and blender are **not** on it):
 ## Phase 2 (outside the baseline — becomes a new initiative when the time comes)
 
 Helmet camera with Face Landmarker; DeepFace with a mood and script layer;
-character profile; custom retargeting; Harpia database + ZMQ; live streaming from
-the recorder to the processing PC; add-on linked to the database; distributed
+character profile; custom retargeting; Harpia database and control plane (remote
+trigger, dashboard); live forwarding of frames to the processing PC; add-on linked to the database; distributed
 workers; camera replacement according to the study's decision.
 
 ## First action of the session
 
-Read the skill, then `mocap-contracts/initiatives/baseline/`. Check open
-question 2 (Harpia's Python target documented), and only then create the branch
+Read the skill, then `mocap-contracts/initiatives/baseline/` and the two
+diagrams in `docs/diagrams/`. Check open question 2 (Harpia's Python output documented), and only then create the branch
 chain for the task `bootstrap/1-package-skeleton`.
