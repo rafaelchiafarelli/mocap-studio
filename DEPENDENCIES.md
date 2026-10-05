@@ -52,13 +52,13 @@ installs only from the lockfile. Base images are pinned by `@sha256:` digest.
 
 | Repo | Direct dependencies | Version constraints we already know |
 |---|---|---|
-| `mocap-contracts` | the generated Python package's own runtime deps (protobuf among them), `hatchling`. Generation needs only Harpia's Docker image, no `protoc` of ours. | **protobuf 4.25.x**: MediaPipe 0.10.14 needs `protobuf>=4.25.3,<5`. `mocap-extract` imports both, so the range the generated package declares must include 4.25.x (checked in bootstrap/2). |
+| `mocap-contracts` | the generated Python package's own runtime deps (protobuf among them), `hatchling`. Generation needs only Harpia's Docker image, no `protoc` of ours. | **protobuf 4.25.x**: MediaPipe 0.10.14 needs `protobuf>=4.25.3,<5`. `mocap-extract` imports both, so the range the generated package declares must include 4.25.x (checked in bootstrap/2). Released: `v0.1.0` (baseline contracts), `v0.2.0` (camera protocol). Its slow tests (`make test-slow`) use `gradle:8.7-jdk17`, pinned by digest. |
 | `mocap-capture` | `mocap_contracts`, `pyyaml` + `pydantic` 2 (config validation), `typer`, `pyudev` | Runs on the recorder PC. `rsync` + `openssh-client` (apt) for the hand-off; the container needs `--device /dev/video*`. |
 | `mocap-extract` | `mocap_contracts` (incl. its ZeroMQ receiver), `freemocap==1.8.2`, `opencv-contrib-python==4.8.*` | FreeMoCap pins `skellytracker[all]==2025.10.1024`, which pulls in `mediapipe==0.10.14`, `torch==2.8.*`, `torchvision==0.23.*`, `ultralytics~=8.3.132` and `numpy<2`. |
 | `mocap-adapt` | `mocap_contracts`, `numpy<2`, `scipy` (Butterworth), One Euro filter (small, can be vendored) | Keep `numpy<2` so it matches extract. |
 | `mocap-studio` | stdlib + `pyyaml` (CLI and study report) | `shellcheck` (apt) for `bootstrap.sh` |
 | Streaming tests | already have their own Dockerfiles (JDK 17, Android SDK 34, Gradle 8.7, adb) | Base image and SDK packages aren't pinned by digest yet. |
-| `mocap-camera-app` | Android SDK 34, JDK 17, Gradle (as `camera-stream-eval`); `mocap-contracts` generated Java (protobuf, gRPC, JeroMQ via Harpia's Java target) | Base image pinned by digest from the start (bootstrap/1). `minSdk` 21 unless the generated Java needs more. |
+| `mocap-camera-app` | Android SDK 34, JDK 17, Gradle (as `camera-stream-eval`); `mocap-contracts` generated Java (protobuf, gRPC, JeroMQ via Harpia's Java target) | Base image pinned by digest from the start (bootstrap/1). **`minSdk 24`** (Harpia's verified Android configuration). |
 
 **Decisions for B**
 - **FreeMoCap 1.8.2 for the baseline** (decided).
