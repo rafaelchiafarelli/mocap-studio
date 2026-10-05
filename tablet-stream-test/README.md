@@ -2,8 +2,8 @@
 
 Throwaway stress test: can an old Android tablet capture, JPEG-encode and stream
 its camera over HTTP at a given resolution/FPS, and for how long before it
-throttles? Not part of the mocap-capture baseline (which imports tablet
-recordings via `adb pull`).
+throttles? Not part of the mocap-capture baseline. That uses the STREAM
+source (H.264, see `camera-stream-eval`).
 
 Everything runs in Docker (`./dev` wraps it): JDK 17, Android SDK 34, Gradle 8.7, adb.
 
