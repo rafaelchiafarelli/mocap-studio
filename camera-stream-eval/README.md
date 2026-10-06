@@ -132,9 +132,11 @@ These are the places that depend on the device, from most to least likely to nee
 | **thresholds don't fit the use** (e.g. a device only for slow body capture) | `THRESHOLDS` in `scripts/report.py`; matrix defaults at the top of `run-eval.sh`. |
 | **ports 8080/8081 clash** | `MainActivity.PORT` / `SYNC_PORT`, `PORT` in `scripts/env.sh`, `--port` in the Python scripts, `clocksync.measure_offset(port=)`. |
 
-Keep the wire formats unchanged unless every script changes with them. The `/stream` part headers (`X-Kind`,
-`X-Frame-Seq`, `X-Timestamp-Ns`, `X-Wall-Ms`), the SEI payload (`TimestampSei` ↔ `scripts/sei.py`) and the UDP sync
-reply (`TimeSyncServer` ↔ `scripts/clocksync.py`) are what makes results comparable between devices.
+Keep the wire formats unchanged unless every script changes with them. `scripts/measure.py` reads `/h264.raw`, the
+video transport of stream protocol v1 (`mocap-contracts`), and identifies frames by their SEI, so it measures
+`mocap-camera-app` too. The SEI payload (`TimestampSei` ↔ `scripts/sei.py`) and the UDP sync reply
+(`TimeSyncServer` ↔ `scripts/clocksync.py`) are what makes results comparable between devices. The multipart
+`/stream` is not part of v1 and is only for watching MJPEG mode in a browser.
 
 ## Known limitations
 
