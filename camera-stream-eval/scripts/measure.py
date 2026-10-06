@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Pull one device's stream for N seconds and record what actually arrived.
 
+Reads /h264.raw, the video transport of stream protocol v1 (mocap-contracts docs/stream-protocol-v1.md):
+frames are identified by their timestamp SEI, so it works with any v1 camera, including mocap-camera-app.
+
 Writes into --out-dir (default measurements/), prefix --name (default a timestamp):
   <name>-frames.csv    one row per received frame (seq, sensor timestamp, capture time on the PC clock, latency)
   <name>-stats.csv     the device's /stats once per second (fps, CPU, temperature, ...)
@@ -14,6 +17,7 @@ Standard library only, so it runs with any Python 3.8+ (run it natively, not ins
 usage: measure.py --host <ip> [--seconds 60] [--out-dir DIR] [--name NAME] [--save-stream]
 """
 import argparse
+import bisect
 import csv
 import json
 import os
@@ -27,11 +31,20 @@ import clocksync
 import sei
 
 
-def read_line(f):
-    line = f.readline()
-    if not line:
-        raise EOFError
-    return line.decode("ascii", "replace").strip()
+class _Prefixed:
+    """A socket whose first recv() returns bytes already read past the HTTP headers."""
+
+    def __init__(self, sock, first):
+        self._sock, self._first = sock, first
+
+    def recv(self, n):
+        if self._first:
+            out, self._first = self._first, b""
+            return out
+        return self._sock.recv(n)
+
+    def close(self):
+        self._sock.close()
 
 
 def poll_stats(base, stop, rows):
@@ -44,6 +57,45 @@ def poll_stats(base, stop, rows):
         except Exception as e:  # device busy or gone; keep going
             rows.append({"pc_time": time.time(), "poll_error": str(e)})
         stop.wait(1.0)
+
+
+def h264_frames(sock, until):
+    """Yield (nals, arrival_s) per access unit of a v1 Annex-B stream: the timestamp SEI starts an access unit.
+    arrival_s is when the last byte of the access unit's last NAL arrived. Codec config NALs before the first
+    SEI come as an access unit of their own. Raises EOFError when the stream ends."""
+    buf = bytearray()
+    chunk_ends, chunk_times = [], []   # buffer offset where each recv() ended, and when
+    nal_start = None
+    frame, frame_time = [], None
+    while time.time() < until:
+        data = sock.recv(65536)
+        if not data:
+            raise EOFError("stream closed")
+        buf += data
+        chunk_ends.append(len(buf))
+        chunk_times.append(time.time())
+        search = 0 if nal_start is None else nal_start
+        while True:
+            sc = buf.find(b"\x00\x00\x01", search)
+            if sc < 0:
+                break
+            if nal_start is not None and sc > nal_start:
+                end = sc - 1 if buf[sc - 1] == 0 else sc        # 4-byte start code: drop its leading zero
+                nal = bytes(buf[nal_start:end])
+                if nal:
+                    if nal[0] & 0x1F == 6 and sei.UUID in nal[:24] and frame:
+                        yield frame, frame_time
+                        frame = []
+                    frame.append(nal)
+                    frame_time = chunk_times[bisect.bisect_left(chunk_ends, end)]
+            nal_start = sc + 3
+            search = nal_start
+        if nal_start is not None and nal_start > 1 << 20:     # drop consumed bytes now and then
+            cut = nal_start
+            del buf[:cut]
+            nal_start -= cut
+            chunk_ends = [e - cut for e in chunk_ends if e - cut > 0]
+            chunk_times = chunk_times[-len(chunk_ends):] if chunk_ends else []
 
 
 def pct(xs, p):
@@ -68,8 +120,7 @@ def main():
     ap.add_argument("--seconds", type=float, default=60)
     ap.add_argument("--out-dir", default="measurements")
     ap.add_argument("--name", default="", help="output file prefix (default: timestamp)")
-    ap.add_argument("--save-stream", action="store_true", help="save the H.264 stream (h264 mode)")
-    ap.add_argument("--save-every", type=int, default=0, help="MJPEG mode: save every Nth JPEG (0 = none)")
+    ap.add_argument("--save-stream", action="store_true", help="save the H.264 stream")
     args = ap.parse_args()
 
     base = f"http://{args.host}:{args.port}"
@@ -84,51 +135,40 @@ def main():
     threading.Thread(target=poll_stats, args=(base, stop, stats_rows), daemon=True).start()
 
     sock = socket.create_connection((args.host, args.port), timeout=5)
-    sock.sendall(f"GET /stream HTTP/1.0\r\nHost: {args.host}\r\n\r\n".encode())
-    f = sock.makefile("rb")
-    while read_line(f):  # response headers
-        pass
+    sock.sendall(f"GET /h264.raw HTTP/1.0\r\nHost: {args.host}\r\n\r\n".encode())
+    head = b""
+    while b"\r\n\r\n" not in head:  # response headers; the bytes after them are the stream
+        more = sock.recv(4096)
+        if not more:
+            raise SystemExit("no response from " + base)
+        head += more
+    head, _, rest = head.partition(b"\r\n\r\n")
+    if b" 200 " not in head.split(b"\r\n", 1)[0]:
+        raise SystemExit(f"{base}/h264.raw: {head.splitlines()[0].decode('ascii', 'replace')}")
+    sock = _Prefixed(sock, rest)
 
     frames = []
     keyframes = sei_ok = sei_bad = 0
     raw = open(out(".h264"), "wb") if args.save_stream else None
     t_end = time.time() + args.seconds
-    print(f"measuring {base}/stream for {args.seconds:.0f}s ...", flush=True)
+    print(f"measuring {base}/h264.raw for {args.seconds:.0f}s ...", flush=True)
     ended_early = ""
     try:
-        while time.time() < t_end:
-            line = read_line(f)
-            if not line.startswith("--"):
+        for nals, arrival in h264_frames(sock, t_end):
+            if raw:
+                raw.write(b"".join(b"\x00\x00\x00\x01" + n for n in nals))
+            types = [n[0] & 0x1F for n in nals]
+            if 1 not in types and 5 not in types:
+                continue  # codec config (SPS/PPS) only
+            ts = next(sei.find_timestamps(b"\x00\x00\x01" + nals[0]), None) if types[0] == 6 else None
+            if ts is None:
+                sei_bad += 1  # untimed or garbled: reported, never guessed
                 continue
-            headers = {}
-            while True:
-                line = read_line(f)
-                if not line:
-                    break
-                k, _, v = line.partition(":")
-                headers[k.strip().lower()] = v.strip()
-            n = int(headers["content-length"])
-            data = f.read(n)
-            arrival = time.time()
-            kind = headers.get("x-kind", "jpeg")
-            if raw and kind != "jpeg":
-                raw.write(data)
-            if kind == "config":
-                continue
-            keyframes += kind == "key"
-            seq = int(headers.get("x-frame-seq", -1))
-            sensor_ns = int(headers.get("x-timestamp-ns", 0))
-            if kind != "jpeg":
-                ts = next(sei.find_timestamps(data), None)
-                if ts and ts[0] == seq and ts[1] == sensor_ns:
-                    sei_ok += 1
-                else:
-                    sei_bad += 1
-            frames.append({"seq": seq, "sensor_ns": sensor_ns, "tablet_wall_ms": int(headers.get("x-wall-ms", 0)),
-                           "pc_arrival_s": arrival, "bytes": n})
-            if kind == "jpeg" and args.save_every and len(frames) % args.save_every == 0:
-                with open(out(f"-{seq:06d}.jpg"), "wb") as img:
-                    img.write(data)
+            sei_ok += 1
+            keyframes += 5 in types
+            seq, sensor_ns, device_unix_ns = ts
+            frames.append({"seq": seq, "sensor_ns": sensor_ns, "tablet_wall_ms": device_unix_ns // 1_000_000,
+                           "pc_arrival_s": arrival, "bytes": sum(len(n) + 4 for n in nals)})
     except (EOFError, ConnectionError, socket.timeout) as e:
         ended_early = repr(e)
         print(f"stream ended early: {ended_early}")
