@@ -119,7 +119,7 @@ Critical path to the camera decision (adapt and blender are **not** on it):
    protocol v1 from `mocap-contracts` camera-protocol), `mocap-camera-app`
    (all epics; `minSdk 24`, contracts `v0.2.1`) and
    `mocap-studio/bootstrap` (includes the hardware inventory, manual).
-3. `mocap-extract`: bootstrap → alignment → calibration → body → quality.
+3. `mocap-extract`: bootstrap → alignment → calibration → body → quality. **bootstrap and alignment done 2026-10-06** (30 fps, nearest frame, warns past 33.3 ms); calibration/1 waits for the printed board and a real calibration take.
 4. `mocap-studio/camera-study`: protocol → baseline session (manual) → analysis → decision (manual).
 5. After, or in parallel with step 4: `mocap-adapt` → `mocap-blender` → `mocap-studio/pipeline`.
 
@@ -134,9 +134,10 @@ Critical path to the camera decision (adapt and blender are **not** on it):
    proposed. The processing PC runs WSL2 behind NAT, so how it accepts rsync
    over SSH and the ZeroMQ events (Windows OpenSSH / port forward into WSL) is
    still to be decided.
-4. **Per-camera 2D in FreeMoCap** (`mocap-extract` body/1 pre-work): can headless
-   FreeMoCap 1.8.2 run 2D per camera, separately from triangulation? If not,
-   2D waits for every role (or we patch FreeMoCap).
+4. ~~**Per-camera 2D in FreeMoCap**~~ **Answered 2026-10-06: yes, without
+   patching.** 2D run one camera at a time and stacked gives 2D and 3D identical
+   to the stock run on FreeMoCap's test recording (details in `mocap-extract`
+   body/1). Only triangulation waits for every role.
 5. Sync precision target: how many ms of inter-camera error is acceptable with
    timestamp-only sync (decides whether the parked LED flash ever comes back).
 6. Python/FreeMoCap and Blender versions (see `DEPENDENCIES.md` for what's pinned).
