@@ -45,7 +45,7 @@ installs only from the lockfile. Base images are pinned by `@sha256:` digest.
 | Python | **3.12** | FreeMoCap 1.8.2 needs `>=3.10,<3.13`; skellytracker `<3.13`. Use the same minor everywhere. |
 | Base image | `ubuntu:24.04@sha256:…` (digest pinned when the first Dockerfile is written) | System Python is 3.12. Same base for every image, `mocap-extract` included (the CUDA runtime comes inside the torch wheels). |
 | FFmpeg + ffprobe | apt, version from the base image | Recording (`-c:v copy`), per-frame timestamps, resampling |
-| `v4l-utils` (`v4l2-ctl`) | apt | Camera enumeration and format probing (capture) |
+| `v4l-utils` (`v4l2-ctl`) | apt | Only for UVC webcams, **parked** (`mocap-capture/initiatives/future/uvc/`): not needed now |
 | `pytest` | lockfile | Test suite in every Python repo |
 
 ### Per repo
@@ -88,7 +88,7 @@ installs only from the lockfile. Base images are pinned by `@sha256:` digest.
 | **Blender** | **5.2.2 LTS** (supported until July 2028) | `blender-5.2.2-windows-x64.zip` (portable, no installer) | Windows PC (the best machine, same as the processing PC) |
 | **FreeMoCap Blender add-on** | `v2026.04.1041` | release `.zip` | Installed into Blender |
 | Android platform-tools (`adb`) | **?** (pin a release zip) | `platform-tools_r<ver>-<os>.zip` | Only needed outside Docker, e.g. Windows side |
-| `usbipd-win` | **?** | `.msi` | Windows host, to attach USB cameras/devices to WSL2 |
+| `usbipd-win` | **?** | `.msi` | Windows host, to attach USB devices to WSL2. Only UVC webcams (**parked**) needed it: not needed now |
 | Windows Python | **?** (3.12.x) | python.org installer | Windows host. The stream-eval scripts measure from Windows because WSL2 NAT stalls TCP. |
 | Docker Engine / Desktop | **?** | — | Every PC. It runs B, so it can't live inside B. |
 

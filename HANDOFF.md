@@ -5,17 +5,17 @@
 Video-based motion capture pipeline for filmic animation in Blender, in 5
 processes: P1 setup, P2 capture, P3 extraction, P4 adaptation, P5 Blender.
 The current initiative is the **baseline**: build it with the hardware Rafael
-already has (tablets, a few cameras, one webcam), **without investing in
+already has (tablets running the camera app; **no webcam**, decided 2026-10-06), **without investing in
 hardware**, and measure whether the cameras are the bottleneck. Cameras sit
-behind an interface (`CameraSource`) so they can be swapped later without
-touching the rest.
+behind an interface (`CameraSource`, a registry per source kind) so other
+image sources can be added later without touching the rest.
 
 ## Architecture (closed 2026-10-05)
 
 ```
 cameras ──live──▶ RECORDER PC ──── rsync, file by file ────▶ PROCESSING PC ──▶ Blender
- UVC (USB)        P1 setup, P2 record (one file per   ──▶    watch: verify each file,
- STREAM (Wi-Fi    camera, host clock), report,               start each step when its
+ STREAM (Wi-Fi    P1 setup, P2 record (one file per   ──▶    watch: verify each file,
+ tablets,         camera, host clock), report,               start each step when its
  H.264 + capture  preprocess per role (CPU only),            inputs are in → P3 extract
  time in SEI)     hand-off per file ── Harpia ZeroMQ ──▶     (all neural nets) → P4 → P5
                   events: TakeClosed, CameraFileReady
@@ -42,8 +42,10 @@ links) and `docs/diagrams/pipeline.drawio` (P1–P5, numbered steps with
     CPU only, one output frame per input frame) into `prep/`.
   - **Processing PC** (Windows + WSL2, RTX 4080): all neural-net work.
     Parallelism later = one take per worker.
-- **Camera sources:** `UVC` (webcam via FFmpeg, `-c:v copy`, MKV, wall-clock
-  timestamps) and `STREAM` (tablets/phones running **`mocap-camera-app`**).
+- **Camera sources:** `STREAM` (tablets/phones running **`mocap-camera-app`**).
+  USB webcams (`UVC`) are **parked**: no webcam will be used, and their tasks
+  wait in `mocap-capture/initiatives/future/uvc/`. `CameraConfig` keeps the
+  `UVC` kind; a take that declares one fails before START.
   **No internal recording and no `adb` import.**
 - **Camera app** (`mocap-camera-app`, Java, started from the
   `camera-stream-eval` app, which stays as the evaluation tool):
@@ -55,7 +57,7 @@ links) and `docs/diagrams/pipeline.drawio` (P1–P5, numbered steps with
   - **Control, info and stats** are `camera.harpia` messages over **Harpia
     ZeroMQ**.
 - **Camera controls: every control a camera offers can be listed and set from
-  the recorder**, for both camera types: V4L2 on webcams, Camera2 on tablets.
+  the recorder**: Camera2 on the tablets (V4L2 for webcams is parked with UVC).
   - One vocabulary (`camera_control.harpia`: `ControlCapability`,
     `ControlSetting`, `ControlResult`) with native key names.
   - Values are always read back from the device. Clamped or unsupported
@@ -100,7 +102,7 @@ links) and `docs/diagrams/pipeline.drawio` (P1–P5, numbered steps with
 |---|---|---|
 | `mocap-contracts` | `.harpia` messages, generated Python + Java (Harpia V5), hand-off event transport (ZeroMQ), session layout; **camera-protocol**: stream protocol v1, `camera.harpia` | 11 + 5 |
 | `mocap-camera-app` | Android STREAM camera (Java): protocol v1, foreground service, ZeroMQ control, every Camera2 control | 8 |
-| `mocap-capture` | Recorder PC: P1 + P2, cameras (UVC + STREAM), recording, sync markers, take report, per-role preprocessing, per-file hand-off + events | 18 (+ studio-setup, live-monitor) |
+| `mocap-capture` | Recorder PC: P1 + P2, STREAM cameras, recording, sync markers, take report, per-role preprocessing, per-file hand-off + events | 12 (+ studio-setup, live-monitor); UVC parked |
 | `mocap-sync-fw` | ESP32 LED flash firmware — **parked**, not scheduled | 3 |
 | `mocap-extract` | Processing PC: P3, intake + `watch` listener, alignment, calibration, FreeMoCap, **per-camera metrics** | 14 |
 | `mocap-adapt` | P4: smoothing, feet on the floor, `MocapTake` | 7 |
@@ -115,8 +117,7 @@ Each repository has its own `initiatives/` folder and `.claude/` skill. Create
 Critical path to the camera decision (adapt and blender are **not** on it):
 
 1. `mocap-contracts`: bootstrap → messages-v0 → tag `v0.1.0`. **Done 2026-10-05** (`v0.1.0` tagged on `dev`; see its `CHANGELOG.md`). Consumers pin `mocap-contracts[zmq] @ git+…@v0.2.1`. The `camera-protocol` initiative is **done too: `v0.2.0`** (stream protocol v1 spec + reference reader + fixtures, `camera.harpia`, Java generation, the camera ZeroMQ channel). mocap-capture's STREAM source and the camera app pin `v0.2.0`. **Pin `v0.2.1`** (same contracts, Harpia submodule over HTTPS so installs work without SSH keys).
-2. **Can start now.** In parallel: `mocap-capture` (all baseline epics; devices/5 needs stream
-   protocol v1 from `mocap-contracts` camera-protocol), `mocap-camera-app`
+2. **Can start now.** In parallel: `mocap-capture` (baseline epics; **bootstrap and devices done 2026-10-06**: `CameraSource` registry + STREAM source on stream protocol v1; UVC parked), `mocap-camera-app`
    (all epics; `minSdk 24`, contracts `v0.2.1`) and
    `mocap-studio/bootstrap` (includes the hardware inventory, manual).
 3. `mocap-extract`: bootstrap → alignment → calibration → body → quality. **bootstrap and alignment done 2026-10-06** (30 fps, nearest frame, warns past 33.3 ms); calibration/1 waits for the printed board and a real calibration take.
