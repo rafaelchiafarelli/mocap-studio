@@ -14,10 +14,10 @@ plan, decisions and diagrams.
 
 ```
 cameras ──live──▶ RECORDER PC ──── rsync, file by file ────▶ PROCESSING PC ──▶ Blender
- UVC (USB)        P1 setup, P2 record (one file per   ──▶    watch: verify each file,
- STREAM (Wi-Fi    camera, host clock), report,               start each step when its
- tablets running  preprocess per role (CPU only),            inputs are in → P3 extract
- the camera app)  hand-off per file ── Harpia ZeroMQ ──▶     (all neural nets) → P4 → P5
+ STREAM (Wi-Fi    P1 setup, P2 record (one file per   ──▶    watch: verify each file,
+ tablets running  camera, host clock), report,               start each step when its
+ the camera app)  preprocess per role (CPU only),            inputs are in → P3 extract
+                  hand-off per file ── Harpia ZeroMQ ──▶     (all neural nets) → P4 → P5
 ```
 
 - **Recorder PC** (Linux): every camera delivers its frames live to it. It
