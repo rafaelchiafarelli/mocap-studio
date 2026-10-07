@@ -8,6 +8,13 @@ PKG=dev.mocapstudio.tabletstream
 APK=app/build/outputs/apk/debug/app-debug.apk
 PORT=8080
 
+# --app camera: mocap-camera-app, controlled over ZeroMQ (scripts/camctl.py in the control image).
+CAMERA_PKG=dev.mocapstudio.camera
+CONTROL_PORT=8082; STATS_PORT=8083; REPLY_PORT=5700
+MOCAP_CONTRACTS=${MOCAP_CONTRACTS:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/mocap-contracts}
+# tagged with a hash of docker/control/, so a changed Dockerfile or lock file builds a fresh image
+CONTROL_IMAGE=camera-stream-eval-control:$(cat "$(dirname "${BASH_SOURCE[0]}")"/../docker/control/* | sha256sum | cut -c1-12)
+
 is_wsl() { grep -qi microsoft /proc/version 2>/dev/null; }
 
 # The measuring Python must run natively on the PC that receives the stream. Under WSL2 that means the

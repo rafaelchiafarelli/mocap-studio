@@ -19,6 +19,9 @@ WAIT_IDLE=300
 PAIR_ADDR=; PAIR_CODE=
 BUILD=1
 OUT=
+APP=eval
+CAMERA_ID=0
+CONTROLS=
 
 usage() {
     cat <<EOF
@@ -38,6 +41,11 @@ options
   --wait-idle <s>          wait up to this long for background updates/compilation to finish (default $WAIT_IDLE)
   --no-build               reuse the existing APK
   --out <dir>              results folder (default results/<model>-<serial>-<time>)
+  --app eval|camera        eval (default): this repo's eval app, over HTTP. camera: mocap-camera-app, already
+                           installed and set up (its README, "Tablet setup"), over ZeroMQ via scripts/camctl.py
+  --camera-id <id>         --app camera: the camera to stream (default $CAMERA_ID)
+  --controls "<k=v ..>"    --app camera: Camera2 controls locked before measuring, results read back into
+                           controls.json (default: the fps range [fps, fps], AE lock and AWB lock on)
 
 environment: PYTHON=<path> to force the measuring Python (default: native Windows Python under WSL)
 EOF
@@ -59,11 +67,16 @@ while [ $# -gt 0 ]; do
         --wait-idle) WAIT_IDLE="$2"; shift 2 ;;
         --no-build) BUILD=; shift ;;
         --out) OUT="$2"; shift 2 ;;
+        --app) APP="$2"; shift 2 ;;
+        --camera-id) CAMERA_ID="$2"; shift 2 ;;
+        --controls) CONTROLS="$2"; shift 2 ;;
         -*) die "unknown option $1 (see --help)" ;;
         *) TARGET="$1"; shift ;;
     esac
 done
 [ -n "${TARGET:-}" ] || { usage; exit 1; }
+[ "$APP" = eval ] || [ "$APP" = camera ] || die "--app is eval or camera"
+CONTROLS=${CONTROLS:-"android.control.aeTargetFpsRange=$FPS,$FPS android.control.aeLock=on android.control.awbLock=on"}
 
 # ---------------------------------------------------------------------------------------------
 say "1/9 prerequisites"
@@ -76,7 +89,9 @@ is_wsl && [[ "$PY" != *.exe ]] && echo "WARNING: measuring from inside WSL2 - ex
 adb() { ./dev adb "$@"; }
 dev_adb() { T="$ADB_T" ./dev adb "$@"; }
 
-if [ -n "$BUILD" ]; then
+if [ "$APP" = camera ]; then
+    say "2/9 build skipped (--app camera: mocap-camera-app is installed with its own scripts/install-app.sh)"
+elif [ -n "$BUILD" ]; then
     say "2/9 build (Docker image + APK)"
     ./dev build
 else
@@ -85,6 +100,11 @@ fi
 
 # ---------------------------------------------------------------------------------------------
 say "3/9 connect"
+# one adb server per PC (port 5037): mocap-camera-app's toolbox may have one running
+if [ "$(docker inspect -f '{{.State.Running}}' mocap-camera-app-adb 2>/dev/null)" = true ]; then
+    echo "stopping mocap-camera-app's adb server container (only one adb server can run)"
+    docker rm -f mocap-camera-app-adb >/dev/null
+fi
 ./dev up
 if [ -n "$PAIR_ADDR" ]; then
     adb pair "$PAIR_ADDR" "$PAIR_CODE"
@@ -136,22 +156,40 @@ sed -n '/# wifi/,/# battery/p' "$OUT/device-adb.txt" | sed '/^#\|^$/d'
 
 # ---------------------------------------------------------------------------------------------
 say "5/9 install and start the app"
-dev_adb install -r -g "$APK" | tail -1
-dev_adb shell am start -S -n "$PKG/.MainActivity" --ei fps "$FPS" --es mode h264 --es facing back >/dev/null
-ok=
-for _ in $(seq 30); do
-    fps_now=$(curl -s --max-time 2 "http://$IP:$PORT/stats" | grep -oE '"encoded_fps":[0-9.]+' | cut -d: -f2 || true)
-    [ -n "$fps_now" ] && awk "BEGIN{exit !($fps_now > 0)}" && { ok=1; break; }
-    sleep 1
-done
-[ -n "$ok" ] || die "the app is not streaming (check: ./dev logs; is the screen on?)"
-curl -s --max-time 5 "http://$IP:$PORT/info" > "$OUT/device.json"
-[ -s "$OUT/device.json" ] || die "no /info from the app"
+camctl() { ./dev camctl --serial "$serial" --control-port "$CONTROL_PORT" --stats-port "$STATS_PORT" --reply-port "$REPLY_PORT" "$@"; }
+if [ "$APP" = camera ]; then
+    PKG=$CAMERA_PKG
+    dev_adb shell pm path "$PKG" | grep -q package: \
+        || die "mocap-camera-app is not installed: run its scripts/install-app.sh (README, \"Tablet setup\")"
+    dev_adb shell am start -S -n "$PKG/.MainActivity" --es serial "$serial" --es camera_id "$CAMERA_ID" \
+        --es fps "$FPS" >/dev/null
+    # the control channel over adb: the app's control and stats ports here, our reply port on the tablet
+    dev_adb forward "tcp:$CONTROL_PORT" "tcp:$CONTROL_PORT" >/dev/null
+    dev_adb forward "tcp:$STATS_PORT" "tcp:$STATS_PORT" >/dev/null
+    dev_adb reverse "tcp:$REPLY_PORT" "tcp:$REPLY_PORT" >/dev/null
+    camctl streaming --seconds 30 || die "the app is not streaming (check: mocap-camera-app ./dev logs)"
+    camctl info --out "$OUT/device.json" || die "no DeviceInfo from the app"
+    say "5b/9 lock controls: $CONTROLS"
+    # shellcheck disable=SC2086
+    camctl controls --out "$OUT/controls.json" $CONTROLS || die "controls request failed"
+else
+    dev_adb install -r -g "$APK" | tail -1
+    dev_adb shell am start -S -n "$PKG/.MainActivity" --ei fps "$FPS" --es mode h264 --es facing back >/dev/null
+    ok=
+    for _ in $(seq 30); do
+        fps_now=$(curl -s --max-time 2 "http://$IP:$PORT/stats" | grep -oE '"encoded_fps":[0-9.]+' | cut -d: -f2 || true)
+        [ -n "$fps_now" ] && awk "BEGIN{exit !($fps_now > 0)}" && { ok=1; break; }
+        sleep 1
+    done
+    [ -n "$ok" ] || die "the app is not streaming (check: ./dev logs; is the screen on?)"
+    curl -s --max-time 5 "http://$IP:$PORT/info" > "$OUT/device.json"
+    [ -s "$OUT/device.json" ] || die "no /info from the app"
+fi
 [ "$RESOLUTIONS" = auto ] && RESOLUTIONS=$("$PY" scripts/pick_sizes.py "$OUT/device.json" "$FPS" | tr -d '\r')  # Windows Python: \r\n
 echo "resolutions: $RESOLUTIONS   bitrates: $BITRATES kbps   fps: $FPS"
 
 cat > "$OUT/run.json" <<EOF
-{"started": "$STAMP", "device_ip": "$IP", "serial": "$serial", "fps": $FPS,
+{"started": "$STAMP", "app": "$APP", "device_ip": "$IP", "serial": "$serial", "fps": $FPS,
  "resolutions": "$RESOLUTIONS", "bitrates": "$BITRATES", "step_seconds": $STEP_SECONDS,
  "soak_minutes": $SOAK_MINUTES, "receiver": "$("$PY" -c 'import platform; print(platform.system(), platform.release(), "python", platform.python_version())' | tr -d '\r')"}
 EOF
@@ -173,12 +211,26 @@ echo "{\"busy_processes\": [${busy_json}], \"waited_s\": $waited}" > "$OUT/load.
 
 measure() {  # name seconds [extra args]
     local name="$1" secs="$2"; shift 2
+    if [ "$APP" = camera ]; then  # device stats from CameraStats, logged meanwhile
+        camctl stats --seconds $((secs + 20)) --out "$OUT/steps/$name-camstats.csv" & local stats_pid=$!
+        set -- --stats-csv "$OUT/steps/$name-camstats.csv" "$@"
+    fi
     "$PY" scripts/measure.py --host "$IP" --seconds "$secs" --out-dir "$OUT/steps" --name "$name" "$@" \
         | grep -E "^(config|frames received|capture rate|capture->PC|bitrate|device side|temperature|stream ended)"
+    local rc=${PIPESTATUS[0]}
+    [ -n "${stats_pid:-}" ] && { kill "$stats_pid" 2>/dev/null; wait "$stats_pid" 2>/dev/null || true; }
+    return "$rc"
 }
 configure() {  # WxH kbps - apply, then verify the device restarted with the new bitrate and is streaming
     local w="${1%x*}" h="${1#*x}" try stats
     for try in 1 2 3; do
+        if [ "$APP" = camera ]; then
+            # the reply comes once the restarted pipeline encodes (stream_applied = what it runs)
+            if camctl stream "$1" "$2" "$FPS" "$CAMERA_ID"; then sleep 3; return 0; fi
+            echo "settings not applied as asked (try $try)"
+            sleep 3
+            continue
+        fi
         if curl -s --max-time 5 "http://$IP:$PORT/control?width=$w&height=$h&fps=$FPS&mode=h264&bitrate=$2" >/dev/null; then
             sleep 8  # pipeline restart + let exposure settle
             stats=$(curl -s --max-time 5 "http://$IP:$PORT/stats" || true)
@@ -210,8 +262,12 @@ TOP_BR=$(echo "$BITRATES" | tr ' ' '\n' | sort -n | tail -1)
 say "8/9 clock sync ($SYNC_ROUNDS rounds) and image samples"
 "$PY" scripts/clocksync.py --host "$IP" --rounds "$SYNC_ROUNDS" --interval 10 --json "$OUT/clocksync.json"
 configure "$LAST_RES" "$TOP_BR"
-"$PY" scripts/measure.py --host "$IP" --seconds 10 --out-dir "$OUT/samples" --name sample --save-stream >/dev/null
+sample_extra=(); [ "$APP" = camera ] && sample_extra=(--stats-csv /dev/null)
+"$PY" scripts/measure.py --host "$IP" --seconds 10 --out-dir "$OUT/samples" --name sample --save-stream "${sample_extra[@]}" >/dev/null
 "$PY" scripts/sei.py "$OUT/samples/sample.h264" "$OUT/samples/sample-sei.csv"
+if [ "$APP" = camera ]; then  # the stream checked with the protocol v1 reference reader (mocap-contracts)
+    camctl v1check "$OUT/samples/sample.h264" --json "$OUT/samples/v1check.json" || echo "WARNING: not protocol v1"
+fi
 ./dev ffprobe -v error -count_frames -select_streams v:0 \
     -show_entries stream=codec_name,profile,width,height,nb_read_frames -of default=nw=1 \
     "$OUT/samples/sample.h264" > "$OUT/samples/ffprobe.txt"

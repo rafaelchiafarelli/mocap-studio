@@ -76,6 +76,27 @@ Things the verdict can't judge, which you should check yourself:
 - **The phase between cameras:** run several devices together with `./dev multi`. With synced clocks, each camera's frames
   still start at their own moment (0–16 ms apart at 30 fps); that offset must stay steady during a take.
 
+## Evaluating mocap-camera-app (`--app camera`)
+
+`./run-eval.sh --app camera [--quick] <device-ip>` runs the same matrix, clock sync, samples and soak on
+the production app instead of this repo's eval app: the `mocap-camera-app` baseline gate. The app must
+already be installed and set up with its own `scripts/install-app.sh` (its README, *Tablet setup*); nothing
+is built here.
+
+It has no HTTP control: settings, device info, camera controls and stats go over its ZeroMQ channel
+(`mocap-contracts` `camera.harpia`), driven by `scripts/camctl.py` in a small Docker image
+(`docker/control/`, Python 3.12 with hash-locked deps; `mocap-contracts` from the umbrella's
+`../mocap-contracts`, or `MOCAP_CONTRACTS=<path>`). WSL's NAT keeps the tablet from connecting in, so
+run-eval routes the channel over adb: `adb forward` for the app's control (8082) and stats (8083) ports,
+`adb reverse` for the reply port (5700). It stops `mocap-camera-app`'s own adb server container first (one
+adb server per PC).
+
+Before measuring it locks `--controls` (default: fps range `[fps, fps]`, AE lock, AWB lock) and writes what
+the camera read back to `controls.json`; a control the camera doesn't take is a WARN in the report. The
+sample stream is also checked with the protocol v1 reference reader (`samples/v1check.json`); not v1 is a
+FAIL. Device stats come from `CameraStats` (`steps/*-camstats.csv`), which has fps, drops, CPU,
+temperature and thermal status but not the eval app's encoder details.
+
 ## Several devices at once
 
 ```bash

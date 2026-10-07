@@ -156,6 +156,34 @@ def main():
             all_grades.append("WARN")
     w("")
 
+    # --- mocap-camera-app: controls and protocol v1 -------------------------------------------
+    controls = load_json(os.path.join(run, "controls.json"), None)
+    if controls is not None:
+        w(f"## Controls (mocap-camera-app, camera {controls.get('camera_id', '?')})")
+        w("")
+        w("Locked over ZeroMQ before measuring; *applied* is what the camera reports back. A control the camera "
+          "doesn't take is a WARN: the device can't hold it during a take.")
+        w("")
+        w("| control | status | requested | applied | note |")
+        w("|---|---|---|---|---|")
+        for r in controls.get("results", []):
+            took = r.get("status") in ("APPLIED", "CLAMPED")
+            w(f"| `{r.get('key')}` | {r.get('status')}{'' if took else ' (WARN)'} | {r.get('requested')} "
+              f"| {r.get('applied')} | {r.get('note', '')} |")
+            all_grades.append("PASS" if took else "WARN")
+        for p in controls.get("problems", []):
+            w(f"- problem: {p}")
+        w("")
+    v1 = load_json(os.path.join(run, "samples", "v1check.json"), None)
+    if v1 is not None:
+        ok = v1.get("ok")
+        w(f"- **Stream protocol v1** (mocap-contracts reference reader, samples/sample.h264): "
+          f"{'PASS' if ok else 'FAIL'}: {v1.get('frames', 0)} frames, {v1.get('untimed', '?')} untimed, "
+          f"{v1.get('seq_gaps', '?')} seq gaps{', problems: ' + '; '.join(v1['problems']) if v1.get('problems') else ''}"
+          f"{', error: ' + v1['error'] if v1.get('error') else ''}")
+        w("")
+        all_grades.append("PASS" if ok else "FAIL")
+
     # --- matrix -------------------------------------------------------------------------------
     w("## Test matrix")
     w("")
