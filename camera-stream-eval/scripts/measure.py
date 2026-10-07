@@ -121,6 +121,8 @@ def main():
     ap.add_argument("--out-dir", default="measurements")
     ap.add_argument("--name", default="", help="output file prefix (default: timestamp)")
     ap.add_argument("--save-stream", action="store_true", help="save the H.264 stream")
+    ap.add_argument("--stats-csv", help="read the device stats from this file (written meanwhile by "
+                    "camctl.py stats, for mocap-camera-app) instead of polling /stats")
     args = ap.parse_args()
 
     base = f"http://{args.host}:{args.port}"
@@ -132,7 +134,8 @@ def main():
 
     stop = threading.Event()
     stats_rows = []
-    threading.Thread(target=poll_stats, args=(base, stop, stats_rows), daemon=True).start()
+    if not args.stats_csv:
+        threading.Thread(target=poll_stats, args=(base, stop, stats_rows), daemon=True).start()
 
     sock = socket.create_connection((args.host, args.port), timeout=5)
     sock.sendall(f"GET /h264.raw HTTP/1.0\r\nHost: {args.host}\r\n\r\n".encode())
@@ -179,6 +182,12 @@ def main():
             raw.close()
 
     sync_after = sync(args.host, "after")
+    if args.stats_csv:
+        try:
+            with open(args.stats_csv, newline="") as fh:
+                stats_rows = [dict(r) for r in csv.DictReader(fh)]
+        except OSError as e:
+            print(f"no device stats: {e}")
 
     # Capture time on the PC clock: sensor_ns + offset, offset interpolated between the two syncs (drift).
     def offset_at(t_ns):

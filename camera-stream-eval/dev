@@ -18,6 +18,15 @@ as_user() {
         -v "$PWD:/work" -w /work --network host "$IMAGE" "$@"
 }
 
+# scripts/camctl.py (mocap-camera-app's control channel) in the control image, with mocap-contracts from
+# the umbrella's submodule; host network, so the adb-forwarded ports are local.
+camctl() {
+    [ -f "$MOCAP_CONTRACTS/mocap_contracts/transport.py" ] || { echo "no mocap-contracts at $MOCAP_CONTRACTS (git submodule update --init ../mocap-contracts, or set MOCAP_CONTRACTS)" >&2; exit 1; }
+    docker image inspect "$CONTROL_IMAGE" >/dev/null 2>&1 || docker build -q -t "$CONTROL_IMAGE" docker/control/ >/dev/null
+    docker run --rm -u "$(id -u):$(id -g)" --network host -v "$PWD:/work" -v "$MOCAP_CONTRACTS:/contracts:ro" -w /work \
+        -e PYTHONPATH=/contracts:/contracts/gen/python "$CONTROL_IMAGE" python scripts/camctl.py "$@"
+}
+
 # A long-lived adb server container, so connections and authorizations survive between commands.
 # Its key lives in a Docker volume: devices that authorized it once stay authorized.
 up() {
@@ -82,6 +91,9 @@ usage: [T=<serial|ip:port>] ./dev <command>     (T selects the device when sever
   ctl <ip|all> [k=v ...]     change settings: width height fps mode bitrate(kbps) quality facing
   measure <ip> [seconds] [--save-stream]   measure one device (native Python)
   multi [seconds]            measure every device found, at the same time, and compare their timing
+
+ mocap-camera-app (ZeroMQ, ports forwarded by run-eval.sh --app camera)
+  camctl <args>              scripts/camctl.py: info, stream, controls, stats, streaming, v1check (--help)
 EOF
 }
 
@@ -143,6 +155,7 @@ case "$cmd" in
     measure) host="$1"; shift; secs="${1:-60}"; shift || true
              py scripts/measure.py --host "$host" --seconds "$secs" "$@" ;;
     multi)   py scripts/multi.py --seconds "${1:-90}" ;;
+    camctl)  camctl "$@" ;;
     adb)     adb "$@" ;;
     *)       usage ;;
 esac
