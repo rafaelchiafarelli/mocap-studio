@@ -126,15 +126,16 @@ Critical path to the camera decision (adapt and blender are **not** on it):
 
 ## Ask Rafael before implementing (open questions)
 
-1. **Preprocessing output codec** (`mocap-capture` preprocess/2). Proposal: FFV1
-   lossless. Recorder "clean-up" beyond crop/rescale is undefined. Each
-   operation gets its own task once it's declared.
-2. **Are `raw/` videos handed off?** (`mocap-capture` handoff/3). Proposal: no.
-   They stay on the recorder as the archive. Timestamps always travel.
-3. **Hand-off network and SSH target** (`mocap-capture` handoff/2): wired LAN
-   proposed. The processing PC runs WSL2 behind NAT, so how it accepts rsync
-   over SSH and the ZeroMQ events (Windows OpenSSH / port forward into WSL) is
-   still to be decided.
+1. ~~**Preprocessing output codec**~~ **Answered 2026-10-06: FFV1 lossless**
+   (`mocap-capture` preprocess/2). Recorder "clean-up" beyond crop/rescale is
+   still undefined; each operation gets its own task once it's declared.
+2. ~~**Are `raw/` videos handed off?**~~ **Answered 2026-10-06: no.** They stay
+   on the recorder as the archive. Timestamps always travel.
+3. ~~**Hand-off network and SSH target**~~ **Answered 2026-10-06: the wired
+   LAN, WSL2 in mirrored networking mode** on the processing PC (`sshd` inside
+   WSL; rsync and the ZeroMQ events reach WSL on the Windows LAN IP, no port
+   forward; Windows 11 22H2+). Still manual: the recorder's SSH key on the
+   processing PC.
 4. ~~**Per-camera 2D in FreeMoCap**~~ **Answered 2026-10-06: yes, without
    patching.** 2D run one camera at a time and stacked gives 2D and 3D identical
    to the stock run on FreeMoCap's test recording (details in `mocap-extract`
