@@ -196,8 +196,8 @@ Critical path to the camera decision (adapt and blender are **not** on it):
    task `mocap-adapt` filtering/0).
 8. **Studio and monitor:** mostly answered 2026-10-12 (see `studio-setup.md`
    and `live-monitor.md`): 3 × 3 × 3 m cube (config only), one body camera per
-   side, recalibration per location; board **FreeMoCap 5x3, 200 mm squares, A0**
-   (`/mnt/g/mocap-studio-downloads/calibration/charuco-5x3-200mm-A0.pdf`);
+   side, recalibration per location; board **FreeMoCap 5x3, 55 mm squares, A4** (changed from A0, 2026-10-12)
+   (`/mnt/g/mocap-studio-downloads/calibration/charuco-5x3-55mm-A4.pdf`);
    director on the recorder's screen; no overlays for now. **Still open:**
    monitor layout (options being compared), latency target confirmation,
    where the quick check runs, and whether the face camera is fixed or worn
