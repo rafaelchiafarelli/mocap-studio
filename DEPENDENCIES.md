@@ -57,6 +57,8 @@ installs only from the lockfile. Base images are pinned by `@sha256:` digest.
 | `mocap-extract` | `mocap_contracts` (incl. its ZeroMQ receiver), `freemocap==1.8.2`, `opencv-contrib-python==4.8.*` | FreeMoCap pins `skellytracker[all]==2025.10.1024`, which pulls in `mediapipe==0.10.14`, `torch==2.8.*`, `torchvision==0.23.*`, `ultralytics~=8.3.132` and `numpy<2`. |
 | `mocap-adapt` | `mocap_contracts`, `numpy<2`, `scipy` (Butterworth), One Euro filter (small, can be vendored) | Keep `numpy<2` so it matches extract. |
 | `mocap-studio` | stdlib + `pyyaml` (CLI and study report) | `shellcheck` (apt) for `bootstrap.sh` |
+| `mocap-dashboard` | `fastapi`, `uvicorn`, `pydantic` 2; UI: React + Vite on Node.js 22 (build only) | Python 3.12. Docker vs. host venv still open (it calls the host `claude` CLI). |
+| `mocap-audio` | shared utilities: `numpy<2`, `scipy`, `soundfile`, `librosa`, `audio-separator` | Each generator (ACE-Step 1.5, Stable Audio Open, Chatterbox, …) in its **own** environment with cu128 torch; weights under `models/` (section D) with their license recorded. |
 | Streaming tests | already have their own Dockerfiles (JDK 17, Android SDK 34, Gradle 8.7, adb) | Base image and SDK packages aren't pinned by digest yet. |
 | `mocap-camera-app` | Android SDK 34, JDK 17, Gradle (as `camera-stream-eval`); `mocap-contracts` generated Java (protobuf, gRPC, JeroMQ via Harpia's Java target) | Base image pinned by digest from the start (bootstrap/1). **`minSdk 24`** (Harpia's verified Android configuration). |
 
