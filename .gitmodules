@@ -19,3 +19,6 @@
 [submodule "mocap-camera-app"]
 	path = mocap-camera-app
 	url = git@github.com:rafaelchiafarelli/mocap-camera-app.git
+[submodule "mocap-audio"]
+	path = mocap-audio
+	url = git@github.com:rafaelchiafarelli/mocap-audio.git
