@@ -185,7 +185,7 @@ Critical path to the camera decision (adapt and blender are **not** on it):
    body/1). Only triangulation waits for every role.
 5. ~~**Sync precision target**~~ **Answered 2026-10-12: one shutter (exposure)
    time.** Beyond that, rethink the timestamp strategy. Task:
-   `mocap-extract` alignment/3.
+   `mocap-extract` sync-tolerance/1 (after camera controls).
 6. ~~**Versions**~~ **Confirmed 2026-10-12:** Python 3.12, FreeMoCap 1.8.2,
    Blender 5.2.2 LTS. Upgrades get a manifest + checker: `mocap-studio`
    bootstrap/3.
