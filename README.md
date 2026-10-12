@@ -44,6 +44,16 @@ Diagrams: [`docs/diagrams/architecture.drawio`](docs/diagrams/architecture.drawi
 | [`mocap-adapt`](mocap-adapt) | processing PC | P4 adapt | one timeline, smoothing, feet on the floor → `MocapTake` |
 | [`mocap-blender`](mocap-blender) | processing PC (Blender) | P5 Blender | Blender add-on: animated empties, NLA layers |
 | [`mocap-sync-fw`](mocap-sync-fw) | ESP32 | — | LED flash sync firmware, **parked** |
+| [`mocap-preprod`](mocap-preprod) | workstation (Claude Code / Copilot) | film pre-production | AI agents that take a script to a creator-reviewed brief, worklist and specialist specifications |
+| [`mocap-audio`](mocap-audio) | processing PC | film sound | local audio/score exploration stack |
+| [`mocap-dashboard`](mocap-dashboard) | workstation (local web app) | whole film lifecycle | workflow dashboard: project state, work packages, agent runs (Python backend, React UI) |
+
+**Workhorse vs. work.** These repositories are reusable tools. A film's
+script, decisions, analysis and assets live in that film's own project root
+(the pilot film, TicTac, lives outside this tree), never in a `mocap-*`
+repository. All software is Python (except the Android app and the dashboard's
+React UI), and applications exchange messages through Harpia contracts in
+`mocap-contracts`.
 
 Clone with `git clone --recurse-submodules`, or run `git submodule update --init`
 after cloning.
