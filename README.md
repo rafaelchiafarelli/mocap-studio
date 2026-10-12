@@ -46,12 +46,13 @@ Diagrams: [`docs/diagrams/architecture.drawio`](docs/diagrams/architecture.drawi
 | [`mocap-sync-fw`](mocap-sync-fw) | ESP32 | — | LED flash sync firmware, **parked** |
 | [`mocap-preprod`](mocap-preprod) | workstation (Claude Code / Copilot) | film pre-production | AI agents that take a script to a creator-reviewed brief, worklist and specialist specifications |
 | [`mocap-audio`](mocap-audio) | processing PC | film sound | local audio/score exploration stack |
-| [`mocap-dashboard`](mocap-dashboard) | workstation (local web app) | whole film lifecycle | workflow dashboard: project state, work packages, agent runs (Python backend, React UI) |
+| [`mocap-dashboard`](mocap-dashboard) | workstation (local web app) | whole film lifecycle | workflow dashboard: film state, work packages, agent runs (Python backend, React UI) |
 
-**Workhorse vs. work.** These repositories are reusable tools. A film's
-script, decisions, analysis and assets live in that film's own project root
-(the pilot film, TicTac, lives outside this tree), never in a `mocap-*`
-repository. All software is Python (except the Android app and the dashboard's
+**Project, workhorse, film.** These repositories are the **project**: the
+code and agents. The **workhorse** is the workflow they implement, which takes
+a film from script to delivery. A **film** lives in its own folder, its
+**film root** (the guinea-pig film, TicTac, is at `/mnt/g/TicTac`), never in a
+`mocap-*` repository. All software is Python (except the Android app and the dashboard's
 React UI), and applications exchange messages through Harpia contracts in
 `mocap-contracts`.
 
