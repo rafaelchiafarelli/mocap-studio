@@ -25,3 +25,6 @@
 [submodule "mocap-preprod"]
 	path = mocap-preprod
 	url = git@github.com:rafaelchiafarelli/mocap-preprod.git
+[submodule "mocap-dashboard"]
+	path = mocap-dashboard
+	url = git@github.com:rafaelchiafarelli/mocap-dashboard.git
