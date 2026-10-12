@@ -30,7 +30,7 @@ replaces the current plan.
 
 | # | Step | Who | Done when |
 |---|---|---|---|
-| 0 | **Prep.** Print the ChArUco board (A0, 100 %, rigid backing). Install the camera app on 2–4 devices. A backless stool. A phone to record the voice. Choose the beat. | Rafael | Board measured (100 mm bar = 100 mm), devices stream, beat written in `<film-root>/mvp/shot.md` |
+| 0 | **Prep.** Print the ChArUco board (A4, 100 %, glued flat on rigid backing). Install the camera app on 2–4 devices. A backless stool. A phone to record the voice. Choose the beat. | Rafael | Board measured (100 mm bar = 100 mm), devices stream, beat written in `<film-root>/mvp/shot.md` |
 | 1 | **Bench take.** `config.yaml` with every device, one 10 s test take. | together | `mocap-capture report` ok: no big gaps, ~30 fps per camera |
 | 2 | **Calibration take** (board walked through the volume), aligned to 30 fps, calibrated with FreeMoCap. | together | Calibration file; board in every camera; reprojection error noted |
 | 3 | **Performance takes** of the beat, 3 to 5 of them. Start with a clap that the cameras and the phone both catch. | Rafael acts | One take picked |
@@ -66,7 +66,7 @@ armature gives us. If it needs code, that's a new task.
 
 | Item | Where |
 |---|---|
-| ChArUco board, FreeMoCap "5x3 Charuco", 200 mm squares, A0 landscape | `/mnt/g/mocap-studio-downloads/calibration/charuco-5x3-200mm-A0.pdf` |
+| ChArUco board, FreeMoCap "5x3 Charuco", 55 mm squares, A4 landscape (detects up to ~2.5 m) | `/mnt/g/mocap-studio-downloads/calibration/charuco-5x3-55mm-A4.pdf` |
 | Camera app APK | `mocap-camera-app` (built debug APK) |
 | FreeMoCap 1.8.2 | `mocap-extract/.venv` |
 | Blender 5.2.2, FreeMoCap Blender add-on, MPFB2 | to download into `/mnt/g/mocap-studio-downloads/apps/` (`DEPENDENCIES.md`) |
