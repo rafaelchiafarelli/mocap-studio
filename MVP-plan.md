@@ -53,6 +53,38 @@ The retarget is a simple frame-matching one (`mocap-blender/mocap_blender/retarg
 each bone takes the actor's direction and twist from two landmark vectors, the
 hips are scaled by leg length, the ankles are put on the floor, the feet stay flat.
 
+## Status (2026-10-12, end of day)
+
+**First recording** (Rafael, 3 tablets, the tablets' own camera app, files copied over Wi-Fi adb to
+`~/mocap-data/tablet-raw/2026-10-12/`, review copies in `G:\mocap-studio-downloads\review\2026-10-12\tablet-takes\`):
+
+- Tablets: **.6 = front body**, **.8 = front-left body** (farther), **.3 = face close-up**. Take 2 (17:04)
+  has the board on the floor, a clap, the board held, then the beat (about 48–98 s on .6).
+- **Not calibratable:** the **wall board** (markers 7–13) was used, and the tablets' camera app records
+  only **640×480**, so the board was found in 10 of about 1,600 frames.
+- **Single-camera route on .6** (`mocap-extract mono` + `mocap-blender`): `beat-tablet6-compare.mp4`.
+  Rafael: hands bad, body jitter, feet flying. Measured: focus is stable and MediaPipe's 2D is steady
+  (ankles 0.2 px/frame); the faults come from MediaPipe's hip-centred 3D with guessed depth (wrist
+  depth p95 25 mm/frame), with the retarget hanging everything from the hips.
+
+**Decided next:**
+
+1. **Record with our own app** (`mocap-camera-app`, 1600×1200 at 30 fps, streamed to `mocap-capture`,
+   per-frame timestamps, no clap needed). It isn't installed on the tablets yet. Claude installs it
+   over the paired Wi-Fi adb (`install-app.sh`), tests one stream into WSL (NAT or mirrored), fills
+   `~/mocap-data/config.yaml` (.6 body front, .8 body side, .3 face), then a bench take.
+   Rafael: tablets awake with Wireless debugging, Stay awake, no screen lock, Awbms "Permitida" tap,
+   sshd, mirrored networking if the stream test stalls.
+2. **Next recording:** the **handheld board (markers 0–6)** within ~1 m of each body tablet; **.8 at the
+   side** (60–90° from .6), not also in front.
+3. **Offered, not started:** contact locking (feet and seat), depth-only smoothing and MediaPipe hand
+   tracking for the single-camera route.
+
+**Tablet access:** the Wi-Fi adb pairings (.3, .6, .8) are in the camera app's Docker adb (`./dev adb`).
+Wireless debugging ports change on every reconnect: scan 30000–49999 for open ports, no new code
+needed. Only that one adb server may run (port 5037 is shared with Windows). `svc power stayon true`
+was set on .6.
+
 ## Runbook
 
 Repositories stay checked out on the branches that carry this work: `mocap-capture`
