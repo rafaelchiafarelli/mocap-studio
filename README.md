@@ -63,6 +63,7 @@ after cloning.
 
 | Path | What |
 |---|---|
+| [`MVP-plan.md`](MVP-plan.md) | **current priority:** one watchable shot end to end; what's frozen until then |
 | [`HANDOFF.md`](HANDOFF.md) | the closed architecture, order between repositories, open questions. Start here. |
 | [`DEPENDENCIES.md`](DEPENDENCIES.md) | every external dependency, its pinned version and where it lives |
 | [`docs/diagrams/`](docs/diagrams) | draw.io architecture and pipeline diagrams |
