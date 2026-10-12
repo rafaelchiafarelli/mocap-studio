@@ -181,25 +181,40 @@ Critical path to the camera decision (adapt and blender are **not** on it):
    patching.** 2D run one camera at a time and stacked gives 2D and 3D identical
    to the stock run on FreeMoCap's test recording (details in `mocap-extract`
    body/1). Only triangulation waits for every role.
-5. Sync precision target: how many ms of inter-camera error is acceptable with
-   timestamp-only sync (decides whether the parked LED flash ever comes back).
-6. Python/FreeMoCap and Blender versions (see `DEPENDENCIES.md` for what's pinned).
-7. Study decision thresholds (detection rate, reprojection error, bone stability).
-8. Initiative-level decisions listed in `studio-setup.md` and `live-monitor.md`.
+5. ~~**Sync precision target**~~ **Answered 2026-10-12: one shutter (exposure)
+   time.** Beyond that, rethink the timestamp strategy. Task:
+   `mocap-extract` alignment/3.
+6. ~~**Versions**~~ **Confirmed 2026-10-12:** Python 3.12, FreeMoCap 1.8.2,
+   Blender 5.2.2 LTS. Upgrades get a manifest + checker: `mocap-studio`
+   bootstrap/3.
+7. ~~**Study thresholds**~~ **Answered 2026-10-12** (`camera-study/1`): body
+   detected in ≥ 90 % of frames **from GO** (new ready-set-go step,
+   `mocap-capture` live-monitor/ready-check); calibration good to 1 cm; sync
+   within one exposure; residual bone jitter 1–3 mm after filtering (research
+   task `mocap-adapt` filtering/0).
+8. **Studio and monitor:** mostly answered 2026-10-12 (see `studio-setup.md`
+   and `live-monitor.md`): 3 × 3 × 3 m cube (config only), one body camera per
+   side, recalibration per location; board **FreeMoCap 5x3, 200 mm squares, A0**
+   (`/mnt/g/mocap-studio-downloads/calibration/charuco-5x3-200mm-A0.pdf`);
+   director on the recorder's screen; no overlays for now. **Still open:**
+   monitor layout (options being compared), latency target confirmation,
+   where the quick check runs, and whether the face camera is fixed or worn
+   (hand cameras TBD).
 
 ### Film side (open as of 2026-10-11)
 
-9. **No execution agents yet.** The pre-production roster only plans. Who or
-   what builds assets (Blender scenes, rigs, simulations, recorded/generated
-   audio) has to be defined before a film can enter production.
+9. ~~**Who builds assets**~~ **Answered 2026-10-12:** Rafael's team, procedural
+   tools first (rigs, faces, eyes, …), with AI adjusting; specialised asset
+   agents drive the procedural tools rather than making assets themselves
+   (`mocap-blender/methodology_study.md`). The agent roster is defined when
+   TicTac enters production.
 10. ~~**Dashboard runtime**~~ **Answered 2026-10-12: Docker** (`make up` in
     `mocap-dashboard`: loopback only, film projects mounted at the same path).
-    Follow-up: how the container reaches the `claude` CLI for agent-run status
-    (CLI inside the image with the user's login mounted, or a small host-side
-    helper). Decide when the status-adapter task is scoped.
-11. **First Harpia messages for the film side.** Which events the dashboard
-    consumes (e.g. take processed, agent run finished) becomes a
-    `mocap-contracts` task once a real need appears.
+    The Claude Code CLI is **inside the image** (pinned, login mounted,
+    `--pid=host` so `claude agents --json` sees host sessions).
+11. ~~**First Harpia messages for the film side**~~ **Delegated 2026-10-12:**
+    Claude defines them as `mocap-contracts` tasks when a real need appears;
+    Rafael steps in only if problems show up.
 12. ~~**First-try example project in `mocap-blender`**~~ **Answered
     2026-10-12: removed.** Its general findings are kept in
     `mocap-blender/methodology_study.md`.
