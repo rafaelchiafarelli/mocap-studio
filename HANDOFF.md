@@ -203,13 +203,14 @@ Critical path to the camera decision (adapt and blender are **not** on it):
 12. ~~**First-try example project in `mocap-blender`**~~ **Answered
     2026-10-12: removed.** Its general findings are kept in
     `mocap-blender/methodology_study.md`.
-13. **Local AI compute vs. generated assets.** `mocap-blender/methodology_study.md`
-    lists as a standing constraint "no local AI compute: the AI is the hosted
-    agent only, and deterministic software builds the assets". The audio
-    survey (`mocap-audio/docs/local-audio-stack.md`) recommends local GPU
-    generators. Which one holds? (P3 neural nets for mocap are not in question.)
+13. ~~**Local AI compute vs. generated assets**~~ **Answered 2026-10-12:** code,
+    model/asset making and script analysis use the hosted agent only; local
+    audio generation is allowed. `mocap-audio` does recording, editing,
+    analysis and generation. **Licenses:** only open/free licenses that allow
+    commercial use, never NC or capped community licenses, not even for tests
+    (rule in the `mocap-workflow` skill).
 14. **Asset methodology questions** (8, in `mocap-blender/methodology_study.md`):
-    commercial film or not, storyboard style, where the film toolbox lives,
+    ~~commercial film or not~~ (answered: treat every film as commercial), storyboard style, where the film toolbox lives,
     versioning of built outputs, recipe/shot file formats, target skeleton,
     agent editing rules, preferred add-ons. They shape the production stage.
 15. **Splitting into parallel sessions.** Deferred on purpose until the work
