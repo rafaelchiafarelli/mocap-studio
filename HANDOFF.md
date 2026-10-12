@@ -192,16 +192,27 @@ Critical path to the camera decision (adapt and blender are **not** on it):
 9. **No execution agents yet.** The pre-production roster only plans. Who or
    what builds assets (Blender scenes, rigs, simulations, recorded/generated
    audio) has to be defined before a film can enter production.
-10. **Dashboard runtime.** `DEPENDENCIES.md` puts Python repos in Docker, but
-    the dashboard has to call the host `claude` CLI and read project folders.
-    Choose between a container with mounts and a plain venv on the host.
+10. ~~**Dashboard runtime**~~ **Answered 2026-10-12: Docker** (`make up` in
+    `mocap-dashboard`: loopback only, film projects mounted at the same path).
+    Follow-up: how the container reaches the `claude` CLI for agent-run status
+    (CLI inside the image with the user's login mounted, or a small host-side
+    helper). Decide when the status-adapter task is scoped.
 11. **First Harpia messages for the film side.** Which events the dashboard
     consumes (e.g. take processed, agent run finished) becomes a
     `mocap-contracts` task once a real need appears.
-12. **`mocap-blender/example-project/`** holds a film (Capitão Arthur) inside
-    a tool repository. Move it to its own project root like TicTac, or keep
-    it as an intentional methodology fixture?
-13. **Splitting into parallel sessions.** Deferred on purpose until the work
+12. ~~**First-try example project in `mocap-blender`**~~ **Answered
+    2026-10-12: removed.** Its general findings are kept in
+    `mocap-blender/methodology_study.md`.
+13. **Local AI compute vs. generated assets.** `mocap-blender/methodology_study.md`
+    lists as a standing constraint "no local AI compute: the AI is the hosted
+    agent only, and deterministic software builds the assets". The audio
+    survey (`mocap-audio/docs/local-audio-stack.md`) recommends local GPU
+    generators. Which one holds? (P3 neural nets for mocap are not in question.)
+14. **Asset methodology questions** (8, in `mocap-blender/methodology_study.md`):
+    commercial film or not, storyboard style, where the film toolbox lives,
+    versioning of built outputs, recipe/shot file formats, target skeleton,
+    agent editing rules, preferred add-ons. They shape the production stage.
+15. **Splitting into parallel sessions.** Deferred on purpose until the work
     ahead is known well enough to scope.
 
 ## Known risks the study must confirm or rule out
