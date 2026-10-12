@@ -114,7 +114,7 @@ the `mocap-blender` bootstrap task.
 | MediaPipe pose/hand models | FreeMoCap (baseline) | Bundled inside the `mediapipe` wheel, so they're locked by B. Nothing to download. |
 | YOLO weights (if skellytracker uses them) | FreeMoCap | `downloads/models/` with SHA256, mounted read-only into the container |
 | `face_landmarker.task`, DeepFace weights | Phase 2 (face) | Same as YOLO. Not downloaded now. |
-| ChArUco calibration board | Calibration | **Changed 2026-10-12 to A4** (A0 couldn't be printed): FreeMoCap "5x3 Charuco", 55 mm squares, A4 landscape: `calibration/charuco-5x3-55mm-A4.pdf`. Detects to ~2.5 m from a 1920 px camera, so cameras stay within that of the volume centre. The A0 file (200 mm) stays for a bigger volume (`mocap-capture` studio-setup decision 2) |
+| ChArUco calibration board | Calibration | **Changed 2026-10-12 to A4** (A0 couldn't be printed): FreeMoCap "5x3 Charuco", 55 mm squares, A4 landscape: `calibration/charuco-5x3-55mm-A4.pdf`. Detects to ~2.5 m from a 1920 px camera, so cameras stay within that of the volume centre. A second board, `calibration/charuco-5x3-55mm-A4-wall-ids7-13.pdf` (same layout, markers 7–13), is for the wall: FreeMoCap ignores it, so it can stay up during calibration takes. The A0 file (200 mm) stays for a bigger volume (`mocap-capture` studio-setup decision 2) |
 
 ---
 
