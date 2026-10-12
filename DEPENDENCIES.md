@@ -88,20 +88,28 @@ installs only from the lockfile. Base images are pinned by `@sha256:` digest.
 | App | Version | Files to download | Runs on |
 |---|---|---|---|
 | **Blender** | **5.2.2 LTS** (supported until July 2028) | `blender-5.2.2-windows-x64.zip` (portable, no installer) | Windows PC (the best machine, same as the processing PC) |
-| **FreeMoCap Blender add-on** | `v2026.04.1041` | release `.zip` | Installed into Blender |
+| **FreeMoCap Blender add-on** | `v2026.04.1041` (AGPL-3.0) | release `.zip`, unpacked next to it | Not installed: `mocap-blender` runs it from the unpacked folder |
+| **MPFB** | `2.0.18` (code GPL-3.0+, MakeHuman base mesh and rigs CC0) | `add-on-mpfb-v2.0.18.zip` from extensions.blender.org | Installed into Blender's **portable** folder (`blender-5.2.2-windows-x64/portable/`), not the Windows profile |
 | Android platform-tools (`adb`) | **?** (pin a release zip) | `platform-tools_r<ver>-<os>.zip` | Only needed outside Docker, e.g. Windows side |
 | `usbipd-win` | **?** | `.msi` | Windows host, to attach USB devices to WSL2. Only UVC webcams (**parked**) needed it: not needed now |
 | Windows Python | **?** (3.12.x) | python.org installer | Windows host. The stream-eval scripts measure from Windows because WSL2 NAT stalls TCP. |
 | Docker Engine / Desktop | **?** | — | Every PC. It runs B, so it can't live inside B. |
 
 The add-on and the `mocap-contracts` wheel have to work with **Blender's bundled
-Python**, which is not ours. Check which Python version Blender 5.2 bundles before
-the `mocap-blender` bootstrap task.
+Python**, which is not ours: **Blender 5.2.2 bundles Python 3.13.13 and numpy
+2.3.4** (checked 2026-10-12, `mocap-blender` mvp/shot task 1).
 
 **Notes for C**
 - Blender runs on **Windows** for now. The Linux archive gets added only if that changes.
-- Is Blender 5.2 OK with the FreeMoCap add-on? It claims Blender 5 support since
-  `v2026.04.1041`. To verify in `mocap-blender` bootstrap.
+- Blender 5.2.2 runs the FreeMoCap add-on `v2026.04.1041` headless (verified
+  2026-10-12 on FreeMoCap's test recording). It sets the scene to 24 fps; our
+  takes are 30, so `mocap-blender` sets it back.
+- Paths handed to Windows Blender (`\\wsl.localhost\...`) must stay under 260
+  characters, or files silently "don't exist": keep the data root short (`~/mocap-data`).
+- **Test fixtures** (`/mnt/g/mocap-studio-downloads/fixtures/`, sha256 next to each):
+  FreeMoCap's test recording (skellysamples `test_data_v06_09_25`, AGPL-3.0; `make
+  fixtures` in `mocap-extract`) and its 60-frame `mocap-extract body` output
+  (`freemocap-test-output-60f`, for `mocap-blender`).
 - `/mnt/g/` is the Windows `G:` drive, so the Windows apps run straight from
   `G:\mocap-studio-downloads\apps\`.
 
