@@ -22,3 +22,6 @@
 [submodule "mocap-audio"]
 	path = mocap-audio
 	url = git@github.com:rafaelchiafarelli/mocap-audio.git
+[submodule "mocap-preprod"]
+	path = mocap-preprod
+	url = git@github.com:rafaelchiafarelli/mocap-preprod.git
