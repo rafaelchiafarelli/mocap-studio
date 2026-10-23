@@ -22,4 +22,8 @@ Rules specific to this repository:
 
 | Initiative | Status |
 |---|---|
-| [baseline](baseline/baseline.md) | Planned — not started |
+| [face-audio](face-audio/face-audio.md) | Planned — not started; **runs first**, alongside the MVP |
+| [face-video](face-video/face-video.md) | Planned — after a `face-audio` pass |
+| [face-character](face-character/face-character.md) | Planned — after a `face-audio` pass |
+| [face-in-shot](face-in-shot/face-in-shot.md) | Planned — after a `face-audio` pass and the MVP shot |
+| [baseline](baseline/baseline.md) | Planned — frozen by the MVP (`MVP-plan.md`) |
