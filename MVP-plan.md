@@ -16,6 +16,7 @@ replaces the current plan.
   (`mocap-extract` watch), quality metrics, the camera study, and new
   `.harpia` messages. No new initiatives, except the face initiatives
   (2026-10-23, `initiatives/face-*`): `face-audio` runs alongside the MVP.
+  `mocap-previz` `validation` is planned only; it starts after `face-audio`.
 - **One machine.** The processing PC (WSL2, RTX 4080) is also the recorder.
   The take is on disk before the hand-off runs, so a failed hand-off at the
   end of `mocap-capture take` is expected and harmless.

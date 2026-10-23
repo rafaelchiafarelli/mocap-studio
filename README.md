@@ -47,6 +47,7 @@ Diagrams: [`docs/diagrams/architecture.drawio`](docs/diagrams/architecture.drawi
 | [`mocap-preprod`](mocap-preprod) | workstation (Claude Code / Copilot) | film pre-production | AI agents that take a script to a creator-reviewed brief, worklist and specialist specifications |
 | [`mocap-audio`](mocap-audio) | processing PC | film sound | local audio/score exploration stack |
 | [`mocap-dashboard`](mocap-dashboard) | workstation (local web app) | whole film lifecycle | workflow dashboard: film state, work packages, agent runs (Python backend, React UI) |
+| [`mocap-previz`](mocap-previz) | workstation (Blender, headless) | film pre-production → production | script → shot list → 3D blocking → layered SVG storyboard |
 
 **Project, workhorse, film.** These repositories are the **project**: the
 code and agents. The **workhorse** is the workflow they implement, which takes

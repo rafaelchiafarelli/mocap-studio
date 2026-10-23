@@ -28,3 +28,6 @@
 [submodule "mocap-dashboard"]
 	path = mocap-dashboard
 	url = git@github.com:rafaelchiafarelli/mocap-dashboard.git
+[submodule "mocap-previz"]
+	path = mocap-previz
+	url = git@github.com:rafaelchiafarelli/mocap-previz.git
