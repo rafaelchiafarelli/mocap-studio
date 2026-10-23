@@ -135,6 +135,8 @@ script ─▶ mocap-preprod agents ─▶ creative brief + worklist ─▶ speci
   weights licenses: `docs/local-audio-stack.md`. Each generator gets its own
   environment, and nothing generated is approved until the film's creator
   says so.
+- **Script → shot list → previz** (exploration, 2026-10-23; no tasks yet):
+  `docs/exploration/script-to-previz/README.md`. Comes after the face test.
 
 ## Repositories
 
