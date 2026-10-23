@@ -80,6 +80,30 @@ hips are scaled by leg length, the ankles are put on the floor, the feet stay fl
 3. **Offered, not started:** contact locking (feet and seat), depth-only smoothing and MediaPipe hand
    tracking for the single-camera route.
 
+**Later on 2026-10-12, our own app on the tablets:**
+
+- `mocap-camera-app` is installed on **.3, .5, .6, .8** (1600×1200, 30 fps). Streams reach WSL fine in
+  NAT mode (about 10 Mbps each, no stalls). A first `mocap-capture` take worked (3 cameras, 0 gaps).
+  Takes in `~/mocap-data/rec/mvp-1/takes/`: `bench-1`, `cal-1`, `cal-2`. Recorder config with the live
+  tablets: `~/mocap-data/config-3cam.yaml` (.5 body_1, .8 body_2, .3 face). .6 runs out of battery:
+  keep it on the charger.
+- **The WSL clock runs 9.1 % slow** (clocksource `tsc`, mis-calibrated under Hyper-V on the i7-14700KF),
+  and Windows steps the wall clock to catch up. `mocap-capture` now uses one steady clock (baseline
+  sync/3), which removes the steps. **The rate still needs Rafael's `sudo`:**
+  `echo hyperv_clocksource_tsc_page | sudo tee /sys/devices/system/clocksource/clocksource0/current_clocksource`,
+  and permanently `kernelCommandLine = clocksource=hyperv_clocksource_tsc_page` under `[wsl2]` in
+  `C:\Users\rafae\.wslconfig`. Until then takes measure 9 % short and tablets read 32.6 fps.
+- **Calibration still fails:** `cal-1` used the wall board (markers 7–13) and showed it only briefly.
+  `cal-2` used the right board, but the M7 image is soft and H.264 at about 10 Mbps smears the marker
+  codes: .8 reads 1–2 of 7 markers per frame, .5 none. Next to try: a bigger tiled board (3 × A4, 80 mm
+  squares), bitrate 20 Mbps (`./dev launch bitrate=...`), matte print, no glare, the board within ~1 m of
+  each body tablet. If not enough: better cameras, or calibrating from body keypoints.
+- **Images stream sideways** (tablets upright, sensor landscape): mount the tablets in landscape, or add
+  a rotation step to the recorder's preprocessing.
+- The app seems to serve **one client per stream**: close any live view before a take.
+- **Still open for Rafael:** your height in `~/mocap-data/rec/mvp-1/session.json`, and `sshd` on
+  localhost (the hand-off fails without both, so takes stay in `rec/`), plus the clock source above.
+
 **Tablet access:** the Wi-Fi adb pairings (.3, .6, .8) are in the camera app's Docker adb (`./dev adb`).
 Wireless debugging ports change on every reconnect: scan 30000–49999 for open ports, no new code
 needed. Only that one adb server may run (port 5037 is shared with Windows). `svc power stayon true`
