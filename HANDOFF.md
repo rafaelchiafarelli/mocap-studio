@@ -175,6 +175,7 @@ script ─▶ mocap-preprod agents ─▶ creative brief + worklist ─▶ speci
 | `mocap-audio` | audio generation survey + shared utilities | none open |
 | `mocap-dashboard` | film workflow dashboard (Python + React) | `workflow-dashboard` initiative (planning; first slice ported to Python) |
 | `mocap-previz` | script → shot list → 3D blocking → layered SVG storyboard | `validation` initiative (planned, after `face-audio`) |
+| `mocap-writer` | script editor: fork of Trelby (GPL-2.0, Python), adapted to write Fountain for the workhorse; `upstream` = trelby/trelby | none yet (UI work starts here) |
 | `mocap-studio` | environment, per-take CLI, **bottleneck study** | 8 |
 
 Each repository has its own `initiatives/` folder and `.claude/` skill. Create
