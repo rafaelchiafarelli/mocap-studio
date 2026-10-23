@@ -222,9 +222,11 @@ Critical path to the camera decision (adapt and blender are **not** on it):
 12. ~~**First-try example project in `mocap-blender`**~~ **Answered
     2026-10-12: removed.** Its general findings are kept in
     `mocap-blender/methodology_study.md`.
-13. ~~**Local AI compute vs. generated assets**~~ **Answered 2026-10-12:** code,
-    model/asset making and script analysis use the hosted agent only; local
-    audio generation is allowed. `mocap-audio` does recording, editing,
+13. ~~**Local AI compute vs. generated assets**~~ **Answered 2026-10-12,
+    revised 2026-10-23:** a model runs locally only if it performs well on the
+    current equipment (measured in a task, not assumed); otherwise the hosted
+    agent does the work. Code, model/asset making and script analysis stay
+    hosted; P3 nets and local audio generation pass. `mocap-audio` does recording, editing,
     analysis and generation. **Licenses:** only open/free licenses that allow
     commercial use, never NC or capped community licenses, not even for tests
     (rule in the `mocap-workflow` skill).
