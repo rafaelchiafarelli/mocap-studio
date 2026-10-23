@@ -10,6 +10,26 @@ hardware**, and measure whether the cameras are the bottleneck. Cameras sit
 behind an interface (`CameraSource`, a registry per source kind) so other
 image sources can be added later without touching the rest.
 
+## Face first (2026-10-23)
+
+Rafael's decision after a research round: the core idea, an expressive,
+caricatured face, is validated before the pipeline grows any further, with a
+small isolated test: recorded speech → NVIDIA Audio2Face-3D → per-character
+gain on the blendshapes → ARKit face in Blender. No cameras, no body, no new
+hardware. It runs alongside the MVP (`MVP-plan.md`), which keeps going.
+
+Four initiatives in `initiatives/`: **face-audio** (the test, first), then on
+a pass **face-video** (eyes/brows from the MVP's face tablet), **face-character**
+(declared per-character gain) and **face-in-shot** (the MVP character speaks).
+The pipeline only grows by automating pain found in these tests, not from an
+upfront design.
+
+References Rafael gave: *Flow* (Oscar 2025: Blender, small team, a
+proof-of-concept teaser before the film, custom tools only where something was
+missing); *Night of the Living Dead: Origins / Darkest Dawn* (markerless mocap
+worked, but the project took years and quietly went to VOD: the pipeline
+became the project).
+
 ## Architecture (closed 2026-10-05)
 
 ```
@@ -136,7 +156,7 @@ script ─▶ mocap-preprod agents ─▶ creative brief + worklist ─▶ speci
   environment, and nothing generated is approved until the film's creator
   says so.
 - **Script → shot list → previz** (exploration, 2026-10-23; no tasks yet):
-  `docs/exploration/script-to-previz/README.md`. Comes after the face test.
+  `docs/exploration/script-to-previz/README.md`. Comes after `face-audio`.
 
 ## Repositories
 
