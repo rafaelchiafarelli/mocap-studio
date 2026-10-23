@@ -155,8 +155,10 @@ script ─▶ mocap-preprod agents ─▶ creative brief + worklist ─▶ speci
   weights licenses: `docs/local-audio-stack.md`. Each generator gets its own
   environment, and nothing generated is approved until the film's creator
   says so.
-- **Script → shot list → previz** (exploration, 2026-10-23; no tasks yet):
-  `docs/exploration/script-to-previz/README.md`. Comes after `face-audio`.
+- **Script → shot list → previz** (2026-10-23): repository `mocap-previz`,
+  exploration record in its `docs/exploration/script-to-previz/`, first
+  initiative `validation` (decisions, docx → Fountain → parser, blocking test).
+  Comes after `face-audio`.
 
 ## Repositories
 
@@ -172,6 +174,7 @@ script ─▶ mocap-preprod agents ─▶ creative brief + worklist ─▶ speci
 | `mocap-preprod` | pre-production agents (readiness, decisions, 7 specialists) | none open |
 | `mocap-audio` | audio generation survey + shared utilities | none open |
 | `mocap-dashboard` | film workflow dashboard (Python + React) | `workflow-dashboard` initiative (planning; first slice ported to Python) |
+| `mocap-previz` | script → shot list → 3D blocking → layered SVG storyboard | `validation` initiative (planned, after `face-audio`) |
 | `mocap-studio` | environment, per-take CLI, **bottleneck study** | 8 |
 
 Each repository has its own `initiatives/` folder and `.claude/` skill. Create
