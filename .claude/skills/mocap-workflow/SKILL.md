@@ -157,6 +157,15 @@ Push back — stop and bring options to Rafael instead of proceeding — in thes
 
 When in doubt about whether something is small enough to just do, it isn't — bring it up.
 
+## Finishing an initiative
+
+A finished initiative leaves the working tree (Rafael, 2026-10-24): `initiatives/` holds only work still to do, and git history keeps every task file of what was done.
+
+- **When:** once the initiative's gate passes. A gate with a step still open (a film session, Rafael's approval) keeps the folder until that step closes, unless Rafael says otherwise.
+- **How:** the commit that marks the initiative done also deletes `initiatives/<initiative>/`, epics and tasks included. `initiatives/README.md` keeps one line for it: `**<initiative>** — <goal> (done <date>; history: git log -- initiatives/<initiative>)`.
+- **Links:** in the same commit, every link into the deleted folder (bug files, as-built gotchas, other initiatives, other repositories) is rewritten to name the initiative in plain text, or dropped. A dangling link breaks `dev` like a failing test.
+- **Never deleted:** `initiatives/bugs/`, which is a backlog, not an initiative that finishes.
+
 ## Tracking progress
 
 **Commits are the only source of truth.** There is no separate progress log and no checkbox system that stands on its own.
