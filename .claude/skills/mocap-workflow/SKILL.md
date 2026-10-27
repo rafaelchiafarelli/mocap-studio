@@ -129,6 +129,7 @@ Fixing every bug as soon as it turns up keeps the project from moving forward (R
 - **A bug file holds:** symptom, where (`file:line`), how to reproduce (or "found by reading the code"), impact, and **Status** — `Open`, or `Fixed (<date>) — fixes/<id>/<name>`. One sentence on the likely fix at most; a fix that needs design or a contract change is planned as a task in its own initiative.
 - **When to fix:** only when the bug gets in the way — it blocks a task, hurts a film session, or Rafael asks. Until then the project moves forward around it. A bug that blocks a scheduled capture session is fixed at once (see "Fix branches", including the main-line case).
 - **How to fix:** a `fixes/<id>/<name>` branch off `dev`, never the initiative chain, so the clone's feature work goes on. The fix commit marks the bug file fixed and updates the as-built (the gotcha goes away or changes).
+- **After the fix is pushed:** a follow-up commit deletes the bug file and turns every link to it into plain text (e.g. `bugs/editor/2, fixed <date>`), so `initiatives/bugs/` holds only open bugs and git history keeps the rest (Rafael, 2026-10-26). Bug numbers are never reused; the epics list keeps the last number used.
 - **Recording is always in scope:** adding a bug file is not scope creep, so a task that finds a bug records it in its own commit without asking. The bug's gotcha links to the bug file.
 
 ## As-built documentation
