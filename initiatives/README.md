@@ -21,8 +21,10 @@ Rules specific to this repository:
 ## ⚠ Major open problem: faces (recorded 2026-11-02)
 
 **Read this before any face, character or planning work.** Believable faces are
-a requirement of this project, and nothing tried so far delivers them. Rafael
-will come back to this soon. **No approach has been chosen.**
+a requirement of this project. **The best tool so far is the mouth faders, below.**
+Rafael says it's much better than he expected, but he's keeping this problem open:
+the realism is in the image, not yet in human mannerisms. His next research is
+[face-anatomy](face-anatomy/face-anatomy.md). No pipeline has been chosen.
 
 - **Requirement (Rafael):** "I need faces... regardless of what my audience
   really needs." Staging around the face, such as hiding the mouth or using
@@ -95,10 +97,62 @@ Stage 2 is a best case: perfect calibration, no real-camera noise, start points
 given. Stage 3 used one camera, so it loses depth and only estimates head motion.
 **The real test, 2–3 synced cameras on a real face, hasn't been done.**
 
-**Ideas not tried, none chosen:** a mouth pose per sound, built on the character
-and timed from the audio; a less realistic character (photoreal is only the
+### Best tool so far: mouth faders (2026-11-02)
+
+**Rafael's verdict:** "gostei... bem melhor do que eu imaginava". With it he can
+stress chosen moments to build the illusion he wants. This is one 20-second
+recording, judged in the Blender file, and it isn't a finished tool or a chosen
+pipeline.
+
+**How it works:** a Blender add-on with faders that re-bake the mouth at once. Each
+sound pulls the mouth towards one of 13 poses built from existing shapes and bones,
+with neighbouring sounds blending. The pose gives the shape, and the tracked video
+can set how far the mouth opens and when it shuts. Eyes, brows and head come from
+OpenSeeFace.
+
+| Test | Result | Rafael's verdict |
+|---|---|---|
+| OpenSeeFace landmarks → 34 ARKit shapes and head | Stable; lips open and close well; no tongue, and the F and pressed-lip shapes are lost | Eyes much better, mouth better but "ainda não está bom"; best at the time |
+| Parrot Lipsync: phonemes → poses | The recognizer got 2 of 9 Fs and 2 of 6 Ps right, even set to Portuguese | Rhythm only "marginalmente melhor" |
+| Mouth faders | See below | **Best so far** |
+
+| Fader setup | Sounds | Jaw correlation with video | Jaw at M | Lip tuck at F |
+|---|---|---|---|---|
+| A: dry, like Parrot | Recognizer | 0.33 | 0.10 | 0.20 |
+| B: blended | Known words | 0.28 | 0.02 | 0.88 |
+| C: B plus tracked opening | Known words | 0.87 | 0.00 | 0.88 |
+
+Half of C's opening comes from the video, so its correlation is high by
+construction. These numbers explain the diagnosis, and they don't score quality.
+
+**Limits:**
+
+- The known-words alignment was built for this recording, with two sounds placed
+  by hand. It isn't a general tool.
+- Tongue motion comes from poses, not data, and there's no emotion in the mouth.
+- The poses are a first pass.
+
+**Decided by Rafael (2026-11-02):**
+
+- The actor performs and the character keeps its own face, so person-specific
+  avatars (GaussianAvatars, SplattingAvatar and similar) are out.
+- AI doesn't generate the final face pixels.
+- Unreal and MetaHuman are parked as too large for this project. They were never
+  tested. If reopened, read the EULA's section 6(c) ban on combining Unreal with GPL
+  code, and the unread Epic Content License Agreement.
+
+**Files:**
+
+- Add-on, presets, poses, table, data and scripts:
+  `G:\mocap-studio-downloads\face\parrot_test_2026-11-02\`, not in git and not yet
+  in `DEPENDENCIES.md`
+- To open it: `abrir_faders.bat` in `G:\mocap-studio-downloads\review\2026-11-02\`.
+  Only the portable Blender has the add-on.
+
+**Ideas not tried, none chosen:** a less realistic character (photoreal is only the
 current choice); dense tracking with real multi-camera footage; a small model
-trained on one actor; face shapes captured from a real person.
+trained on one actor; face shapes captured from a real person; a general
+known-words alignment from the script.
 
 **Not suitable (reviewed):** openFACS (Unreal only, its own character, fewer mouth
 controls); First Order Motion Model (moves 2D pixels, no data to drive a rig).
@@ -130,3 +184,4 @@ only, never film material):
 | [face-in-shot](face-in-shot/face-in-shot.md) | Planned — after a `face-audio` pass and the MVP shot; **see the open problem above** |
 | [baseline](baseline/baseline.md) | Planned — frozen by the MVP (`MVP-plan.md`) |
 | [environments](environments/environments.md) | Proposed — free library-and-rules set building for a free camera; not scoped, nothing tested |
+| [face-anatomy](face-anatomy/face-anatomy.md) | Proposed — research handoff on an anatomy-based rig and muscle physics; not scoped, nothing built |
