@@ -185,9 +185,9 @@ Each repository has its own `initiatives/` folder and `.claude/` skill. Create
 
 Critical path to the camera decision (adapt and blender are **not** on it):
 
-1. `mocap-contracts`: bootstrap → messages-v0 → tag `v0.1.0`. **Done 2026-10-05** (`v0.1.0` tagged on `dev`; see its `CHANGELOG.md`). Consumers pin `mocap-contracts[zmq] @ git+…@v0.2.1`. The `camera-protocol` initiative is **done too: `v0.2.0`** (stream protocol v1 spec + reference reader + fixtures, `camera.harpia`, Java generation, the camera ZeroMQ channel). mocap-capture's STREAM source and the camera app pin `v0.2.0`. **Pin `v0.2.1`** (same contracts, Harpia submodule over HTTPS so installs work without SSH keys).
+1. `mocap-contracts`: bootstrap → messages-v0 → tag `v0.1.0`. **Done 2026-10-05** (`v0.1.0` tagged on `dev`; see its `CHANGELOG.md`). Consumers pin `mocap-contracts[zmq] @ git+…@v0.8.0`, the newest release (2026-11-02; see its `CHANGELOG.md`). The `camera-protocol` initiative is **done too: `v0.2.0`** (stream protocol v1 spec + reference reader + fixtures, `camera.harpia`, Java generation, the camera ZeroMQ channel). mocap-capture's STREAM source and the camera app pin `v0.2.0`. **Pin `v0.2.1`** (same contracts, Harpia submodule over HTTPS so installs work without SSH keys).
 2. **Can start now.** In parallel: `mocap-capture` (**every baseline epic done 2026-10-06**, on its `baseline` branch: STREAM source, `mocap-capture take` → take.json + report.json → per-file hand-off with Harpia events; `mocap-capture send` resends. Verified locally against `mocap-extract`'s intake. **Initiative gate not yet run**: it needs ≥2 tablets running the camera app and the processing PC reachable. For that, `mocap-extract watch` must bind the two ports the recorder's `config.yaml` `handoff:` declares, `take_closed_port` and `file_ready_port` (one PUSH/PULL socket per event type); UVC parked), `mocap-camera-app`
-   (all epics; `minSdk 24`, contracts `v0.2.1`) and
+   (all epics; `minSdk 24`, contracts `v0.8.0`) and
    `mocap-studio/bootstrap` (includes the hardware inventory, manual).
 3. `mocap-extract`: bootstrap → alignment → calibration → body → quality. **bootstrap and alignment done 2026-10-06** (30 fps, nearest frame, warns past 33.3 ms); calibration/1 waits for the printed board and a real calibration take.
 4. `mocap-studio/camera-study`: protocol → baseline session (manual) → analysis → decision (manual).
@@ -279,6 +279,6 @@ workers; camera replacement according to the study's decision.
 
 ## First action of the session
 
-Read the skill, then `mocap-contracts/initiatives/baseline/` and the two
-diagrams in `docs/diagrams/`. Harpia is pinned to V5, which documents everything the plan uses, and only then create the branch
-chain for the task `bootstrap/1-package-skeleton`.
+Read the skill, then `mocap-contracts/CHANGELOG.md` and the two diagrams in
+`docs/diagrams/`. Harpia is pinned to V6, which documents everything the plan
+uses, and only then create the branch chain for your task.
