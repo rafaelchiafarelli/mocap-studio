@@ -81,19 +81,44 @@ this completes a task in the face initiatives below.
   reproduced in Python, so quality may differ.
 - Licenses for the Audio2Face route: read, but not yet confirmed by Rafael.
 
+**Also EMBRYONIC: dense skin tracking (2026-11-02).** Rafael's idea: track face
+pixels in 2–3 cameras and move the character's mesh directly, skipping the 52
+values. BootsTAPIR (Apache-2.0, weights included) did the tracking.
+
+| Stage | Test | Result |
+|---|---|---|
+| 1. Tracking | About 2,800 points on one real frontal clip | Stayed on the face; 0.10 s per frame; 0.95 lip-gap correlation with MediaPipe; about 1 mm round-trip drift |
+| 2. 3D | Three **rendered** cameras with known true positions; no real multi-camera footage exists yet | Lips 0.85 mm median, 1.95 mm p95. One camera 1 frame late: 1.05 and 2.77 mm; 2 frames late: 1.20 and 4.49 mm |
+| 3. Transfer | That one real camera onto the character's mesh | Works but weak: mouth opens too little, skin and brow flap at one temple, head turns still leak in. Rafael hasn't judged it |
+
+Stage 2 is a best case: perfect calibration, no real-camera noise, start points
+given. Stage 3 used one camera, so it loses depth and only estimates head motion.
+**The real test, 2–3 synced cameras on a real face, hasn't been done.**
+
 **Ideas not tried, none chosen:** a mouth pose per sound, built on the character
 and timed from the audio; a less realistic character (photoreal is only the
-current choice); motion transferred directly from geometry or landmarks,
-skipping the 52 values.
+current choice); dense tracking with real multi-camera footage; a small model
+trained on one actor; face shapes captured from a real person.
+
+**Not suitable (reviewed):** openFACS (Unreal only, its own character, fewer mouth
+controls); First Order Motion Model (moves 2D pixels, no data to drive a rig).
+**Blocked by the license rule:** CoTracker and MASt3R (non-commercial).
+
+**Body results are also bad (Rafael, 2026-11-02).** He'll discuss this later, and
+gave no details yet. Don't treat body capture as working; ask him before planning
+body work.
 
 **Files** (outside git, and two tests use third-party footage: private tests
 only, never film material):
 
 - Tests and scripts: `G:\mocap-studio-downloads\face\`
-- Comparison images: `G:\mocap-studio-downloads\review\2026-11-01\`
+- Comparison images and videos: `G:\mocap-studio-downloads\review\2026-11-01\`
+  and `2026-11-02\`
 - Character recipe and scripts: `<film-root>\character_work\`
 - Models and asset packs: `G:\mocap-studio-downloads\models\` and `apps\mpfb\`,
   not yet listed in `DEPENDENCIES.md`
+- Experiment code: `scratch\` in Rafael's clone of this repository, not in git;
+  start with `scratch\README.md`
 
 ## Index
 
