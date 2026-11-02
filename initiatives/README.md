@@ -104,3 +104,4 @@ only, never film material):
 | [face-character](face-character/face-character.md) | Planned — after a `face-audio` pass; **see the open problem above** |
 | [face-in-shot](face-in-shot/face-in-shot.md) | Planned — after a `face-audio` pass and the MVP shot; **see the open problem above** |
 | [baseline](baseline/baseline.md) | Planned — frozen by the MVP (`MVP-plan.md`) |
+| [environments](environments/environments.md) | Proposed — free library-and-rules set building for a free camera; not scoped, nothing tested |
