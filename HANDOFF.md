@@ -52,7 +52,7 @@ links) and `docs/diagrams/pipeline.drawio` (P1–P5, numbered steps with
   **session folder layout**. None imports code from another.
 - **Contracts** live in `.harpia`, **one module per owner** (whoever produces the data
   defines the message, and the others only import it). They're generated into Python
-  by **Harpia V5's Python target** (and Java target, for the camera app) (a black box: used only through its documented
+  by **Harpia V6's Python target** (and Java target, for the camera app) (a black box: used only through its documented
   interface), and the generated code is **committed** in `mocap-contracts`, so
   consumers need neither Harpia nor Docker.
 - **Two PCs.**
@@ -164,7 +164,7 @@ script ─▶ mocap-preprod agents ─▶ creative brief + worklist ─▶ speci
 
 | Repository | Role | Baseline tasks |
 |---|---|---|
-| `mocap-contracts` | `.harpia` messages, generated Python + Java (Harpia V5), hand-off event transport (ZeroMQ), session layout; **camera-protocol**: stream protocol v1, `camera.harpia` | 11 + 5 |
+| `mocap-contracts` | `.harpia` messages, generated Python + Java (Harpia V6), hand-off event transport (ZeroMQ), session layout; **camera-protocol**: stream protocol v1, `camera.harpia` | 11 + 5 |
 | `mocap-camera-app` | Android STREAM camera (Java): protocol v1, foreground service, ZeroMQ control, every Camera2 control | 8 |
 | `mocap-capture` | Recorder PC: P1 + P2, STREAM cameras, recording, sync markers, take report, per-role preprocessing, per-file hand-off + events | 12 (+ studio-setup, live-monitor); UVC parked |
 | `mocap-sync-fw` | ESP32 LED flash firmware — **parked**, not scheduled | 3 |
