@@ -18,7 +18,7 @@ def evaluate():
     return dg
 
 
-for name in ("frontalis_L", "zygomaticus_major_L"):
+for name in ("frontalis_lateral_L", "zygomaticus_major_L"):
     prop = f"m_{name}"
     dg = evaluate()
     pb = mrig.evaluated_get(dg).pose.bones[f"{name}.0"]
