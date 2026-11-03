@@ -12,4 +12,4 @@
 
 ## Result (2026-11-03)
 
-Every vertebra is placed from the back's skin. Ribs rotate on their own bones, pump handle above and bucket handle below, at 9° for a deep breath (declared). Measured expansion is listed in the epic's check. **Limit:** cartilages move with the sternum as one rigid piece, so they don't bend; no spine bending rule is enforced.
+Every vertebra is placed from the back's skin. Ribs rotate on their own bones, pump handle above and bucket handle below, at 9° for a deep breath (declared). Measured chest expansion at a full breath: 4.0 cm male, 5.0 cm female. **Limit:** cartilages move with the sternum as one rigid piece, so they don't bend; no spine bending rule is enforced.

@@ -12,4 +12,4 @@
 
 ## Result (2026-11-03)
 
-Frontalis: 86.5 to 74.3 mm, shortening 14.2%, 8% wider, skin moves 13.3 mm. Zygomaticus major: 75.0 to 64.0 mm, shortening 14.7%, 8% wider, skin moves 11.8 mm. **Direction of cause:** the shape key moves the skin, and the muscle body follows the skin. The contraction values are declared, tuned by eye to reasonable displacements.
+Lateral frontalis: 86.5 to 73.6 mm, shortening 14.9%, 8% wider, skin moves 13.4 mm. Zygomaticus major: 75.0 to 61.3 mm, shortening 18.2%, 11% wider, skin moves 14.8 mm. **Direction of cause:** the shape key moves the skin, and the muscle body follows the skin. The contraction values are declared, tuned by eye to reasonable displacements.
