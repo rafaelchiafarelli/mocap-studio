@@ -15,12 +15,16 @@
 - `render_views.py`, `render_seq.py`: review stills and sequences.
 - `motion_check.py`: joints at their limits, mesh overlap between bones.
 - `breath_check.py`: rib cage at rest and at a full breath.
+- `hmmuscles.py`: fields as shape keys, muscle bodies on their own armature.
+- `volume_check.py`: muscle volume in test poses.
+- `contraction_check.py`: frontalis and zygomaticus, measured.
 - `walk.py`: keys the walking cycle and solves the root from the stance foot.
 
 ## Key facts / gotchas
 
 - A changed control property reaches its drivers only after `update_tag` and a frame change: `breath_check.py:15`.
 - Joint limits are stored as the `hm_limit_deg` bone property, not as Blender constraints: `assemble.py`, search `hm_limit_deg`.
+- Muscles have their own armature: on the main rig, a bone following a skin vertex would be a dependency cycle: `hmmuscles.py:1`.
 - MPFB's Rigify metarig deforms the skin; the generated control rig isn't used.
 
 ## Touchpoints

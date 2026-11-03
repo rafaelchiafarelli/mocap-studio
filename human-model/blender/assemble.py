@@ -115,6 +115,19 @@ lift = M @ Vector((0, -0.010, 0.006))
 for i in range(3):
     hb.drive(pb, "location", i, ctrl, "breath", f"x*{lift[i]:.5f}")
 
+# ---- tongue: its own controls on the rig's three tongue bones. Tip raise and back raise are the intrinsic longitudinal muscles and styloglossus; protrude is genioglossus.
+for prop, lo, hi in (("tongue_tip_raise", -1.0, 1.0), ("tongue_body_raise", -1.0, 1.0), ("tongue_back_raise", -1.0, 1.0), ("tongue_protrude", -1.0, 1.0)):
+    hb.add_prop(ctrl, prop, 0.0, lo, hi)
+for bone, prop, deg in (("tongue", "tongue_tip_raise", 35.0), ("tongue.001", "tongue_body_raise", 18.0), ("tongue.002", "tongue_back_raise", 22.0)):
+    pb = rig.pose.bones[bone]
+    pb.rotation_mode = "XYZ"
+    hb.drive(pb, "rotation_euler", 0, ctrl, prop, f"x*{math.radians(deg):.5f}")
+pb = rig.pose.bones["tongue.002"]
+M = rig.data.bones["tongue.002"].matrix_local.to_3x3().inverted()
+forward = M @ Vector((0, -0.016, 0))
+for i in range(3):
+    hb.drive(pb, "location", i, ctrl, "tongue_protrude", f"x*{forward[i]:.5f}")
+
 # ---- joint limits on the main hinges
 limits = meta.get("limits", {})
 for side in ("L", "R"):
@@ -124,5 +137,15 @@ for side in ("L", "R"):
             continue
         pb["hm_limit_deg"] = [lo, hi]
 
+# ---- muscles and fields
+if len(a) > 3:
+    muscles = json.load(open(a[3], encoding="utf-8"))
+    fields = np.load(a[4]) if len(a) > 4 else None
+    import hmmuscles
+    if fields is not None:
+        hmmuscles.add_fields(body, ctrl, muscles, fields, rig)
+    hmmuscles.add_muscle_bodies(rig, body, ctrl, muscles)
+
+rig["hm_sex"] = recipe.get("sex", "male")
 bpy.ops.wm.save_as_mainfile(filepath=out_blend, compress=True)
 print("saved", out_blend, "objects", len(bpy.data.objects))
