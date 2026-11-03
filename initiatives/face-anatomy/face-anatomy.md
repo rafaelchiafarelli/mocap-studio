@@ -1,8 +1,35 @@
 # face-anatomy — mocap-studio
 
-**Status:** Proposed by Rafael, 2026-11-02. This is a **research handoff**: no
-epics, no tasks, nothing built. The next session researches and brings back
-options. It doesn't start implementing.
+**Status:** Research delivered, 2026-11-02. Rafael then chose to build a full model,
+so the work continues in [human-model](../human-model/human-model.md). The handoff
+below is kept as written; see "Findings" for what the research changed.
+
+## Findings (2026-11-02)
+
+The repositories were opened and tested, with licensing set aside by Rafael for the
+investigation.
+
+| Repository | What it is | Use to us |
+|---|---|---|
+| Z-Anatomy | Static atlas: 0 armatures, 0 shape keys, no skin. Has origin and insertion patches. Moving the mandible moves 38 of 4,569 meshes rigidly | Reference, to be validated |
+| Z-Biomechanics (same repository) | 3 armatures, 22 actions, bones and insertion patches, no muscle bodies. Capture animations cross arms and legs when applied directly | Not a validation source |
+| MuSkeMo | Path-point muscles between rigid bodies, for OpenSim. No face work. No license found; one file declares CC-BY-NC | None for the face |
+| anatomy3d-blender | Geometry nodes drawing fibers, no simulation. Last commit on `main` 2022-12-30 (the April 2023 date above is the last push) | None for deformation |
+
+- **The current face barely moves outside the mouth:** no channel animates
+  `cheekSquint`, `eyeSquint` or the nose in the fader take, and no fader pose uses them.
+- **The ARKit smile already pulls the right way:** the corner of the mouth moves about
+  4° from the line of the zygomaticus major (one vertex, a different reference body).
+- **Muscle activation from markers is published:**
+  [Sifakis, Neverov and Fedkiw 2005](https://pages.cs.wisc.edu/~sifakis/papers/activations_siggraph_2005.pdf),
+  a finite-element method. [FTS](https://pages.cs.wisc.edu/~sifakis/project_pages/fts.html)
+  is its BSD code, but its page has no download link.
+- **Liquid:** it captures conserved volume and tissue lag, but has no rest shape and no
+  contraction along fibers. Both useful ideas can be kept without a fluid.
+- **Rigging method:** [Rik Schutte's Blender Conference talk](https://youtu.be/_Ov0pFIOpug)
+  combines bones, a lip guide and corrective shape keys, and builds brow shapes from
+  weights, without sculpting. Pose Shape Keys is GPL-3.0+, and the Storm rig is CC-BY
+  but needs a paid membership to download. It's a stylized character.
 
 **Goal:** make the character move like a person, not only look like one, through
 a rig and armature based on anatomy, with some physics for the muscles.
