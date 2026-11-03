@@ -80,7 +80,18 @@ def fit_head(ind, lib):
         return lambda v: fit.box_map(tilt(v), lo, hi, dst_lo, dst_hi)
 
     best = min(np.radians(np.arange(-40, 40.1, 1.0)), key=lambda a: abs(mapping(a)(socket[None])[0, 1] - hinge[1]))
-    cranium_map = mapping(best)
+    unshrunk = mapping(best)
+    # A head isn't a box: shrink towards the socket until the cranium stays under the skin.
+    sample = unshrunk(cr0[:: max(1, len(cr0) // 2500)])
+    shrink = 1.0
+    while shrink > 0.8:
+        pts = (sample - hinge) * np.array([shrink, shrink, 1.0]) + hinge
+        pts[:, 2] = (sample[:, 2] - hinge[2]) * shrink + hinge[2]
+        if (fit.winding_number(pts, skin, ind["tris"]) < 0.5).mean() < 0.01:
+            break
+        shrink -= 0.01
+    def cranium_map(v):
+        return (unshrunk(v) - hinge) * shrink + hinge
 
     # The jaw in a scan can sit turned; its hinge axis has to run left to right.
     level = fit.rotation_between(c_l - c_r, [1, 0, 0])

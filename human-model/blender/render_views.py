@@ -9,14 +9,20 @@ skin = next(o for o in bpy.data.objects if o.name.endswith(".skin"))
 props = dict(p.split("=") for p in a[2:])
 hb.setup_render((900, 1400), 16)
 m = skin.data.materials[0] if skin.data.materials else None
+show_skin = props.get("skin", "1") != "0"
 for o in bpy.data.objects:
     if o.name.endswith(".skin"):
-        o.hide_render = props.get("skin", "1") == "0"
+        o.hide_render = not show_skin
+    # with skin on, the viewer sees only skin; the inner layers still drive it
+    elif o.name == "HM_muscles" or (o.parent_type == "BONE" and o.type == "MESH"):
+        o.hide_render = show_skin or (o.name == "HM_muscles" and props.get("muscles", "1") == "0")
 ctrl = bpy.data.objects.get("HM_controls")
 for k, v in props.items():
     if ctrl is not None and k in ctrl:
         ctrl[k] = float(v)
-bpy.context.view_layer.update()
+if ctrl is not None:
+    ctrl.update_tag()
+bpy.context.scene.frame_set(bpy.context.scene.frame_current)
 for view in views:
     if view == "body":
         cam = hb.camera_look("cam_body", (1.4, -4.2, 1.1), (0, 0, 0.9), 50)
