@@ -41,13 +41,13 @@ def main():
             docker(f"{tools}/build_bones.py", sex, f"{base}.export.npz", f"{base}.export.json", f"{base}.bones.npz", cache)
             docker(f"{tools}/spec.py", f"{base}.bones.npz", sex)
         elif stage == "muscles" and os.path.exists(f"{HERE}/tools/build_muscles.py"):
-            docker(f"{tools}/build_muscles.py", f"{base}.export.npz", f"{base}.export.json", f"{base}.bones.npz", f"{base}.muscles.npz", sex)
+            docker(f"{tools}/build_muscles.py", f"{base}.export.npz", f"{base}.export.json", f"{base}.bones.npz", f"{base}.muscles.json", sex)
         elif stage == "fields" and os.path.exists(f"{HERE}/tools/build_fields.py"):
-            docker(f"{tools}/build_fields.py", f"{base}.export.npz", f"{base}.export.json", f"{base}.bones.npz", f"{base}.muscles.npz", f"{base}.fields.npz")
+            docker(f"{tools}/build_fields.py", f"{base}.export.npz", f"{base}.export.json", f"{base}.bones.npz", f"{base}.muscles.json", f"{base}.fields.npz")
         elif stage == "assemble":
             args = [f"{HERE}/blender/assemble.py", recipe, f"{base}.bones.npz", f"{base}.blend"]
-            if os.path.exists(f"{base}.muscles.npz"):
-                args.append(f"{base}.muscles.npz")
+            if os.path.exists(f"{base}.muscles.json"):
+                args.append(f"{base}.muscles.json")
             if os.path.exists(f"{base}.fields.npz"):
                 args.append(f"{base}.fields.npz")
             blender(*args)
