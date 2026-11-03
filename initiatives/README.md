@@ -23,8 +23,9 @@ Rules specific to this repository:
 **Read this before any face, character or planning work.** Believable faces are
 a requirement of this project. **The best tool so far is the mouth faders, below.**
 Rafael says it's much better than he expected, but he's keeping this problem open:
-the realism is in the image, not yet in human mannerisms. His next research is
-[face-anatomy](face-anatomy/face-anatomy.md). No pipeline has been chosen.
+the realism is in the image, not yet in human mannerisms. His research in
+[face-anatomy](face-anatomy/face-anatomy.md) led to the proposed
+[human-model](human-model/human-model.md). No pipeline has been chosen.
 
 - **Requirement (Rafael):** "I need faces... regardless of what my audience
   really needs." Staging around the face, such as hiding the mouth or using
@@ -188,4 +189,5 @@ only, never film material):
 | [face-in-shot](face-in-shot/face-in-shot.md) | Planned — after a `face-audio` pass and the MVP shot; **see the open problem above** |
 | [baseline](baseline/baseline.md) | Planned — frozen by the MVP (`MVP-plan.md`) |
 | [environments](environments/environments.md) | Proposed — free library-and-rules set building for a free camera; not scoped, nothing tested |
-| [face-anatomy](face-anatomy/face-anatomy.md) | Proposed — research handoff on an anatomy-based rig and muscle physics; not scoped, nothing built |
+| [face-anatomy](face-anatomy/face-anatomy.md) | Research delivered — continues in `human-model` |
+| [human-model](human-model/human-model.md) | Proposed — full-body male and female model in layers, bones to skin; first epic has tasks, nothing built |
