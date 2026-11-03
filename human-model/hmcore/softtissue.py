@@ -10,10 +10,13 @@ NOSE_STIFFNESS = 1.0
 LIDS_STIFFNESS = 1.0
 LIGAMENT_STIFFNESS = 0.3  # relative to the sheet's median stiffness; declared
 HARD = 10.0
-BULGE_GAIN = 0.6  # how much of the conserved volume goes outward instead of sliding away; declared
+BULGE_GAIN = 0.8  # how much of the conserved volume goes outward instead of sliding away; declared
 THICK_CAP = 0.012  # tissue over bone that can bunch, m
-BULGE_MAX = 0.0025
+BULGE_MAX = 0.004
 NO_BONE = 0.03
+FOLD_WAVE_FOREHEAD = 0.014
+FOLD_RAYS = 16
+FOLD_DEPTH = 0.0007  # declared
 
 
 class Region:
@@ -117,6 +120,28 @@ class Region:
         push = np.maximum(min_d - d1, 0.0)
         return out + self.normals * push[:, None]
 
+    def add_folds(self, u, m):
+        """Wrinkles as ripples on the skin where a muscle compresses it: across the forehead for frontalis, fanning from the eye's corner for orbicularis oculi. Too coarse a mesh below the wavelength, so subdivide when rendering."""
+        name = m["name"]
+        if not (name.startswith("frontalis") or name.startswith("orbicularis_oculi_orbital")):
+            return u
+        area0 = vertex_areas(self.v, self.tris)
+        area1 = vertex_areas(self.v + u, self.tris)
+        press = np.clip(1.0 - area1 / np.maximum(area0, 1e-12), 0.0, 0.5) / 0.5
+        for _ in range(4):
+            press = smooth(self.graph, press)
+        if name.startswith("frontalis"):
+            phase = self.v[:, 2] / FOLD_WAVE_FOREHEAD
+        else:
+            sign = 1 if name.endswith("_L") else -1
+            corner = self.rig_point(f"lid.T.{'L' if sign > 0 else 'R'}.003", "tail")
+            rel = self.v - corner
+            mask = sign * rel[:, 0] > 0
+            phase = np.arctan2(rel[:, 2], sign * rel[:, 0]) / (2 * np.pi) * FOLD_RAYS
+            press = press * mask * np.exp(-(np.linalg.norm(rel, axis=1) / 0.028) ** 2)
+        ripple = np.cos(2 * np.pi * phase) * press * FOLD_DEPTH
+        return u + self.normals * ripple[:, None]
+
     def field(self, m):
         """Full-activation displacement of one muscle from the muscle list, for the region's vertices."""
         n = len(self.v)
@@ -143,7 +168,7 @@ class Region:
             elif kind == "sphincter":
                 targets = self.tangent(targets)
         u = self.solve(targets, weights, hold_lids=kind != "lid" and not m["name"].startswith("orbicularis_oculi"))
-        return self.add_bulge(u)
+        return self.add_folds(self.add_bulge(u), m)
 
 
 def smooth(graph, x):
