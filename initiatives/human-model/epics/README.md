@@ -1,7 +1,6 @@
 # human-model — epics (execution order)
 
-Only `references` has task files. The later lists are proposals, and each becomes
-task files when its epic starts, because their contracts depend on earlier results.
+Each epic's task files were written when it started, because their contracts depend on earlier results.
 
 Inside each building epic the work goes in the same order: head and neck, then
 trunk, then limbs. Male comes first, because that's where there's a reference;
