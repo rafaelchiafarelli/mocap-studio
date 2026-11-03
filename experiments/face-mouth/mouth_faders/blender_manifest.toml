@@ -1,0 +1,9 @@
+schema_version = "1.0.0"
+id = "mouth_faders"
+version = "0.2.0"
+name = "Mouth Faders"
+tagline = "Faders for mouth animation built from sounds and poses"
+maintainer = "Mocap Studio"
+type = "add-on"
+blender_version_min = "5.1.0"
+license = ["SPDX:GPL-3.0-or-later"]

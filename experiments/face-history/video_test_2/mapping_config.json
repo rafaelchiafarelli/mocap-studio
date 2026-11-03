@@ -1,0 +1,1 @@
+{"rest_percentile":10,"rest_percentile_look":50,"sigma":0.9,"sigma_blink":0.5,"smile_suppress_by_jaw":1.6,"lip_part_from_jaw":0.3,"gain":{"jawOpen":1.7,"eyeLookDown":0.35,"eyeLookUp":0.5,"eyeLookIn":0.35,"eyeLookOut":0.35,"eyeSquint":0.35,"browDown":0.6,"mouthRoll":0.3,"mouthPress":0.5,"mouthPucker":0.7,"mouthShrug":0.5,"mouthDimple":0.5}}
