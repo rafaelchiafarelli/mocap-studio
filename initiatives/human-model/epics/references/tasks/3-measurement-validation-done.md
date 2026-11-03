@@ -50,7 +50,7 @@ as the contract says. Z-Anatomy stays a comparison only (`references/1`).
 **Limits of the numbers:**
 
 - ANSUR II is US Army personnel, as this file's limits section says.
-- The CT sample comes from hospital patients at one Swiss institution, with disease
+- The CT sample comes from clinical routine at the hospital sites coded in `meta.csv`, with disease
   recorded in many of them. Age and sex come from `meta.csv`.
 - **Arms are almost always clipped in CT.** A first run reported a mean humerus of 128 mm,
   because the field of view cuts arms at its sides. Labels that touch any face of the volume
