@@ -11,3 +11,6 @@
 - **Pre-work:** —
 - **Out of scope:** the initiative gate
 - **Tests:** —
+
+**Delivered:** the register in `human-model.md`, opened with no verdicts: every row says
+what's waiting for Rafael.
