@@ -133,11 +133,14 @@ What the character already has, checked on 2026-11-02:
    bones, corrective shapes, jiggle and delay, wrinkles. The fader test got much of its gain
    from timing and shapes, without anatomy.
 
-## Good enough
+## Good-enough register
 
-The register is a list in this file, added by `references/5`. Each entry records
-the element, what was compared, Rafael's verdict, the date and what would reopen it.
-A verdict marks that element as enough for now, and it can move.
+An element's verdict comes only from Rafael, never from a metric alone. A verdict marks
+it as enough for now, and it can move.
+
+| Element | What was compared | Verdict (Rafael's words) | Date | What would reopen it |
+|---|---|---|---|---|
+| — | — | No verdicts yet | — | — |
 
 For faces, new work still has to beat the mouth faders on the same recording, in
 Rafael's judgement.
