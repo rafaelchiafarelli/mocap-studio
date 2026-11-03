@@ -1,0 +1,7 @@
+{
+ "until": 15.3,
+ "words": ["F A L O U", "M I M O K A", "F A L O F A", "F A L O U", "M I M O K A", "F A L O F A", "F A L O U", "M I M O K A", "F A L O F A"],
+ "anchors": {"45": 13.9, "46": 14.03},
+ "rest_window_s": [0.1, 0.9],
+ "markers": [[1.77, "farol"], [3.36, "pipoca"], [4.8, "farofa"], [6.72, "farol"], [8.04, "pipoca"], [9.21, "farofa"], [11.25, "farol"], [12.57, "pipoca"], [13.9, "farofa"], [15.7, "fim da fala"]]
+}
