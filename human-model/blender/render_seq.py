@@ -11,9 +11,12 @@ w, h = (int(x) for x in props.get("res", "640x720").split("x"))
 hb.setup_render((w, h), 8)
 scene = bpy.context.scene
 rig = bpy.data.objects["HM_rig"]
+show_skin = props.get("skin", "1") != "0"
 for o in bpy.data.objects:
     if o.name.endswith(".skin"):
-        o.hide_render = props.get("skin", "1") == "0"
+        o.hide_render = not show_skin
+    elif o.name == "HM_muscles" or (o.parent_type == "BONE" and o.type == "MESH"):
+        o.hide_render = show_skin
 if view == "walkside":
     cam = hb.camera_look("cam", (4.6, -1.6, 1.0), (0, -1.6, 0.9), 70)
 elif view == "head":
@@ -26,6 +29,8 @@ if view == "walkside":
         cam.location = (4.6, rig.location.y, 1.0)
         cam.keyframe_insert("location", frame=f)
 os.makedirs(out, exist_ok=True)
+if view == "follow":
+    scene.camera = cam
 for f in range(start, end + 1):
     scene.frame_set(f)
     scene.render.filepath = os.path.join(out, f"f{f:04d}.png")
