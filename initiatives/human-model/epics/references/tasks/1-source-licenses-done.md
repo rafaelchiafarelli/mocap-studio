@@ -38,7 +38,7 @@ an engineer's reading of the license texts, not legal advice.
 | [ANSUR II](https://www.openlab.psu.edu/ansur2/) | public CSVs | US Army data "approved for public release; distribution is unlimited"; no formal license | **Measure:** external validation only. Nothing ships | Yes in practice | Not a formal license, which is why it's validation only |
 | [Fukuchi 2018](https://doi.org/10.6084/m9.figshare.5722711) | figshare 5722711 | CC BY 4.0 (figshare API) | **Derive:** walking joint angles; **measure** | Yes, with attribution | — |
 | [CDC joint range study](https://archive.cdc.gov/www_cdc_gov/ncbddd/jointrom/index.html) | Soucie 2011 | US government public data | **Measure:** range limits | Yes | — |
-| MPFB | 2.0.18 | Code GPL-3.0+; MakeHuman base mesh, targets and assets CC0 | **Derive:** skin, rig, eyes, teeth, tongue | Yes | GPL covers the tool, not the characters it produces, according to MPFB's own licensing notes |
+| MPFB | 2.0.18 | Code GPL-3.0+; MakeHuman base mesh, targets and assets CC0 | **Derive:** skin, rig, eyes, teeth, tongue | Yes | This session didn't find a statement in the add-on on whether GPL reaches a generated character. The usual reading is that it doesn't, since the mesh and targets are CC0 |
 | Tissue | 0.3.76 | GPL-3.0+ | **Tool:** pattern experiment | Yes (rule: GPL for tools) | — |
 | Pose Shape Keys | — | GPL-3.0+ | Not used | Yes | — |
 | Z-Anatomy, BodyParts3D | current | CC BY-SA 4.0 and CC BY-SA 2.1 JP, some parts NC | **Look and compare only:** validation numbers in reports | Share-alike isn't on the allowed list, and NC parts are forbidden | See decision 1 |
