@@ -1,6 +1,6 @@
 # baseline — epics (execution order)
 
-1. **bootstrap** — Environment (2 tasks)
+1. **bootstrap** — Environment (3 tasks)
 2. **pipeline** — Per-take execution (2 tasks)
 3. **camera-study** — Camera bottleneck study (4 tasks)
 

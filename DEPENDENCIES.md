@@ -1,7 +1,7 @@
 # Dependencies — what to download, and where it lives
 
-**Status: agreed baseline list (2026-10-04).** Nothing here is installed or
-downloaded yet. Versions marked **?** are still to be pinned.
+**Status: kept current; agreed as a baseline on 2026-10-04.** Versions marked **?**
+are still to be pinned.
 
 ## The three rules
 
@@ -125,7 +125,10 @@ Python**, which is not ours: **Blender 5.2.2 bundles Python 3.13.13 and numpy
 |---|---|---|
 | MediaPipe pose/hand models | FreeMoCap (baseline) | Bundled inside the `mediapipe` wheel, so they're locked by B. Nothing to download. |
 | YOLO weights (if skellytracker uses them) | FreeMoCap | `downloads/models/` with SHA256, mounted read-only into the container |
-| `face_landmarker.task`, DeepFace weights | Phase 2 (face) | Same as YOLO. Not downloaded now. |
+| MediaPipe Face Landmarker | Face experiments | Apache-2.0, in `models/face_landmarker/` |
+| BootsTAPIR | Face experiment, dense tracking (`experiments/face-history/dense_face/`) | Apache-2.0, weights included, in `models/tapir/` |
+| Audio2Face-3D v3.0 | Face experiment (`experiments/face-history/audio2face/`) | NVIDIA Open Model License, read but not yet confirmed by Rafael, in `models/audio2face-3d-v3.0/` |
+| MPFB asset packs | Character tests | CC0, in `apps/mpfb/` |
 | Allosaurus `uni2005` | Face experiment (`experiments/face-mouth/`) | Code GPL-3.0; **model's terms not found, settle before production**. Saved in `face/baseline_mouth_faders_2026-11-02/generated/` |
 | ChArUco calibration board | Calibration | **Changed 2026-10-12 to A4** (A0 couldn't be printed): FreeMoCap "5x3 Charuco", 55 mm squares, A4 landscape: `calibration/charuco-5x3-55mm-A4.pdf`. Detects to ~2.5 m from a 1920 px camera, so cameras stay within that of the volume centre. A second board, `calibration/charuco-5x3-55mm-A4-wall-ids7-13.pdf` (same layout, markers 7–13), is for the wall: FreeMoCap ignores it, so it can stay up during calibration takes. The A0 file (200 mm) stays for a bigger volume (`mocap-capture` studio-setup decision 2) |
 
@@ -141,6 +144,10 @@ Python**, which is not ours: **Blender 5.2.2 bundles Python 3.13.13 and numpy
 │   └── …/<version>/
 ├── models/<name>/<version>/               weights + SHA256
 ├── calibration/                           board PDFs
+├── fixtures/                              test recordings, sha256 next to each
+├── face/                                  face tests and the frozen mouth-fader baseline
+├── review/<date>/                         files for Rafael to look at, never committed
+├── backups/                               copies of data worth keeping
 ├── sessions/<session>/<take>/             raw takes (one file per camera)
 ├── SHA256SUMS                             one line per downloaded file
 └── MANIFEST.md                            what, version, source URL, date — mirrors section C/D

@@ -4,25 +4,24 @@
 
 Video-based motion capture pipeline for filmic animation in Blender, in 5
 processes: P1 setup, P2 capture, P3 extraction, P4 adaptation, P5 Blender.
-The current initiative is the **baseline**: build it with the hardware Rafael
+The capture side's plan is the **baseline**: build it with the hardware Rafael
 already has (tablets running the camera app; **no webcam**, decided 2026-10-06), **without investing in
 hardware**, and measure whether the cameras are the bottleneck. Cameras sit
 behind an interface (`CameraSource`, a registry per source kind) so other
 image sources can be added later without touching the rest.
 
-## Face first (2026-10-23)
+## Where things stand (2026-11-03)
 
-Rafael's decision after a research round: the core idea, an expressive,
-caricatured face, is validated before the pipeline grows any further, with a
-small isolated test: recorded speech → NVIDIA Audio2Face-3D → per-character
-gain on the blendshapes → ARKit face in Blender. No cameras, no body, no new
-hardware. It runs alongside the MVP (`MVP-plan.md`), which keeps going.
-
-Four initiatives in `initiatives/`: **face-audio** (the test, first), then on
-a pass **face-video** (eyes/brows from the MVP's face tablet), **face-character**
-(declared per-character gain) and **face-in-shot** (the MVP character speaks).
-The pipeline only grows by automating pain found in these tests, not from an
-upfront design.
+- **Faces are the major open problem** and a requirement. Rafael is reconsidering the
+  project over them. The best tool so far is the mouth faders, and no pipeline is
+  chosen. Read `initiatives/faces/faces.md` before any face, character or planning work.
+- **Body results are also bad** (Rafael, 2026-11-02, no details yet). Ask him before
+  planning body work.
+- **The MVP shot** (`MVP-plan.md`) has been stuck on step 2 since 2026-10-12, because
+  calibration fails on the real tablets. Whether it's still first is question 16 below.
+- **Proposed, nothing built:** `initiatives/human-model/` (a layered human model, one
+  candidate answer for the face) and `mocap-blender/initiatives/environments/` (sets).
+- The pipeline only grows by automating pain found in tests, not from an upfront design.
 
 References Rafael gave: *Flow* (Oscar 2025: Blender, small team, a
 proof-of-concept teaser before the film, custom tools only where something was
@@ -103,7 +102,7 @@ links) and `docs/diagrams/pipeline.drawio` (P1–P5, numbered steps with
   never go through Harpia.
 - **7 cameras planned:** 4 body (full body incl. feet, hands, arms, head),
   1 face, 1 per hand (2). The two hand cameras are still in doubt. Face moves
-  into the camera count; the face pipeline itself is still phase 2.
+  into the camera count; no face pipeline is chosen (`initiatives/faces/`).
 - Body and hands through FreeMoCap.
 - **Studio setup (P1):** `mocap-capture/initiatives/studio-setup/` (checklist,
   declared and printed ChArUco board declared in `mocap-contracts` as
@@ -158,27 +157,28 @@ script ─▶ mocap-preprod agents ─▶ creative brief + worklist ─▶ speci
 - **Script → shot list → previz** (2026-10-23): repository `mocap-previz`,
   exploration record in its `docs/exploration/script-to-previz/`, first
   initiative `validation` (decisions, docx → Fountain → parser, blocking test).
-  Comes after `face-audio`.
+  Planned; it starts when Rafael says so.
 
 ## Repositories
 
-| Repository | Role | Baseline tasks |
+| Repository | Role | Where its work stands |
 |---|---|---|
-| `mocap-contracts` | `.harpia` messages, generated Python + Java (Harpia V6), hand-off event transport (ZeroMQ), session layout; **camera-protocol**: stream protocol v1, `camera.harpia` | 11 + 5 |
-| `mocap-camera-app` | Android STREAM camera (Java): protocol v1, foreground service, ZeroMQ control, every Camera2 control | 8 |
-| `mocap-capture` | Recorder PC: P1 + P2, STREAM cameras, recording, sync markers, take report, per-role preprocessing, per-file hand-off + events | 12 (+ studio-setup, live-monitor); UVC parked |
-| `mocap-sync-fw` | ESP32 LED flash firmware — **parked**, not scheduled | 3 |
-| `mocap-extract` | Processing PC: P3, intake + `watch` listener, alignment, calibration, FreeMoCap, **per-camera metrics** | 14 |
-| `mocap-adapt` | P4: smoothing, feet on the floor, `MocapTake` | 7 |
-| `mocap-blender` | P5: add-on, animated empties, NLA | 5 |
-| `mocap-preprod` | pre-production agents (readiness, decisions, 7 specialists) | none open |
-| `mocap-audio` | audio generation survey + shared utilities | none open |
-| `mocap-dashboard` | film workflow dashboard (Python + React) | `workflow-dashboard` initiative (planning; first slice ported to Python) |
-| `mocap-previz` | script → shot list → 3D blocking → layered SVG storyboard | `validation` initiative (planned, after `face-audio`) |
-| `mocap-writer` | script editor: fork of Trelby (GPL-2.0, Python), adapted to write Fountain for the workhorse; `upstream` = trelby/trelby | none yet (UI work starts here) |
-| `mocap-studio` | environment, per-take CLI, **bottleneck study** | 8 |
+| `mocap-contracts` | `.harpia` messages, generated Python + Java (Harpia V6), hand-off event transport (ZeroMQ), session layout; stream protocol v1, `camera.harpia` | Released through `v0.8.0`; bugs backlog |
+| `mocap-camera-app` | Android STREAM camera (Java): protocol v1, foreground service, ZeroMQ control, every Camera2 control | `baseline` done; bugs backlog |
+| `mocap-capture` | Recorder PC: P1 + P2, STREAM cameras, recording, sync markers, take report, per-role preprocessing, per-file hand-off + events | `baseline` epics done, gate not run; `studio-setup`, `live-monitor` planned; UVC parked; bugs backlog |
+| `mocap-sync-fw` | ESP32 LED flash firmware | **Parked**, not scheduled |
+| `mocap-extract` | Processing PC: P3, intake + `watch` listener, alignment, calibration, FreeMoCap, **per-camera metrics** | `baseline` in progress: body/2, quality and watch open |
+| `mocap-adapt` | P4: smoothing, feet on the floor, `MocapTake` | `baseline` planned, frozen by the MVP |
+| `mocap-blender` | P5: add-on, animated empties, NLA; film tools | `mvp` tasks done; `baseline`, `integration` planned; `environments` proposed |
+| `mocap-preprod` | pre-production agents (readiness, decisions, 7 specialists) | `preprod-link` in progress; bugs backlog |
+| `mocap-audio` | audio generation survey + shared utilities | No initiatives |
+| `mocap-dashboard` | film workflow dashboard (Python + React) | `workflow-dashboard` planning; first slice ported to Python |
+| `mocap-previz` | script → shot list → 3D blocking → layered SVG storyboard | `validation` planned, waits for Rafael's go-ahead |
+| `mocap-writer` | script editor: fork of Trelby (GPL-2.0, Python), writes Fountain for the workhorse; `upstream` = trelby/trelby | `workflow-link` planned; bugs backlog; its full list is in `initiatives/README.md` |
+| `mocap-studio` | environment, per-take CLI, bottleneck study, faces | `faces` open; `human-model` proposed; `versioning` to be planned; `baseline` frozen |
 
-Each repository has its own `initiatives/` folder and `.claude/` skill. Create
+Each repository has its own `.claude/` skill and, except `mocap-audio`, its own
+`initiatives/` folder. Create
 `main` and `dev` before starting the branch chain.
 
 ## Order between repositories
@@ -234,8 +234,8 @@ Critical path to the camera decision (adapt and blender are **not** on it):
 9. ~~**Who builds assets**~~ **Answered 2026-10-12:** Rafael's team, procedural
    tools first (rigs, faces, eyes, …), with AI adjusting; specialised asset
    agents drive the procedural tools rather than making assets themselves
-   (`mocap-blender/methodology_study.md`). The agent roster is defined when
-   TicTac enters production.
+   (`mocap-blender/initiatives/methodology_study.md`). The agent roster is defined when
+   the pilot film enters production.
 10. ~~**Dashboard runtime**~~ **Answered 2026-10-12: Docker** (`make up` in
     `mocap-dashboard`: loopback only, film folders mounted at the same path).
     The Claude Code CLI is **inside the image** (pinned, login mounted,
@@ -245,7 +245,7 @@ Critical path to the camera decision (adapt and blender are **not** on it):
     Rafael steps in only if problems show up.
 12. ~~**First-try example project in `mocap-blender`**~~ **Answered
     2026-10-12: removed.** Its general findings are kept in
-    `mocap-blender/methodology_study.md`.
+    `mocap-blender/initiatives/methodology_study.md`.
 13. ~~**Local AI compute vs. generated assets**~~ **Answered 2026-10-12,
     revised 2026-10-23:** a model runs locally only if it performs well on the
     current equipment (measured in a task, not assumed); otherwise the hosted
@@ -254,12 +254,16 @@ Critical path to the camera decision (adapt and blender are **not** on it):
     analysis and generation. **Licenses:** only open/free licenses that allow
     commercial use, never NC or capped community licenses, not even for tests
     (rule in the `mocap-workflow` skill).
-14. **Asset methodology questions** (8, in `mocap-blender/methodology_study.md`):
+14. **Asset methodology questions** (8, in `mocap-blender/initiatives/methodology_study.md`):
     ~~commercial film or not~~ (answered: treat every film as commercial), storyboard style, where the film toolbox lives,
     versioning of built outputs, recipe/shot file formats, target skeleton,
     agent editing rules, preferred add-ons. They shape the production stage.
 15. **Splitting into parallel sessions.** Deferred on purpose until the work
     ahead is known well enough to scope.
+16. **Is the MVP shot still first?** It has been stuck since 2026-10-12 while the
+    film's script and agent tools moved on, and faces are now the main question.
+17. **Where do the film tools live?** `human-model`'s building epics, `environments`
+    and `integration`: a new toolbox repository or `mocap-blender`.
 
 ## Known risks the study must confirm or rule out
 
@@ -272,8 +276,7 @@ Critical path to the camera decision (adapt and blender are **not** on it):
 
 ## Phase 2 (outside the baseline — becomes a new initiative when the time comes)
 
-Helmet camera with Face Landmarker; DeepFace with a mood and script layer;
-character profile; custom retargeting; Harpia database and control plane (remote
+Custom retargeting; Harpia database and control plane (remote
 trigger, dashboard); live forwarding of frames to the processing PC; add-on linked to the database; distributed
 workers; camera replacement according to the study's decision.
 

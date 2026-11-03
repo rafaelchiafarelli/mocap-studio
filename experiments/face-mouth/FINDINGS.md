@@ -2,7 +2,7 @@
 
 **All of this is embryonic:** a few short clips, judged by eye, with few measurements.
 The verdicts are Rafael's. This file keeps the detail, and the summary is in
-[`initiatives/README.md`](../../initiatives/README.md).
+[`initiatives/faces/`](../../initiatives/faces/faces.md).
 
 ## Ranking so far
 
@@ -122,7 +122,7 @@ and its material support is unconfirmed.
 ## Still open
 
 - **Mannerisms:** Rafael: "o photorealismo está somente na imagem, mas não em todos os
-  trejeitos humanos". Next: [face-anatomy](../../initiatives/face-anatomy/face-anatomy.md).
+  trejeitos humanos". Next: [human-model](../../initiatives/human-model/human-model.md).
 - **Emotion in the mouth:** only upper-face tracking and the tracked opening carry performance.
 - **Tongue:** poses only.
 - **A general tool for known words:** this alignment was built for one recording.

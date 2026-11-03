@@ -2,7 +2,7 @@
 
 The best face result so far, kept so it can be rebuilt and never quietly lost.
 What was tested and learned is in [FINDINGS.md](FINDINGS.md), and the process is
-in [the diagram](../../docs/diagrams/face-mouth-experiment.drawio).
+in [the diagram](face-mouth-experiment.drawio).
 
 ## Where everything is
 
