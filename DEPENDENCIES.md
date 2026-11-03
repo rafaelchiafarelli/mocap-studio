@@ -93,6 +93,7 @@ installs only from the lockfile. Base images are pinned by `@sha256:` digest.
 | **MPFB** | `2.0.18` (code GPL-3.0+, MakeHuman base mesh and rigs CC0) | `add-on-mpfb-v2.0.18.zip` from extensions.blender.org | Installed into Blender's **portable** folder (`blender-5.2.2-windows-x64/portable/`), not the Windows profile |
 | **OpenSeeFace** | `v1.20.5` (code and models BSD-2-Clause) | `OpenSeeFace-v1.20.5.zip`, sha256 `c9223f35...`, unpacked in `apps/openseeface/v1.20.5/` | Windows. Face experiment only (`experiments/face-mouth/`) |
 | **Parrot Lipsync** | `1.1.4` (manifest says MIT, repository GPL-3.0; **not settled**) | `parrotLipsync-1.1.4-windows-x64-blender_5.1.0.zip`, sha256 `1f25b279...`, in `apps/parrot/` | Installed into Blender's extensions. Old test only: the faders don't use it |
+| **Tissue** | `0.3.76` (GPL-3.0+), `add-on-tissue-v0.3.76.zip` in `apps/tissue/`, sha256 `997e9114...` | From extensions.blender.org | Installed into Blender's extensions. Human-model experiment only; recommended against |
 | **Mouth Faders** | `0.2.0` (ours, `experiments/face-mouth/mouth_faders/`) | Built and installed by `run_experiment.py` | Installed into Blender's extensions. Face experiment only |
 | Android platform-tools (`adb`) | **?** (pin a release zip) | `platform-tools_r<ver>-<os>.zip` | Only needed outside Docker, e.g. Windows side |
 | `usbipd-win` | **?** | `.msi` | Windows host, to attach USB devices to WSL2. Only UVC webcams (**parked**) needed it: not needed now |
