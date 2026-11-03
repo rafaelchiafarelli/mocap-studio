@@ -6,7 +6,8 @@ actors. Their videos are synchronised, turned into 3D body and hand motion by
 neural networks (FreeMoCap / MediaPipe), cleaned up, and imported into
 Blender as animation.
 
-**This repository is the organizer.** It holds no pipeline code. It ties the
+**This repository is the organizer.** It holds no pipeline code; the human model's tools are
+the one exception, for now. It ties the
 other repositories together as git submodules and keeps the project-wide
 plan, decisions, diagrams and research experiments.
 
@@ -66,12 +67,13 @@ after cloning.
 
 | Path | What |
 |---|---|
-| [`MVP-plan.md`](MVP-plan.md) | one watchable shot end to end; stuck on step 2 since 2026-10-12 |
+| [`MVP-plan.md`](MVP-plan.md) | one watchable shot end to end; **on hold until the human model exists** |
 | [`HANDOFF.md`](HANDOFF.md) | where things stand, the closed architecture, order between repositories, open questions. Start here. |
 | [`DEPENDENCIES.md`](DEPENDENCIES.md) | every external dependency, its pinned version and where it lives |
 | [`docs/diagrams/`](docs/diagrams) | draw.io diagrams: architecture, pipeline, film workflow |
-| [`initiatives/`](initiatives) | this repo's own plan: **the faces problem**, the proposed human model, versioning, environment bootstrap, per-take CLI, camera study |
-| [`experiments/`](experiments) | face and jaw experiments, kept so results can be repeated; not pipeline code |
+| [`initiatives/`](initiatives) | this repo's own plan: **the human model (current priority)**, the faces problem, versioning, environment bootstrap, per-take CLI, camera study |
+| [`human-model/`](human-model/CLAUDE.md) | the human model's tools; the plan is in `initiatives/human-model/` |
+| [`experiments/`](experiments) | face experiments, kept so results can be repeated; not pipeline code |
 | [`camera-stream-eval/`](camera-stream-eval) | the tool that decides whether an Android device is good enough as a STREAM camera (one command, PASS/WARN/FAIL report) |
 
 ## How work is organized

@@ -1,6 +1,7 @@
 # human-model — mocap-studio
 
-**Status:** Proposed by Rafael, 2026-11-02. Scope planned, epics listed, only the
+**Status:** Current priority: the MVP is on hold until this model exists (Rafael,
+2026-11-03). Proposed by him on 2026-11-02. Scope planned, epics listed, only the
 first epic has task files. Nothing built yet. It comes out of the
 anatomy research summarized below.
 
@@ -46,7 +47,7 @@ precisarmos mais".
 **Proof of concept on Z-Anatomy, jaw only.** Review files are in
 `G:\mocap-studio-downloads\review\2026-11-02\` (`z_anatomy_mandibula_vinculos.blend`,
 `z_anatomy_mandibula_comparacao.png`). Scripts:
-[`experiments/human-model-poc/`](../../experiments/human-model-poc/README.md).
+[`human-model/jaw-poc/`](../../human-model/jaw-poc/README.md).
 
 - **Works:** 26 parts of 13 muscle types were bound automatically from Z-Anatomy's
   origin and insertion patches, and the other 224 by proximity to bone. They now
@@ -156,9 +157,8 @@ loss of detail.
 
 ## Where it lives
 
-`references` is research and stays here. This repository holds no pipeline code, so the
-building epics need another home before `skeleton` starts: Rafael decides between a new
-toolbox repository and `mocap-blender`.
+This plan stays here. Its tools go in [`human-model/`](../../human-model/CLAUDE.md) at the root
+of this repository, not in a separate repository for now (Rafael, 2026-11-03).
 
 ## Constraints
 
