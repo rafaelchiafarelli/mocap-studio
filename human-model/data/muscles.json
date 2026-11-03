@@ -23,8 +23,8 @@
 "snap": null
 },
 "radius": 0.0035,
-"contraction": 0.168,
-"patch": 0.012,
+"contraction": 0.21,
+"patch": 0.015,
 "facs": [
 "AU12"
 ],
@@ -143,7 +143,7 @@
 "snap": null
 },
 "radius": 0.003,
-"contraction": 0.15,
+"contraction": 0.18,
 "patch": 0.01,
 "facs": [
 "AU14"
