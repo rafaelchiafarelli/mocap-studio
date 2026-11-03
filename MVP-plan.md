@@ -1,5 +1,9 @@
 # MVP plan: one watchable shot
 
+**Status (2026-11-03):** not finished. Stuck on step 2 since 2026-10-12, because
+calibration fails on the real tablets. Whether it's still first is an open question
+for Rafael (`HANDOFF.md`, question 16).
+
 **Goal:** a rendered shot of about 10 seconds, at 1080p, of a rigged character
 performing one dialog beat from the pilot film, driven by our own capture,
 with the actor's voice. Rough is fine. The bar is "you can tell what he's
@@ -11,12 +15,10 @@ replaces the current plan.
 
 ## Rules for the MVP
 
-- **Frozen until the shot exists:** `mocap-dashboard`, `mocap-preprod`,
-  `mocap-audio`, `mocap-sync-fw`, `mocap-adapt`, the hand-off listener
-  (`mocap-extract` watch), quality metrics, the camera study, and new
-  `.harpia` messages. No new initiatives, except the face initiatives
-  (2026-10-23, `initiatives/face-*`): `face-audio` runs alongside the MVP.
-  `mocap-previz` `validation` is planned only; it starts after `face-audio`.
+- **Frozen until the shot exists:** `mocap-dashboard`, `mocap-audio`, `mocap-sync-fw`,
+  `mocap-adapt`, the hand-off listener (`mocap-extract` watch), quality metrics and the
+  camera study. As first written it also froze `mocap-preprod`, new `.harpia` messages
+  and new initiatives; those moved on after 2026-10-12, so they aren't listed any more.
 - **One machine.** The processing PC (WSL2, RTX 4080) is also the recorder.
   The take is on disk before the hand-off runs, so a failed hand-off at the
   end of `mocap-capture take` is expected and harmless.
@@ -89,27 +91,19 @@ hips are scaled by leg length, the ankles are put on the floor, the feet stay fl
   Takes in `~/mocap-data/rec/mvp-1/takes/`: `bench-1`, `cal-1`, `cal-2`. Recorder config with the live
   tablets: `~/mocap-data/config-3cam.yaml` (.5 body_1, .8 body_2, .3 face). .6 runs out of battery:
   keep it on the charger.
-- **The WSL clock runs 9.1 % slow** (clocksource `tsc`, mis-calibrated under Hyper-V on the i7-14700KF),
-  and Windows steps the wall clock to catch up. `mocap-capture` now uses one steady clock (baseline
-  sync/3), which removes the steps. **The rate still needs Rafael's `sudo`:**
-  `echo hyperv_clocksource_tsc_page | sudo tee /sys/devices/system/clocksource/clocksource0/current_clocksource`,
-  and permanently `kernelCommandLine = clocksource=hyperv_clocksource_tsc_page` under `[wsl2]` in
-  `C:\Users\rafae\.wslconfig`. Until then takes measure 9 % short and tablets read 32.6 fps.
+- **The WSL clock runs 9.1 % slow**, so takes measure 9 % short until Rafael changes the clock source:
+  `mocap-capture` bug `environment/1`, with the commands.
 - **Calibration still fails:** `cal-1` used the wall board (markers 7–13) and showed it only briefly.
   `cal-2` used the right board, but the M7 image is soft and H.264 at about 10 Mbps smears the marker
   codes: .8 reads 1–2 of 7 markers per frame, .5 none. Next to try: a bigger tiled board (3 × A4, 80 mm
   squares), bitrate 20 Mbps (`./dev launch bitrate=...`), matte print, no glare, the board within ~1 m of
   each body tablet. If not enough: better cameras, or calibrating from body keypoints.
-- **Images stream sideways** (tablets upright, sensor landscape): mount the tablets in landscape, or add
-  a rotation step to the recorder's preprocessing.
-- The app seems to serve **one client per stream**: close any live view before a take.
+- **Workarounds:** mount the tablets in landscape (`mocap-capture` bug `preprocess/2`), and close any live
+  view before a take (`mocap-camera-app` bug `streaming/1`).
 - **Still open for Rafael:** your height in `~/mocap-data/rec/mvp-1/session.json`, and `sshd` on
   localhost (the hand-off fails without both, so takes stay in `rec/`), plus the clock source above.
 
-**Tablet access:** the Wi-Fi adb pairings (.3, .6, .8) are in the camera app's Docker adb (`./dev adb`).
-Wireless debugging ports change on every reconnect: scan 30000–49999 for open ports, no new code
-needed. Only that one adb server may run (port 5037 is shared with Windows). `svc power stayon true`
-was set on .6.
+**Tablet access:** the Wi-Fi adb pairings are in the camera app's Docker adb (`./dev adb`); see its README.
 
 ## Runbook
 
@@ -161,10 +155,10 @@ $EX align $P/beat-1 && $EX body $P/beat-1                          # FreeMoCap 3
 **Steps 5 and 6, Blender (Claude or you):**
 
 ```bash
-BL=mocap-blender/.venv/bin/mocap-blender; FILM=/mnt/g/TicTac/mvp
+BL=mocap-blender/.venv/bin/mocap-blender; FILM=<film-root>/mvp
 $BL reference $P/beat-1                                   # optional: FreeMoCap's own view, to check the capture
-$BL character $FILM/character.json ~/mocap-data/proc/mvp-1/antonio.blend
-$BL retarget $P/beat-1 ~/mocap-data/proc/mvp-1/antonio.blend
+$BL character $FILM/character.json ~/mocap-data/proc/mvp-1/character.blend
+$BL retarget $P/beat-1 ~/mocap-data/proc/mvp-1/character.blend
 $BL shot $P/beat-1 $FILM/shot.json                        # renders $FILM/shot.mp4
 ```
 
@@ -177,7 +171,8 @@ stool and the camera to fit the take (`shot.blend` next to the take shows the sc
 
 - **Hands.** 2 MP front cameras won't give usable fingers. Wrists and arms
   only; fingers posed by hand if needed.
-- **Face.** No face capture. Frame the shot so lip sync isn't the point
+- **Face.** No face capture in this shot; this limit is for the MVP only, and faces
+  remain a requirement (`initiatives/faces/`). Frame the shot so lip sync isn't the point
   (wide, profile or three-quarter back), or accept a still mouth.
 - **Occlusion.** A seated actor behind a real table loses the lower body. Act
   on a backless stool with no table and add the table in Blender.
@@ -196,4 +191,4 @@ stool and the camera to fit the take (`shot.blend` next to the take shows the sc
 | FreeMoCap 1.8.2 | `mocap-extract/.venv` |
 | Blender 5.2.2 (portable, MPFB 2.0.18 installed in it), FreeMoCap Blender add-on v2026.04.1041 | `/mnt/g/mocap-studio-downloads/apps/` (`DEPENDENCIES.md`) |
 | Recorder config and session template | `~/mocap-data/config.yaml`, `~/mocap-data/rec/mvp-1/session.json` |
-| Placeholder character and shot recipe (film material) | `/mnt/g/TicTac/mvp/character.json`, `shot.json` |
+| Placeholder character and shot recipe (film material) | `<film-root>/mvp/character.json`, `shot.json` |

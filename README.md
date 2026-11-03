@@ -6,9 +6,9 @@ actors. Their videos are synchronised, turned into 3D body and hand motion by
 neural networks (FreeMoCap / MediaPipe), cleaned up, and imported into
 Blender as animation.
 
-**This repository is the organizer.** It holds no mocap logic. It ties the
+**This repository is the organizer.** It holds no pipeline code. It ties the
 other repositories together as git submodules and keeps the project-wide
-plan, decisions and diagrams.
+plan, decisions, diagrams and research experiments.
 
 ## Architecture
 
@@ -30,8 +30,9 @@ cameras ──live──▶ RECORDER PC ──── rsync, file by file ──�
   layout).
 
 Diagrams: [`docs/diagrams/architecture.drawio`](docs/diagrams/architecture.drawio)
-(machines, cameras, links) and [`docs/diagrams/pipeline.drawio`](docs/diagrams/pipeline.drawio)
-(P1–P5 with every step's inputs and outputs).
+(machines, cameras, links), [`docs/diagrams/pipeline.drawio`](docs/diagrams/pipeline.drawio)
+(P1–P5 with every step's inputs and outputs) and
+[`docs/diagrams/film-workflow.drawio`](docs/diagrams/film-workflow.drawio) (a film from script to delivery).
 
 ## Repositories
 
@@ -47,12 +48,13 @@ Diagrams: [`docs/diagrams/architecture.drawio`](docs/diagrams/architecture.drawi
 | [`mocap-preprod`](mocap-preprod) | workstation (Claude Code / Copilot) | film pre-production | AI agents that take a script to a creator-reviewed brief, worklist and specialist specifications |
 | [`mocap-audio`](mocap-audio) | processing PC | film sound | local audio/score exploration stack |
 | [`mocap-dashboard`](mocap-dashboard) | workstation (local web app) | whole film lifecycle | workflow dashboard: film state, work packages, agent runs (Python backend, React UI) |
+| [`mocap-writer`](mocap-writer) | workstation | film pre-production | script editor: a fork of Trelby that writes Fountain and keeps the film bible |
 | [`mocap-previz`](mocap-previz) | workstation (Blender, headless) | film pre-production → production | script → shot list → 3D blocking → layered SVG storyboard |
 
 **Project, workhorse, film.** These repositories are the **project**: the
 code and agents. The **workhorse** is the workflow they implement, which takes
 a film from script to delivery. A **film** lives in its own folder, its
-**film root** (the guinea-pig film, TicTac, is at `/mnt/g/TicTac`), never in a
+**film root** (the guinea-pig film's location is in `HANDOFF.md`), never in a
 `mocap-*` repository. All software is Python (except the Android app and the dashboard's
 React UI), and applications exchange messages through Harpia contracts in
 `mocap-contracts`.
@@ -64,13 +66,13 @@ after cloning.
 
 | Path | What |
 |---|---|
-| [`MVP-plan.md`](MVP-plan.md) | **current priority:** one watchable shot end to end; what's frozen until then |
-| [`HANDOFF.md`](HANDOFF.md) | the closed architecture, order between repositories, open questions. Start here. |
+| [`MVP-plan.md`](MVP-plan.md) | one watchable shot end to end; stuck on step 2 since 2026-10-12 |
+| [`HANDOFF.md`](HANDOFF.md) | where things stand, the closed architecture, order between repositories, open questions. Start here. |
 | [`DEPENDENCIES.md`](DEPENDENCIES.md) | every external dependency, its pinned version and where it lives |
-| [`docs/diagrams/`](docs/diagrams) | draw.io architecture and pipeline diagrams |
-| [`initiatives/`](initiatives) | this repo's own plan: environment bootstrap, per-take CLI, the **camera bottleneck study** |
+| [`docs/diagrams/`](docs/diagrams) | draw.io diagrams: architecture, pipeline, film workflow |
+| [`initiatives/`](initiatives) | this repo's own plan: **the faces problem**, the proposed human model, versioning, environment bootstrap, per-take CLI, camera study |
+| [`experiments/`](experiments) | face and jaw experiments, kept so results can be repeated; not pipeline code |
 | [`camera-stream-eval/`](camera-stream-eval) | the tool that decides whether an Android device is good enough as a STREAM camera (one command, PASS/WARN/FAIL report) |
-| [`tablet-stream-test/`](tablet-stream-test) | the first throwaway streaming stress test, kept for its measurements |
 
 ## How work is organized
 
