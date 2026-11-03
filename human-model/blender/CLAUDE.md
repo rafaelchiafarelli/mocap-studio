@@ -1,0 +1,28 @@
+# blender — scripts that run inside Blender
+
+**Role:** everything that needs `bpy`. Run with `blender_run.py`, so auto-run stays off and drivers use simple expressions only.
+
+**Entry points:** each script, with its arguments after `--`.
+
+**Inputs → Outputs:** `hmcore` outputs → `.blend` files, measurements, renders.
+
+## Files
+
+- `hmblender.py`: shared helpers: meshes, drivers, render setup.
+- `posing.py`: joint rotations in the rest pose's axes.
+- `export_human.py`: MPFB human to arrays.
+- `assemble.py`: builds the model file.
+- `render_views.py`, `render_seq.py`: review stills and sequences.
+- `motion_check.py`: joints at their limits, mesh overlap between bones.
+- `breath_check.py`: rib cage at rest and at a full breath.
+- `walk.py`: keys the walking cycle and solves the root from the stance foot.
+
+## Key facts / gotchas
+
+- A changed control property reaches its drivers only after `update_tag` and a frame change: `breath_check.py:15`.
+- Joint limits are stored as the `hm_limit_deg` bone property, not as Blender constraints: `assemble.py`, search `hm_limit_deg`.
+- MPFB's Rigify metarig deforms the skin; the generated control rig isn't used.
+
+## Touchpoints
+
+`hmcore/`, `tools/`, `build_model.py`.
