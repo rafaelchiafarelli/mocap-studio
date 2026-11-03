@@ -1,4 +1,4 @@
-# human-model-poc — jaw test on Z-Anatomy
+# jaw-poc — jaw test on Z-Anatomy
 
 **Role:** the scripts of the jaw proof of concept. An experiment, not pipeline code.
 
