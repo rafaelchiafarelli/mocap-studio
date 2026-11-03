@@ -32,8 +32,8 @@ Rules specific to this repository:
 | Initiative | Status |
 |---|---|
 | [faces](faces/faces.md) | Open — the major open problem, its results and the best tool so far |
-| [human-model](human-model/human-model.md) | Proposed — full-body male and female model in layers, bones to skin; first epic has tasks, nothing built. Its building epics need a home outside this repository |
-| [baseline](baseline/baseline.md) | Planned — frozen by the MVP (`MVP-plan.md`) |
+| [human-model](human-model/human-model.md) | **Current priority** — full-body male and female model in layers, bones to skin; first epic has tasks, nothing built. Tools go in `human-model/` at the repository root |
+| [baseline](baseline/baseline.md) | Planned — not active while the MVP (`MVP-plan.md`) is on hold |
 | [versioning](versioning/versioning.md) | To be planned — one versioning system for the whole workflow |
 | **face-anatomy** — anatomy research for a character that moves like a person | Done 2026-11-02; findings in `human-model` (history: `git log -- initiatives/face-anatomy`) |
 | **face-audio** — mouth from recorded speech with Audio2Face-3D | Retired 2026-11-03; see [faces](faces/faces.md) (history: `git log -- initiatives/face-audio`) |

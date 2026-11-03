@@ -1,7 +1,8 @@
 # faces — mocap-studio
 
 **Status:** Open problem, recorded 2026-11-02. No epics or tasks; no pipeline chosen.
-[human-model](../human-model/human-model.md) is one candidate answer, not the chosen one.
+[human-model](../human-model/human-model.md) is the path being pursued (Rafael, 2026-11-03),
+and it still has to beat the mouth faders.
 
 **Goal:** believable faces.
 

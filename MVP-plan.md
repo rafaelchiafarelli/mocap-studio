@@ -1,8 +1,8 @@
 # MVP plan: one watchable shot
 
-**Status (2026-11-03):** not finished. Stuck on step 2 since 2026-10-12, because
-calibration fails on the real tablets. Whether it's still first is an open question
-for Rafael (`HANDOFF.md`, question 16).
+**Status: on hold until the human model exists** (Rafael, 2026-11-03;
+`initiatives/human-model/`). It stopped on step 2, because calibration fails on the
+real tablets. The rules below apply again when it resumes.
 
 **Goal:** a rendered shot of about 10 seconds, at 1080p, of a rigged character
 performing one dialog beat from the pilot film, driven by our own capture,

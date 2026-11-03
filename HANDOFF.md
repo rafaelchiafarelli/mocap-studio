@@ -17,10 +17,11 @@ image sources can be added later without touching the rest.
   chosen. Read `initiatives/faces/faces.md` before any face, character or planning work.
 - **Body results are also bad** (Rafael, 2026-11-02, no details yet). Ask him before
   planning body work.
-- **The MVP shot** (`MVP-plan.md`) has been stuck on step 2 since 2026-10-12, because
-  calibration fails on the real tablets. Whether it's still first is question 16 below.
-- **Proposed, nothing built:** `initiatives/human-model/` (a layered human model, one
-  candidate answer for the face) and `mocap-blender/initiatives/environments/` (sets).
+- **The human model is the current priority** (`initiatives/human-model/`, tools in
+  `human-model/`). It still has to beat the mouth faders. Nothing is built yet.
+- **The MVP shot (`MVP-plan.md`) is on hold until the human model exists** (Rafael,
+  2026-11-03). It stopped on step 2, because calibration fails on the real tablets.
+- **Proposed, nothing built:** `mocap-blender/initiatives/environments/` (sets).
 - The pipeline only grows by automating pain found in tests, not from an upfront design.
 
 References Rafael gave: *Flow* (Oscar 2025: Blender, small team, a
@@ -168,14 +169,14 @@ script ─▶ mocap-preprod agents ─▶ creative brief + worklist ─▶ speci
 | `mocap-capture` | Recorder PC: P1 + P2, STREAM cameras, recording, sync markers, take report, per-role preprocessing, per-file hand-off + events | `baseline` epics done, gate not run; `studio-setup`, `live-monitor` planned; UVC parked; bugs backlog |
 | `mocap-sync-fw` | ESP32 LED flash firmware | **Parked**, not scheduled |
 | `mocap-extract` | Processing PC: P3, intake + `watch` listener, alignment, calibration, FreeMoCap, **per-camera metrics** | `baseline` in progress: body/2, quality and watch open |
-| `mocap-adapt` | P4: smoothing, feet on the floor, `MocapTake` | `baseline` planned, frozen by the MVP |
-| `mocap-blender` | P5: add-on, animated empties, NLA; film tools | `mvp` tasks done; `baseline`, `integration` planned; `environments` proposed |
+| `mocap-adapt` | P4: smoothing, feet on the floor, `MocapTake` | `baseline` planned, not active |
+| `mocap-blender` | P5: add-on, animated empties, NLA; film tools | `mvp` tasks done, on hold; `baseline`, `integration` planned; `environments` proposed |
 | `mocap-preprod` | pre-production agents (readiness, decisions, 7 specialists) | `preprod-link` in progress; bugs backlog |
 | `mocap-audio` | audio generation survey + shared utilities | No initiatives |
 | `mocap-dashboard` | film workflow dashboard (Python + React) | `workflow-dashboard` planning; first slice ported to Python |
 | `mocap-previz` | script → shot list → 3D blocking → layered SVG storyboard | `validation` planned, waits for Rafael's go-ahead |
 | `mocap-writer` | script editor: fork of Trelby (GPL-2.0, Python), writes Fountain for the workhorse; `upstream` = trelby/trelby | `workflow-link` planned; bugs backlog; its full list is in `initiatives/README.md` |
-| `mocap-studio` | environment, per-take CLI, bottleneck study, faces | `faces` open; `human-model` proposed; `versioning` to be planned; `baseline` frozen |
+| `mocap-studio` | environment, per-take CLI, bottleneck study, faces | `human-model` current priority; `faces` open; `versioning` to be planned; `baseline` not active |
 
 Each repository has its own `.claude/` skill and, except `mocap-audio`, its own
 `initiatives/` folder. Create
@@ -260,10 +261,10 @@ Critical path to the camera decision (adapt and blender are **not** on it):
     agent editing rules, preferred add-ons. They shape the production stage.
 15. **Splitting into parallel sessions.** Deferred on purpose until the work
     ahead is known well enough to scope.
-16. **Is the MVP shot still first?** It has been stuck since 2026-10-12 while the
-    film's script and agent tools moved on, and faces are now the main question.
-17. **Where do the film tools live?** `human-model`'s building epics, `environments`
-    and `integration`: a new toolbox repository or `mocap-blender`.
+16. ~~**Is the MVP shot still first?**~~ **Answered 2026-11-03: no.** It's on hold until
+    the human model exists.
+17. ~~**Where do the film tools live?**~~ **Answered 2026-11-03:** in `human-model/` in
+    this repository, not a separate repository for now.
 
 ## Known risks the study must confirm or rule out
 
