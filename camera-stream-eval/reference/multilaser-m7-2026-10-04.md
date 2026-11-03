@@ -54,4 +54,4 @@ launch (we saw 1–15 ms) and slid by only what their drift difference predicts 
 First run of the finished kit (`./run-eval.sh --quick`, tablet 1, 2026-10-04): **PASS**, 8/8 checks: 1600×1200
 @ 29.899 fps, 0 frames lost, capture→PC p95 ~62 ms, sync ±1.1 ms, drift −23 ppm, max 32 °C.
 
-Raw data (CSV, logs, saved streams) from these runs stayed in the prototype folder `../tablet-stream-test/measurements/`.
+Raw data (CSV, logs, saved streams) from these runs are in `G:\mocap-studio-downloads\backups\tablet-stream-test-measurements\`.
