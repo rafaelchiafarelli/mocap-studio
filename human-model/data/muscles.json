@@ -301,9 +301,9 @@
 "kind": "linear"
 },
 {
-"name": "frontalis",
+"name": "frontalis_lateral",
 "origin": {
-"rig": "brow.T.{s}.002",
+"rig": "brow.T.{s}.001",
 "t": 0,
 "off": [
 0.0,
@@ -313,7 +313,7 @@
 "snap": null
 },
 "insertion": {
-"rig": "brow.T.{s}.002",
+"rig": "brow.T.{s}.001",
 "t": 0,
 "off": [
 0,
@@ -324,9 +324,8 @@
 },
 "radius": 0.0015,
 "contraction": 0.16,
-"patch": 0.028,
+"patch": 0.02,
 "facs": [
-"AU1",
 "AU2"
 ],
 "kind": "linear"
@@ -451,6 +450,36 @@
 "facs": [
 "AU20",
 "AU21"
+],
+"kind": "linear"
+},
+{
+"name": "frontalis_medial",
+"origin": {
+"rig": "brow.T.{s}.003",
+"t": 0,
+"off": [
+0.0,
+0.03,
+0.075
+],
+"snap": null
+},
+"insertion": {
+"rig": "brow.T.{s}.003",
+"t": 0,
+"off": [
+0,
+0,
+0.002
+],
+"snap": null
+},
+"radius": 0.0015,
+"contraction": 0.16,
+"patch": 0.018,
+"facs": [
+"AU1"
 ],
 "kind": "linear"
 }
