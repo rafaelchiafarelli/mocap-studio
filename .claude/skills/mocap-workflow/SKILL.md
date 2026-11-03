@@ -110,6 +110,7 @@ A task is only ready to implement when:
 
 Once a task file is ready and its branch exists, the loop is:
 
+0. **Read the architecture first, then the documentation** (Rafael, 2026-10-31): when the repository has an architecture overview (in `mocap-writer`, `doc/architecture.md`, the agents' version; `doc/architecture/` holds the same pages for human architects), read it before anything else, then the as-built docs of the folders the task touches. This applies to fixes and planning too.
 1. Read the task file.
 2. Implement exactly what it asks.
 3. Run the full test suite (not just new tests — regressions anywhere are still regressions).
@@ -140,6 +141,7 @@ Fixing every bug as soon as it turns up keeps the project from moving forward (R
 - **Content:** what the code *does*, never what it should do (plans live in `initiatives/`); every claim points to `file:line`; a bug or oddity found goes under gotchas, linked to its bug file in `initiatives/bugs/` (see "Bugs"), never a silent edit.
 - **In the same commit:** the change and its as-built update travel together, like the task file and its done marker. A new file gets its bullet, a removed file loses it, a new folder gets its `CLAUDE.md`, a changed stage is updated in `<name>.process.md`.
 - **References follow the code** (Rafael, 2026-10-31): every code change also updates the `file:line` references into the files it changed, in **every** doc of the repository (as-built, process spec, bug and task files), not only the ones describing the change: lines added or removed above a reference move it. Before the commit, every reference into a changed file must land on what it names. A reference found off in a file the commit didn't touch is fixed in its own commit, never left.
+- **Architecture follows too** (Rafael, 2026-10-31): a change to the architecture (a part added or removed, a different flow between parts, a new record or file format, a changed behaviour that the overview describes) also updates the architecture overview in the same commit: the agents' `doc/architecture.md` and the human pages in `doc/architecture/`, both rebuilt from the as-built docs, never from memory, with the same content. The online copy, if there is one, is then republished from the repository's pages.
 - **Review:** a separate session can be asked to check the as-built against the code (every `file:line` resolves, every file has its bullet, every claim matches the code). A mismatch is recorded as a bug (epic `as-built-docs`), and an unexplained one is a red flag about the commit that caused it.
 - **Repositories not documented yet:** before their next substantial work they get an `as-built` initiative 0 (as `mocap-writer` did). Until then, a change still adds or updates the `CLAUDE.md` of the folders it touches.
 
