@@ -21,7 +21,7 @@
 - `verify_faders.py`: measures the presets, tests a fader, saves curves, renders stills.
 - `measure_mouth.py`: measures the lip gap per `jawOpen` and the eye distance on a character.
 - `render_poses.py`: renders each pose close up.
-- `poses.json`: the 13 mouth poses. `presets/`: fader settings A, B, C. `takes/`: known words and timing for a recording.
+- `poses.json`: the 13 mouth poses. `presets/`: fader settings A, B, C. `take_files/`: known words and timing for a recording.
 - `config.example.json`: template for the local config; real paths stay out of git. `requirements.txt`: pinned versions used.
 
 ## Key facts / gotchas
@@ -31,6 +31,7 @@
 - The table is written in ASCII because Parrot opens tables with the system encoding: `make_table.py:22`.
 - The control object is found by its properties, so older files keep working: `mouth_faders/__init__.py:14`.
 - The comparison guards the curves and measures; stills are coarse: `run_experiment.py:11`.
+- The take file's folder isn't called `takes/` because the root `.gitignore` ignores that name.
 - `requirements.txt` is a local venv, not the Dockerfile that `DEPENDENCIES.md` asks for. It was kept because this is an experiment, and that's a flagged divergence.
 
 ## Touchpoints

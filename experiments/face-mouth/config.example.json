@@ -6,7 +6,7 @@
  "allosaurus_model": "/mnt/g/mocap-studio-downloads/face/<baseline>/generated/allosaurus_uni2005",
  "out_dir": "/mnt/g/mocap-studio-downloads/face/<new output folder>",
  "expected_dir": "/mnt/g/mocap-studio-downloads/face/<baseline>/expected",
- "take": "takes/farol_pipoca_farofa.json",
+ "take": "take_files/farol_pipoca_farofa.json",
  "lip_gap_at_jaw1_m": 0.0345,
  "eye_distance_m": 0.0583
 }

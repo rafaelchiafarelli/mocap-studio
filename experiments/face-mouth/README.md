@@ -57,7 +57,7 @@ video.
 
 ## Use the faders on a new recording
 
-1. Copy `takes/farol_pipoca_farofa.json` and set a still, neutral window, the words as
+1. Copy `take_files/farol_pipoca_farofa.json` and set a still, neutral window, the words as
    mouth groups, and the markers. `make_data.py` prints how the words aligned; place
    sounds it misses with `anchors`.
 2. Point a new config at the recording and a new `out_dir`, and run through `verify`.
