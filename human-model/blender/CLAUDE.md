@@ -18,9 +18,17 @@
 - `hmmuscles.py`: fields as shape keys, muscle bodies on their own armature.
 - `volume_check.py`: muscle volume in test poses.
 - `contraction_check.py`: frontalis and zygomaticus, measured.
+- `export_blend.py`: exports a character that already exists as a `.blend`, in `export_human.py`'s format.
+- `add_fields.py`: adds muscle fields to such a file.
+- `smile_compare.py`: its current smile against the muscle smile.
+- `binding_compare.py`, `scipy_free_nearest.py`: Surface Deform and Mesh Deform against the direct field.
+- `tissue_experiment.py`: Tissue on a skin patch.
+- `speed_measure.py`: frames per second by layer.
 - `walk.py`: keys the walking cycle and solves the root from the stance foot.
 
 ## Key facts / gotchas
+
+- MakeHuman's body vertices come first and helpers after, so the first 13,380 indices mean the same on every MPFB character: `export_blend.py:7`.
 
 - A changed control property reaches its drivers only after `update_tag` and a frame change: `breath_check.py:15`.
 - Joint limits are stored as the `hm_limit_deg` bone property, not as Blender constraints: `assemble.py`, search `hm_limit_deg`.
