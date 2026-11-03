@@ -1,0 +1,24 @@
+{
+ "name": "male_slim_tall",
+ "sex": "male",
+ "macros": {
+  "gender": 1.0,
+  "age": 0.4,
+  "muscle": 0.3,
+  "weight": 0.2,
+  "height": 0.85,
+  "proportions": 0.6,
+  "cupsize": 0.5,
+  "firmness": 0.5,
+  "race": {
+   "african": 0.33,
+   "asian": 0.33,
+   "caucasian": 0.34
+  }
+ },
+ "assets": {
+  "eyes": "eyes/high-poly/high-poly.mhclo",
+  "teeth": "teeth/teeth_base/teeth_base.mhclo",
+  "tongue": "tongue/tongue01/tongue01.mhclo"
+ }
+}
