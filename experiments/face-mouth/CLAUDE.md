@@ -22,6 +22,7 @@
 - `measure_mouth.py`: measures the lip gap per `jawOpen` and the eye distance on a character.
 - `render_poses.py`: renders each pose close up.
 - `poses.json`: the 13 mouth poses. `presets/`: fader settings A, B, C. `take_files/`: known words and timing for a recording.
+- `face-mouth-experiment.drawio`: the process as a diagram.
 - `config.example.json`: template for the local config; real paths stay out of git. `requirements.txt`: pinned versions used.
 
 ## Key facts / gotchas
@@ -36,4 +37,4 @@
 
 ## Touchpoints
 
-`initiatives/README.md` (results), `initiatives/face-anatomy/` (next research), `docs/diagrams/face-mouth-experiment.drawio`, `DEPENDENCIES.md` (apps), and the baseline folder on `G:`.
+`initiatives/faces/` (results), `initiatives/human-model/` (next research), `DEPENDENCIES.md` (apps), and the baseline folder on `G:`.

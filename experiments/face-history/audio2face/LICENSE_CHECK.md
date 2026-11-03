@@ -1,6 +1,6 @@
 # Audio2Face test: license check, for the creator to confirm
 
-Read 2026-11-01. This is my reading of the terms, not legal advice. Not yet recorded in `face-audio` prework/2.
+Read 2026-11-01. This is my reading of the terms, not legal advice. Not yet confirmed by Rafael.
 
 | Item | Version | License | Commercial use | Used in this test | Source |
 |---|---|---|---|---|---|

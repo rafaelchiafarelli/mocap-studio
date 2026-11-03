@@ -20,4 +20,4 @@
 
 ## Touchpoints
 
-`experiments/face-mouth/FINDINGS.md`, `initiatives/README.md`.
+`experiments/face-mouth/FINDINGS.md`, `initiatives/faces/`.
