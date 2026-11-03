@@ -1,0 +1,12 @@
+{
+ "recording": "/mnt/g/mocap-studio-downloads/face/<baseline>/inputs/recording.mp4",
+ "character_blend": "/mnt/g/mocap-studio-downloads/face/<baseline>/inputs/character/out/<character>.blend",
+ "blender": "/mnt/g/mocap-studio-downloads/apps/blender/5.2.2/blender-5.2.2-windows-x64/blender.exe",
+ "facetracker_dir": "/mnt/g/mocap-studio-downloads/apps/openseeface/v1.20.5/Binary",
+ "allosaurus_model": "/mnt/g/mocap-studio-downloads/face/<baseline>/generated/allosaurus_uni2005",
+ "out_dir": "/mnt/g/mocap-studio-downloads/face/<new output folder>",
+ "expected_dir": "/mnt/g/mocap-studio-downloads/face/<baseline>/expected",
+ "take": "takes/farol_pipoca_farofa.json",
+ "lip_gap_at_jaw1_m": 0.0345,
+ "eye_distance_m": 0.0583
+}

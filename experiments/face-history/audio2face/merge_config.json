@@ -1,0 +1,1 @@
+{"centre_cm": 0.8, "edge_verts": 12, "upper_radius_cm": 1.0, "closed_percentile": 3, "mesh_scale": 1.0, "mm_at_full_jaw": 30.0, "lip_lift_gain": 0.4, "contact_mm": 2.5, "press_gain": 0.6, "press_on_contact": 0.25, "roll_gain": 0.8, "lid_open": 0.35, "blink_from": 0.55, "blink_to": 0.85, "squint_gain": 0.5}

@@ -25,8 +25,9 @@ trejeitos humanos". He expects to stop adding detail at some point, but not yet:
 
 The best tool so far is the mouth faders, described in
 [the faces problem](../README.md#best-tool-so-far-mouth-faders-2026-11-02). New
-work has to beat it on the same recording, in Rafael's judgement. Read that
-section first, then open the fader file in the portable Blender with
+work has to beat it on the same recording, in Rafael's judgement, and
+[`experiments/face-mouth/`](../../experiments/face-mouth/README.md) shows how to
+repeat it and check for regressions. Read that section first, then open the fader file in the portable Blender with
 `abrir_faders.bat` from `G:\mocap-studio-downloads\review\2026-11-02\`.
 
 What the character already has, checked on 2026-11-02:

@@ -91,6 +91,9 @@ installs only from the lockfile. Base images are pinned by `@sha256:` digest.
 | **Blender** | **5.2.2 LTS** (supported until July 2028) | `blender-5.2.2-windows-x64.zip` (portable, no installer) | Windows PC (the best machine, same as the processing PC) |
 | **FreeMoCap Blender add-on** | `v2026.04.1041` (AGPL-3.0) | release `.zip`, unpacked next to it | Not installed: `mocap-blender` runs it from the unpacked folder |
 | **MPFB** | `2.0.18` (code GPL-3.0+, MakeHuman base mesh and rigs CC0) | `add-on-mpfb-v2.0.18.zip` from extensions.blender.org | Installed into Blender's **portable** folder (`blender-5.2.2-windows-x64/portable/`), not the Windows profile |
+| **OpenSeeFace** | `v1.20.5` (code and models BSD-2-Clause) | `OpenSeeFace-v1.20.5.zip`, sha256 `c9223f35...`, unpacked in `apps/openseeface/v1.20.5/` | Windows. Face experiment only (`experiments/face-mouth/`) |
+| **Parrot Lipsync** | `1.1.4` (manifest says MIT, repository GPL-3.0; **not settled**) | `parrotLipsync-1.1.4-windows-x64-blender_5.1.0.zip`, sha256 `1f25b279...`, in `apps/parrot/` | Installed into Blender's extensions. Old test only: the faders don't use it |
+| **Mouth Faders** | `0.2.0` (ours, `experiments/face-mouth/mouth_faders/`) | Built and installed by `run_experiment.py` | Installed into Blender's extensions. Face experiment only |
 | Android platform-tools (`adb`) | **?** (pin a release zip) | `platform-tools_r<ver>-<os>.zip` | Only needed outside Docker, e.g. Windows side |
 | `usbipd-win` | **?** | `.msi` | Windows host, to attach USB devices to WSL2. Only UVC webcams (**parked**) needed it: not needed now |
 | Windows Python | **?** (3.12.x) | python.org installer | Windows host. The stream-eval scripts measure from Windows because WSL2 NAT stalls TCP. |
@@ -123,6 +126,7 @@ Python**, which is not ours: **Blender 5.2.2 bundles Python 3.13.13 and numpy
 | MediaPipe pose/hand models | FreeMoCap (baseline) | Bundled inside the `mediapipe` wheel, so they're locked by B. Nothing to download. |
 | YOLO weights (if skellytracker uses them) | FreeMoCap | `downloads/models/` with SHA256, mounted read-only into the container |
 | `face_landmarker.task`, DeepFace weights | Phase 2 (face) | Same as YOLO. Not downloaded now. |
+| Allosaurus `uni2005` | Face experiment (`experiments/face-mouth/`) | Code GPL-3.0; **model's terms not found, settle before production**. Saved in `face/baseline_mouth_faders_2026-11-02/generated/` |
 | ChArUco calibration board | Calibration | **Changed 2026-10-12 to A4** (A0 couldn't be printed): FreeMoCap "5x3 Charuco", 55 mm squares, A4 landscape: `calibration/charuco-5x3-55mm-A4.pdf`. Detects to ~2.5 m from a 1920 px camera, so cameras stay within that of the volume centre. A second board, `calibration/charuco-5x3-55mm-A4-wall-ids7-13.pdf` (same layout, markers 7–13), is for the wall: FreeMoCap ignores it, so it can stay up during calibration takes. The A0 file (200 mm) stays for a bigger volume (`mocap-capture` studio-setup decision 2) |
 
 ---

@@ -141,11 +141,15 @@ construction. These numbers explain the diagnosis, and they don't score quality.
   tested. If reopened, read the EULA's section 6(c) ban on combining Unreal with GPL
   code, and the unread Epic Content License Agreement.
 
-**Files:**
+**Don't lose this result:**
 
-- Add-on, presets, poses, table, data and scripts:
-  `G:\mocap-studio-downloads\face\parrot_test_2026-11-02\`, not in git and not yet
-  in `DEPENDENCIES.md`
+- Code, how to repeat it and every finding: [`experiments/face-mouth/`](../experiments/face-mouth/README.md).
+  Process diagram: [`face-mouth-experiment.drawio`](../docs/diagrams/face-mouth-experiment.drawio).
+- Frozen baseline (recording, character, approved `.blend`, expected results):
+  `G:\mocap-studio-downloads\face\baseline_mouth_faders_2026-11-02\`, not in git and on
+  one drive only.
+- New face work must beat it on the same recording, in Rafael's judgement. Only Rafael
+  moves the reference.
 - To open it: `abrir_faders.bat` in `G:\mocap-studio-downloads\review\2026-11-02\`.
   Only the portable Blender has the add-on.
 
@@ -171,8 +175,8 @@ only, never film material):
 - Character recipe and scripts: `<film-root>\character_work\`
 - Models and asset packs: `G:\mocap-studio-downloads\models\` and `apps\mpfb\`,
   not yet listed in `DEPENDENCIES.md`
-- Experiment code: `scratch\` in Rafael's clone of this repository, not in git;
-  start with `scratch\README.md`
+- Older experiment code: [`experiments/face-history/`](../experiments/face-history/README.md).
+  Its full working copies stay in `scratch\` in Rafael's clone, not in git
 
 ## Index
 
