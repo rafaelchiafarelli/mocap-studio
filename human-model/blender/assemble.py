@@ -20,6 +20,28 @@ body = HumanService.create_human(macro_detail_dict=recipe["macros"])
 body.name = recipe.get("name", "human") + ".skin"
 rig = HumanService.add_builtin_rig(body, "rigify.human")
 rig.name = "HM_rig"
+# MPFB's weights name a few bones of the generated Rigify rig (DEF-forearm.L.001, ...) that the metarig lacks.
+# Merge each into the metarig bone it stands for, or those vertices stay behind when the body bends.
+rig_bones = {b.name for b in rig.data.bones}
+
+
+def metarig_bone(name):
+    name = name.removeprefix("DEF-").replace("_master", "")
+    while name not in rig_bones and name[-4:-3] == "." and name[-3:].isdigit():
+        name = name[:-4]
+    return name if name in rig_bones else None
+
+
+for vg in [g for g in body.vertex_groups if g.name not in rig_bones and g.name.startswith("DEF-")]:
+    target_name = metarig_bone(vg.name)
+    if target_name is None:
+        continue
+    target = body.vertex_groups.get(target_name) or body.vertex_groups.new(name=target_name)
+    for v in body.data.vertices:
+        for g in v.groups:
+            if g.group == vg.index and g.weight > 0:
+                target.add([v.index], g.weight, "ADD")
+    body.vertex_groups.remove(vg)
 asset = lambda rel: os.path.join(LocationService.get_user_data(), *rel.split("/"))
 assets = {}
 for kind, label in (("eyes", "Eyes"), ("teeth", "Teeth"), ("tongue", "Tongue")):
