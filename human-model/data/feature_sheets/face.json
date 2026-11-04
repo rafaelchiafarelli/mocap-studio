@@ -1,0 +1,22 @@
+{
+"nariz_largo": "nose-scale-horiz-incr",
+"nariz_estreito": "nose-scale-horiz-decr",
+"nariz_ponta_acima": "nose-point-up",
+"nariz_ponta_abaixo": "nose-point-down",
+"nariz_longo": "nose-scale-vert-incr",
+"nariz_projetado": "nose-scale-depth-incr",
+"boca_larga": "mouth-scale-horiz-incr",
+"boca_estreita": "mouth-scale-horiz-decr",
+"labio_sup_grosso": "mouth-upperlip-height-incr",
+"labio_inf_grosso": "mouth-lowerlip-height-incr",
+"labios_finos": "mouth-upperlip-height-decr",
+"olho_grande": "l-eye-scale-incr",
+"olho_afastado": "l-eye-trans-out",
+"queixo_proeminente": "chin-prominent-incr",
+"queixo_triangular": "chin-triangle",
+"cara_oval": "head-oval",
+"cara_quadrada": "head-square",
+"testa_alta": "forehead-scale-vert-incr",
+"maca_volume": "l-cheek-volume-incr",
+"orelha_grande": "l-ear-scale-incr"
+}
