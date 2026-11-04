@@ -2,18 +2,28 @@
 
 **Role:** code and tools that build the human model, in this repository for now, not a separate one (Rafael, 2026-11-03). The plan is in `initiatives/human-model/`.
 
-**Entry points:** none yet; `jaw-poc/` runs inside Blender.
+**Entry points:** `build_model.py RECIPE OUT_DIR` from WSL builds one individual; `hm.sh pytest` runs the tests in Docker.
 
-**Inputs → Outputs:** only the proof of concept so far; see `jaw-poc/`.
+**Inputs → Outputs:** a recipe (`data/recipes/`) and the sources on `G:\\mocap-studio-downloads\\models\\` → `<name>.blend` with skin, rig, bones, muscles and their skin fields. The stages are in [human-model.process.md](human-model.process.md).
 
 ## Files
 
-- `jaw-poc/`: the jaw test on Z-Anatomy, with its own `CLAUDE.md`.
+- `build_model.py`: the stages in order.
+- `blender_run.py`: runs a script in Windows Blender from WSL, auto-run off.
+- `hm.sh`, `Dockerfile`, `requirements.in`, `requirements.txt`: the locked environment for `hmcore`.
+- `ATTRIBUTION.md`: the credits a film has to carry.
+- `human-model.process.md`: the stages.
+- `data/`: `recipes/` (a neutral male and female), `gait_walk.json` (mean walking cycles derived from Fukuchi 2018), `muscles.json` (the declared muscle table), `recipes/test_people/` (six neutral test individuals).
+- `hmcore/`, `blender/`, `tools/`, `references/`: see each folder's `CLAUDE.md`.
+- `tests/`: pytest for `hmcore`.
+- `jaw-poc/`: the jaw test on Z-Anatomy, review only, with its own `CLAUDE.md`.
 
 ## Key facts / gotchas
 
-- Nothing is built yet. Each epic's tools get a folder here when that epic starts.
 - Film-neutral: a character's parameters live in the film root.
+- Z-Anatomy enters no output. Its numbers appear only in validation tables (`references/1`).
+- Blender is the Windows build; paths passed to it must be under `/mnt/g` or `\\wsl.localhost`: `blender_run.py:8`.
+- Built models and CT caches are on `G:` (`models/hm-build`, `models/hm-cache`), not in git.
 
 ## Touchpoints
 
