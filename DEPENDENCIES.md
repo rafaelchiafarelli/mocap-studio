@@ -129,6 +129,11 @@ Python**, which is not ours: **Blender 5.2.2 bundles Python 3.13.13 and numpy
 | MediaPipe Face Landmarker | Face experiments | Apache-2.0, in `models/face_landmarker/` |
 | BootsTAPIR | Face experiment, dense tracking (`experiments/face-history/dense_face/`) | Apache-2.0, weights included, in `models/tapir/` |
 | Audio2Face-3D v3.0 | Face experiment (`experiments/face-history/audio2face/`) | NVIDIA Open Model License, read but not yet confirmed by Rafael, in `models/audio2face-3d-v3.0/` |
+| TotalSegmentator CT dataset v2.0.1 labels | `human-model`: bones and statistics | CC BY 4.0, in `models/totalsegmentator-ct-v2.0.1/`, read by byte range from Zenodo 10047292 |
+| BMF Toolkit, commit `e3e781e` | `human-model`: legs and feet | zlib, in `models/bmf-toolkit/` |
+| Rajagopal 2016 model and geometry | `human-model`: forearm, hand, leg muscle paths | MIT on SimTK; files from `opensim-models`, in `models/rajagopal-2016/` |
+| Fukuchi 2018 ASCII data | `human-model`: walking | CC BY 4.0, in `models/fukuchi-2018/` |
+| ANSUR II CSVs | `human-model`: validation only | Public release, in `models/ansur-ii/` |
 | MPFB asset packs | Character tests | CC0, in `apps/mpfb/` |
 | Allosaurus `uni2005` | Face experiment (`experiments/face-mouth/`) | Code GPL-3.0; **model's terms not found, settle before production**. Saved in `face/baseline_mouth_faders_2026-11-02/generated/` |
 | ChArUco calibration board | Calibration | **Changed 2026-10-12 to A4** (A0 couldn't be printed): FreeMoCap "5x3 Charuco", 55 mm squares, A4 landscape: `calibration/charuco-5x3-55mm-A4.pdf`. Detects to ~2.5 m from a 1920 px camera, so cameras stay within that of the volume centre. A second board, `calibration/charuco-5x3-55mm-A4-wall-ids7-13.pdf` (same layout, markers 7–13), is for the wall: FreeMoCap ignores it, so it can stay up during calibration takes. The A0 file (200 mm) stays for a bigger volume (`mocap-capture` studio-setup decision 2) |

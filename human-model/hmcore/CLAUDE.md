@@ -23,10 +23,14 @@
 - `muscle.py`: spindles, volume, landmarks to points, Rajagopal muscles.
 - `softtissue.py`: skin displacement per muscle.
 - `bodyskin.py`: breath and muscle-belly shapes.
+- `activation.py`: shapes or landmarks to muscle activations, with an effort penalty.
+- `tongue.py`: tongue controls from phonemes.
+- `retarget.py`: capture as bone directions, and capture quality measures.
+- `retire.py`: a compact linear basis of the fields.
 
 ## Key facts / gotchas
 
-- A scan isn't centred on x=0, so "medial" and "midline" are always relative to the bone pair: `bonelib.py:30`.
+- A scan isn't centred on x=0, so "medial" and "midline" are always relative to the bone pair: `bonelib.py:33`.
 - CT arms are almost always clipped by the sides of the field of view: `ctbones.py` `touches_scan_edge`, `measures.py` `COMPLETE_MIN`.
 - Lips tear with cotangent weights, so `softtissue.py` uses uniform ones.
 - Bulge is capped and off where no bone is near, or the chin swells: `softtissue.py`, search `NO_BONE`.

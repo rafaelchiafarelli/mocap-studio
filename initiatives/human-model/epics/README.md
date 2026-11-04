@@ -16,7 +16,7 @@ Task files in `references/tasks/`.
 4. `motion-validation` — how each joint should move, with sources
 5. `good-enough-register` — the register format
 
-**Check:** Rafael approves the inventory and the validation sources.
+**Check:** Rafael approves the inventory and the validation sources. *Open: decided on his behalf.*
 
 ## 2. skeleton — bones and joints
 
@@ -28,7 +28,7 @@ Task files in `references/tasks/`.
 6. `motion-check` — ranges against `references/4`, and no bones passing through
    each other
 
-**Check:** a full range of motion without collisions, and walking looks right to Rafael.
+**Check:** a full range of motion without collisions, and walking looks right to Rafael. *Collisions pass, apart from contact at joints. Walking open.*
 
 ## 3. muscles — the actuators
 
@@ -41,7 +41,7 @@ Task files in `references/tasks/`.
 6. `tongue` — own controls, with internal structure to be researched
 7. `trunk-and-limb-muscles`
 
-**Check:** volume stays in a range to be agreed, and nothing tears.
+**Check:** volume stays in a range to be agreed, and nothing tears. *Proposed range ±5%; measured within 0.1%. Open: the range is Rafael's.*
 
 ## 4. skin — what the viewer sees
 
@@ -53,7 +53,7 @@ Task files in `references/tasks/`.
 6. `speed-measure`
 
 **Check, and the plan's biggest bet:** the muscle-driven smile beats the current
-smile, in Rafael's judgement. If it doesn't, stop and rethink before the next epics.
+smile, in Rafael's judgement. If it doesn't, stop and rethink before the next epics. *Open. The next epics went ahead on his instruction to implement everything.*
 
 ## 5. drive — recordings move the model
 
@@ -67,7 +67,7 @@ smile, in Rafael's judgement. If it doesn't, stop and rethink before the next ep
 
 Contracts: new messages or files between applications start in `mocap-contracts`.
 
-**Check:** beats the mouth faders on the same recording, in Rafael's judgement.
+**Check:** beats the mouth faders on the same recording, in Rafael's judgement. *Open. Muscles alone don't, in this session's reading; the hybrid is his call.*
 
 ## 6. morphology — parameters and the female model
 
@@ -78,7 +78,7 @@ Contracts: new messages or files between applications start in `mocap-contracts`
 5. `male-female-differences` — a sourced, measured report on how the two differ
 6. `character-declaration` — the per-character file, as a `mocap-contracts` task
 
-**Check:** three different individuals of each sex work with no manual repair.
+**Check:** three different individuals of each sex work with no manual repair. *All six build, with no unrelated bones colliding and volume held; see bug `human-model/2`.*
 
 ## 7. retirement — keeping only what's needed
 
@@ -86,6 +86,6 @@ Contracts: new messages or files between applications start in `mocap-contracts`
 2. `fit-from-data` — a fitted model, if measured to run well on the RTX 4080
 3. `retire-trial` — one layer, under the rule in `human-model.md`
 
-**Check:** Rafael approves each retirement. Nothing is retired by default.
+**Check:** Rafael approves each retirement. Nothing is retired by default. *Nothing retired.*
 
-An epic only merges up into `epics` once all its tasks are `-done` and the suite is green.
+An epic only merges up into `epics` once all its tasks are `-done` and the suite is green. These epics merged with Rafael's checks open, on his instruction, and stop at the `human-model` branch.

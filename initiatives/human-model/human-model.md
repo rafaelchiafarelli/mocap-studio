@@ -1,9 +1,10 @@
 # human-model — mocap-studio
 
 **Status:** Current priority: the MVP is on hold until this model exists (Rafael,
-2026-11-03). Proposed by him on 2026-11-02. Scope planned, epics listed, only the
-first epic has task files. Nothing built yet. It comes out of the
-anatomy research summarized below.
+2026-11-03). Proposed by him on 2026-11-02. All 7 epics implemented on 2026-11-03, on
+the `human-model` branch, with decisions made on his behalf: see
+[decisions](decisions.md). Every check that needs his judgement is still open, so this
+folder stays and the branch isn't in `dev`.
 
 **Goal:** our own full-body human model, male and female, built in layers from
 bones to skin. Image and audio processing moves the bones, tongue, eyes and head,
@@ -140,7 +141,10 @@ it as enough for now, and it can move.
 
 | Element | What was compared | Verdict (Rafael's words) | Date | What would reopen it |
 |---|---|---|---|---|
-| — | — | No verdicts yet | — | — |
+| Walking | `caminhar_masculino_ossos_e_pele.mp4` | Waiting | — | — |
+| Muscle smile | `sorriso_neutro_arkit_musculo.png`, the current ARKit smile | Waiting | — | — |
+| Face on a recording | `comparacao_faders_hibrido_musculos.mp4`, three variants | Waiting | — | — |
+| Six individuals | `seis_individuos_pele.png`, `seis_individuos_ossos_musculos.png` | Waiting | — | — |
 
 For faces, new work still has to beat the mouth faders on the same recording, in
 Rafael's judgement.
