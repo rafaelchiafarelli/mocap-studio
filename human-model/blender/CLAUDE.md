@@ -27,6 +27,9 @@
 - `dump_take.py`, `key_take.py`, `render_take.py`: read a take's shapes, key a variant, render it.
 - `body_drive.py`: keys capture onto the rig by bone direction.
 - `retire_trial.py`: removes the muscle bodies and measures the skin.
+- `feature_sheet.py`: renders what each morph target does.
+- `macro_sweep.py`: measures the skin per macro slider.
+- `recipe_from_file.py`: reads an MPFB human back into a recipe.
 - `walk.py`: keys the walking cycle and solves the root from the stance foot.
 
 ## Key facts / gotchas
@@ -37,7 +40,7 @@
 - Joint limits are stored as the `hm_limit_deg` bone property, not as Blender constraints: `assemble.py`, search `hm_limit_deg`.
 - Muscles have their own armature: on the main rig, a bone following a skin vertex would be a dependency cycle: `hmmuscles.py:1`.
 - Nothing depends on the muscle bodies: skin moves through shape keys and bones. See `retire_trial.py`.
-- MPFB's Rigify metarig deforms the skin; the generated control rig isn't used. Its `DEF-*` weights have to be merged into metarig bones, or vertices stay behind: `assemble.py:28`.
+- MPFB's Rigify metarig deforms the skin; the generated control rig isn't used. Its `DEF-*` weights have to be merged into metarig bones, or vertices stay behind: `assemble.py:34`.
 
 ## Touchpoints
 

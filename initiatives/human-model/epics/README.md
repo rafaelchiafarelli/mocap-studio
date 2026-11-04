@@ -88,4 +88,14 @@ Contracts: new messages or files between applications start in `mocap-contracts`
 
 **Check:** Rafael approves each retirement. Nothing is retired by default. *Nothing retired.*
 
+## 8. character-controls — changing a character
+
+1. `character-controls-research` — what can change, how, and what follows it
+
+Later tasks come from its gaps, once Rafael has read it.
+
+## 9. muscle-data — real values for the muscles
+
+1. `biomedical-tables` — published values per muscle, to replace declared ones
+
 An epic only merges up into `epics` once all its tasks are `-done` and the suite is green. These epics merged with Rafael's checks open, on his instruction, and reached `dev` at his request.
