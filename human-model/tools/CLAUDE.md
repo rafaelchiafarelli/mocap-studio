@@ -19,6 +19,7 @@
 - `morph_set.py`: writes the test people.
 - `sex_report.py`: the male and female table.
 - `fit_fields.py`: how far the fields compress.
+- `contact_sheet.py`: a labelled grid of renders.
 - `make_gait_table.py`: writes `data/gait_walk.json`.
 - `debug_view.py`: quick point views of a fit, no Blender.
 

@@ -26,6 +26,7 @@
 - `activation.py`: shapes or landmarks to muscle activations, with an effort penalty.
 - `tongue.py`: tongue controls from phonemes.
 - `retarget.py`: capture as bone directions, and capture quality measures.
+- `morph.py`: real sizes to sliders; height so far.
 - `retire.py`: a compact linear basis of the fields.
 
 ## Key facts / gotchas

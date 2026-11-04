@@ -72,3 +72,16 @@ def test_compression_keeps_the_energy_asked():
     F = np.concatenate([a, 2 * a, 3 * a])
     basis, coeff = retire.compress(F, keep_energy=0.999)
     assert basis.shape[0] == 1
+
+
+def test_height_slider_inverts_the_sweep():
+    from hmcore import morph
+    assert morph.height_slider(1.73, "male") == pytest.approx(0.5)
+    assert morph.height_slider(1.591, "female") == pytest.approx(0.5)
+    assert 0.5 < morph.height_slider(1.80, "male") < 0.75
+
+
+def test_height_outside_the_range_is_refused():
+    from hmcore import morph
+    with pytest.raises(ValueError):
+        morph.height_slider(2.6, "male")
