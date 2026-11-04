@@ -18,10 +18,11 @@ A **recipe** is one small file and the whole definition. All its fields are in [
  "assets": {"eyes": "eyes/high-poly/high-poly.mhclo", "teeth": "teeth/teeth_base/teeth_base.mhclo", "tongue": "tongue/tongue01/tongue01.mhclo"}}
 ```
 
-Two ways to write it:
+Three ways to write it:
 
-1. **By hand:** copy `data/recipes/male.json` and edit it.
-2. **By eye:** make a new MPFB human in Blender, use its sliders, then run `blender/recipe_from_file.py`. Reading back a built file gave identical values in both sexes; real interface sliders haven't been exercised.
+1. **By eye, in the editor:** the sidebar tab **Human** in Blender: [character-editor.md](character-editor.md). Start here.
+2. **By hand:** copy `data/recipes/male.json` and edit it.
+3. **By eye, in MPFB's own panel:** make a new MPFB human in Blender, use its sliders, then run `blender/recipe_from_file.py`. Reading back a built file gave identical values in both sexes; real interface sliders haven't been exercised.
 
 Then build, about 4.5 minutes:
 

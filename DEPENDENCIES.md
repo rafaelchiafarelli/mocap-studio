@@ -95,6 +95,7 @@ installs only from the lockfile. Base images are pinned by `@sha256:` digest.
 | **Parrot Lipsync** | `1.1.4` (manifest says MIT, repository GPL-3.0; **not settled**) | `parrotLipsync-1.1.4-windows-x64-blender_5.1.0.zip`, sha256 `1f25b279...`, in `apps/parrot/` | Installed into Blender's extensions. Old test only: the faders don't use it |
 | **Tissue** | `0.3.76` (GPL-3.0+), `add-on-tissue-v0.3.76.zip` in `apps/tissue/`, sha256 `997e9114...` | From extensions.blender.org | Installed into Blender's extensions. Human-model experiment only; recommended against |
 | **Mouth Faders** | `0.2.0` (ours, `experiments/face-mouth/mouth_faders/`) | Built and installed by `run_experiment.py` | Installed into Blender's extensions. Face experiment only |
+| **Human Model Editor** | `0.1.0` (ours, `human-model/hm_editor/`, GPL-3.0-or-later like MPFB, which it calls) | Built and installed by `human-model/install_editor.py`; the zip stays in `apps/hm-editor/` | Installed into Blender's extensions |
 | Android platform-tools (`adb`) | **?** (pin a release zip) | `platform-tools_r<ver>-<os>.zip` | Only needed outside Docker, e.g. Windows side |
 | `usbipd-win` | **?** | `.msi` | Windows host, to attach USB devices to WSL2. Only UVC webcams (**parked**) needed it: not needed now |
 | Windows Python | **?** (3.12.x) | python.org installer | Windows host. The stream-eval scripts measure from Windows because WSL2 NAT stalls TCP. |
