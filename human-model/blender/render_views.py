@@ -30,7 +30,9 @@ for view in views:
         cam = hb.camera_look("cam_side", (4.5, -0.1, 1.0), (0, 0, 0.9), 50)
     elif view == "head":
         bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 1000, 1000
-        cam = hb.camera_look("cam_head", (0.28, -0.75, 1.62), (0, -0.05, 1.59), 50)
+        rig = bpy.data.objects["HM_rig"]
+        nose = rig.data.bones["nose.001"].head_local
+        cam = hb.camera_look("cam_head", (0.14, nose.y - 0.66, nose.z + 0.02), (0, nose.y + 0.09, nose.z + 0.01), 85)
     elif view == "headside":
         bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 1000, 1000
         cam = hb.camera_look("cam_hs", (0.8, -0.1, 1.6), (0, -0.05, 1.59), 50)

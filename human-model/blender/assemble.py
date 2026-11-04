@@ -18,6 +18,12 @@ from bl_ext.user_default.mpfb.services.locationservice import LocationService
 hb.clear_scene()
 body = HumanService.create_human(macro_detail_dict=recipe["macros"])
 body.name = recipe.get("name", "human") + ".skin"
+from bl_ext.user_default.mpfb.services.targetservice import TargetService
+for name, value in recipe.get("targets", {}).items():
+    path = TargetService.target_full_path(name)
+    if not path:
+        raise SystemExit(f"no target {name}")
+    TargetService.load_target(body, path, weight=value, name=name)
 rig = HumanService.add_builtin_rig(body, "rigify.human")
 rig.name = "HM_rig"
 # MPFB's weights name a few bones of the generated Rigify rig (DEF-forearm.L.001, ...) that the metarig lacks.
