@@ -13,12 +13,14 @@
 - `hm.sh`, `Dockerfile`, `requirements.in`, `requirements.txt`: the locked environment for `hmcore`.
 - `ATTRIBUTION.md`: the credits a film has to carry.
 - `human-model.process.md`: the stages.
-- `data/`: `recipes/` (a neutral male and female), `gait_walk.json` (mean walking cycles derived from Fukuchi 2018), `muscles.json` (the declared muscle table), `recipes/test_people/` (six neutral test individuals).
+- `data/`: `recipes/` (a neutral male and female), `gait_walk.json` (mean walking cycles derived from Fukuchi 2018), `muscles.json` (the declared muscle table), `recipes/test_people/` (six neutral test individuals), `macro_sweep.json` (real sizes per macro slider), `feature_sheets/` (what the slider sheets show).
 - `hmcore/`, `blender/`, `tools/`, `references/`: see each folder's `CLAUDE.md`.
 - `tests/`: pytest for `hmcore`.
 - `jaw-poc/`: the jaw test on Z-Anatomy, review only, with its own `CLAUDE.md`.
 
 ## Key facts / gotchas
+
+- To change a character, see `initiatives/human-model/epics/character-controls/`. A recipe holds `macros` and `targets`.
 
 - Film-neutral: a character's parameters live in the film root.
 - Z-Anatomy enters no output. Its numbers appear only in validation tables (`references/1`).
