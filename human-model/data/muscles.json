@@ -1,0 +1,1587 @@
+{
+"face": [
+{
+"name": "zygomaticus_major",
+"origin": {
+"rig": "cheek.T.{s}",
+"t": 0,
+"off": [
+0.002,
+0.004,
+-0.006
+],
+"snap": "cranium"
+},
+"insertion": {
+"rig": "lip.T.{s}.001",
+"t": 1,
+"off": [
+0.006,
+0.002,
+0
+],
+"snap": null
+},
+"radius": 0.0035,
+"contraction": 0.21,
+"patch": 0.015,
+"facs": [
+"AU12"
+],
+"kind": "linear"
+},
+{
+"name": "zygomaticus_minor",
+"origin": {
+"rig": "cheek.T.{s}.001",
+"t": 0,
+"off": [
+0.004,
+0.004,
+0.002
+],
+"snap": "cranium"
+},
+"insertion": {
+"rig": "lip.T.{s}.001",
+"t": 0,
+"off": [
+0.0,
+0,
+0.004
+],
+"snap": null
+},
+"radius": 0.0025,
+"contraction": 0.15,
+"patch": 0.009,
+"facs": [
+"AU13"
+],
+"kind": "linear"
+},
+{
+"name": "levator_labii_superioris",
+"origin": {
+"rig": "lid.B.{s}.002",
+"t": 0,
+"off": [
+0.0,
+0.004,
+-0.01
+],
+"snap": "cranium"
+},
+"insertion": {
+"rig": "lip.T.{s}",
+"t": 1,
+"off": [
+0,
+0,
+0.004
+],
+"snap": null
+},
+"radius": 0.0035,
+"contraction": 0.168,
+"patch": 0.009,
+"facs": [
+"AU10"
+],
+"kind": "linear"
+},
+{
+"name": "levator_labii_alaeque_nasi",
+"origin": {
+"rig": "brow.B.{s}.004",
+"t": 1,
+"off": [
+0.0,
+0.004,
+0.004
+],
+"snap": "cranium"
+},
+"insertion": {
+"rig": "nose.{s}.001",
+"t": 0,
+"off": [
+0.002,
+0,
+-0.002
+],
+"snap": null
+},
+"radius": 0.0022,
+"contraction": 0.15,
+"patch": 0.007,
+"facs": [
+"AU9"
+],
+"kind": "linear"
+},
+{
+"name": "levator_anguli_oris",
+"origin": {
+"rig": "cheek.T.{s}.001",
+"t": 0,
+"off": [
+-0.012,
+0.006,
+-0.012
+],
+"snap": "cranium"
+},
+"insertion": {
+"rig": "lip.T.{s}.001",
+"t": 1,
+"off": [
+0.004,
+0.002,
+0.002
+],
+"snap": null
+},
+"radius": 0.003,
+"contraction": 0.18,
+"patch": 0.01,
+"facs": [
+"AU14"
+],
+"kind": "linear"
+},
+{
+"name": "risorius",
+"origin": {
+"rig": "jaw.{s}.001",
+"t": 0,
+"off": [
+0.0,
+-0.006,
+0.018
+],
+"snap": null
+},
+"insertion": {
+"rig": "lip.T.{s}.001",
+"t": 1,
+"off": [
+0.005,
+0.002,
+0
+],
+"snap": null
+},
+"radius": 0.0015,
+"contraction": 0.132,
+"patch": 0.01,
+"facs": [
+"AU20"
+],
+"kind": "linear"
+},
+{
+"name": "buccinator",
+"origin": {
+"rig": "jaw.{s}.001",
+"t": 0,
+"off": [
+-0.01,
+-0.015,
+0.025
+],
+"snap": "mandible"
+},
+"insertion": {
+"rig": "lip.T.{s}.001",
+"t": 1,
+"off": [
+0.003,
+0.006,
+0
+],
+"snap": null
+},
+"radius": 0.004,
+"contraction": 0.108,
+"patch": 0.012,
+"facs": [
+"AU14"
+],
+"kind": "linear"
+},
+{
+"name": "depressor_anguli_oris",
+"origin": {
+"rig": "chin.{s}",
+"t": 0,
+"off": [
+0.006,
+0.002,
+-0.002
+],
+"snap": "mandible"
+},
+"insertion": {
+"rig": "lip.B.{s}.001",
+"t": 1,
+"off": [
+0.004,
+0.002,
+-0.002
+],
+"snap": null
+},
+"radius": 0.003,
+"contraction": 0.15,
+"patch": 0.01,
+"facs": [
+"AU15"
+],
+"kind": "linear"
+},
+{
+"name": "depressor_labii_inferioris",
+"origin": {
+"rig": "chin.{s}",
+"t": 0,
+"off": [
+-0.006,
+0.004,
+0.002
+],
+"snap": "mandible"
+},
+"insertion": {
+"rig": "lip.B.{s}",
+"t": 1,
+"off": [
+0,
+0,
+-0.004
+],
+"snap": null
+},
+"radius": 0.0028,
+"contraction": 0.15,
+"patch": 0.009,
+"facs": [
+"AU16"
+],
+"kind": "linear"
+},
+{
+"name": "mentalis",
+"origin": {
+"rig": "chin",
+"t": 0,
+"off": [
+0.005,
+0.008,
+0.016
+],
+"snap": "mandible"
+},
+"insertion": {
+"rig": "chin",
+"t": 0,
+"off": [
+0.005,
+0.0,
+0.002
+],
+"snap": null
+},
+"radius": 0.003,
+"contraction": 0.15,
+"patch": 0.009,
+"facs": [
+"AU17"
+],
+"kind": "linear"
+},
+{
+"name": "frontalis_lateral",
+"origin": {
+"rig": "brow.T.{s}.001",
+"t": 0,
+"off": [
+0.0,
+0.03,
+0.075
+],
+"snap": null
+},
+"insertion": {
+"rig": "brow.T.{s}.001",
+"t": 0,
+"off": [
+0,
+0,
+0.002
+],
+"snap": null
+},
+"radius": 0.0015,
+"contraction": 0.16,
+"patch": 0.02,
+"facs": [
+"AU2"
+],
+"kind": "linear"
+},
+{
+"name": "corrugator",
+"origin": {
+"rig": "brow.B.{s}.004",
+"t": 0,
+"off": [
+0.002,
+0.006,
+0.002
+],
+"snap": "cranium"
+},
+"insertion": {
+"rig": "brow.T.{s}.002",
+"t": 0,
+"off": [
+-0.006,
+0,
+0
+],
+"snap": null
+},
+"radius": 0.0018,
+"contraction": 0.18,
+"patch": 0.009,
+"facs": [
+"AU4"
+],
+"kind": "linear"
+},
+{
+"name": "procerus",
+"origin": {
+"rig": "nose",
+"t": 0,
+"off": [
+0.002,
+0.003,
+-0.01
+],
+"snap": "cranium"
+},
+"insertion": {
+"rig": "nose",
+"t": 0,
+"off": [
+0.002,
+0.0,
+0.012
+],
+"snap": null
+},
+"radius": 0.0018,
+"contraction": 0.15,
+"patch": 0.007,
+"facs": [
+"AU4",
+"AU9"
+],
+"kind": "linear"
+},
+{
+"name": "nasalis",
+"origin": {
+"rig": "nose.{s}.001",
+"t": 0,
+"off": [
+0.006,
+0.006,
+0.008
+],
+"snap": "cranium"
+},
+"insertion": {
+"rig": "nose.{s}.001",
+"t": 1,
+"off": [
+0.004,
+0,
+0.004
+],
+"snap": null
+},
+"radius": 0.0015,
+"contraction": 0.12,
+"patch": 0.006,
+"facs": [
+"AU9",
+"AU38"
+],
+"kind": "linear"
+},
+{
+"name": "platysma",
+"origin": {
+"rig": "shoulder.{s}",
+"t": 0.55,
+"off": [
+0,
+-0.02,
+0.0
+],
+"snap": "clavicle_{s}"
+},
+"insertion": {
+"rig": "chin.{s}",
+"t": 0,
+"off": [
+0.012,
+0.004,
+-0.002
+],
+"snap": null
+},
+"radius": 0.0012,
+"contraction": 0.07,
+"patch": 0.018,
+"facs": [
+"AU20",
+"AU21"
+],
+"kind": "linear"
+},
+{
+"name": "frontalis_medial",
+"origin": {
+"rig": "brow.T.{s}.003",
+"t": 0,
+"off": [
+0.0,
+0.03,
+0.075
+],
+"snap": null
+},
+"insertion": {
+"rig": "brow.T.{s}.003",
+"t": 0,
+"off": [
+0,
+0,
+0.002
+],
+"snap": null
+},
+"radius": 0.0015,
+"contraction": 0.16,
+"patch": 0.018,
+"facs": [
+"AU1"
+],
+"kind": "linear"
+}
+],
+"sphincters": [
+{
+"name": "orbicularis_oris_upper",
+"ring": {
+"rig": "lip.T.{s}.001",
+"t": 0,
+"off": [
+0,
+0,
+0.002
+],
+"snap": null
+},
+"centre": {
+"rig": "lip.T.{s}",
+"t": 0,
+"off": [
+0,
+0,
+0
+],
+"snap": null
+},
+"radius": 0.012,
+"contraction": 0.154,
+"facs": [
+"AU18",
+"AU23",
+"AU24"
+],
+"kind": "pucker"
+},
+{
+"name": "orbicularis_oris_lower",
+"ring": {
+"rig": "lip.B.{s}.001",
+"t": 0,
+"off": [
+0,
+0,
+-0.002
+],
+"snap": null
+},
+"centre": {
+"rig": "lip.B.{s}",
+"t": 0,
+"off": [
+0,
+0,
+0
+],
+"snap": null
+},
+"radius": 0.012,
+"contraction": 0.154,
+"facs": [
+"AU18",
+"AU23",
+"AU24"
+],
+"kind": "pucker"
+},
+{
+"name": "orbicularis_oculi_orbital",
+"ring": {
+"rig": "cheek.T.{s}.001",
+"t": 0,
+"off": [
+-0.006,
+0,
+0.008
+],
+"snap": null
+},
+"centre": {
+"rig": "eye.{s}",
+"t": 1,
+"off": [
+0,
+0,
+0
+],
+"snap": null
+},
+"radius": 0.017,
+"contraction": 0.154,
+"facs": [
+"AU6"
+],
+"kind": "sphincter"
+},
+{
+"name": "orbicularis_oculi_upper_lid",
+"ring": {
+"rig": "lid.T.{s}.001",
+"t": 1,
+"off": [
+0,
+0,
+0
+],
+"snap": null
+},
+"centre": {
+"rig": "eye.{s}",
+"t": 1,
+"off": [
+0,
+0,
+-0.004
+],
+"snap": null
+},
+"radius": 0.007,
+"contraction": 0.85,
+"facs": [
+"AU43",
+"AU45"
+],
+"kind": "lid"
+},
+{
+"name": "orbicularis_oculi_lower_lid",
+"ring": {
+"rig": "lid.B.{s}.001",
+"t": 1,
+"off": [
+0,
+0,
+0
+],
+"snap": null
+},
+"centre": {
+"rig": "eye.{s}",
+"t": 1,
+"off": [
+0,
+0,
+-0.004
+],
+"snap": null
+},
+"radius": 0.006,
+"contraction": 0.25,
+"facs": [
+"AU7",
+"AU45"
+],
+"kind": "lid"
+},
+{
+"name": "levator_palpebrae",
+"ring": {
+"rig": "lid.T.{s}.001",
+"t": 1,
+"off": [
+0,
+0,
+0
+],
+"snap": null
+},
+"centre": {
+"rig": "eye.{s}",
+"t": 1,
+"off": [
+0,
+0,
+0.012
+],
+"snap": null
+},
+"radius": 0.007,
+"contraction": 0.45,
+"facs": [
+"AU5"
+],
+"kind": "lid"
+}
+],
+"jaw": [
+{
+"name": "masseter_superficial",
+"origin": {
+"rig": "cheek.T.{s}",
+"t": 0,
+"off": [
+0.002,
+0.012,
+-0.01
+],
+"snap": "cranium"
+},
+"insertion": {
+"rig": "jaw.{s}.001",
+"t": 0,
+"off": [
+-0.004,
+0.01,
+-0.008
+],
+"snap": "mandible"
+},
+"radius": 0.01
+},
+{
+"name": "masseter_deep",
+"origin": {
+"rig": "cheek.T.{s}",
+"t": 0,
+"off": [
+0.0,
+0.022,
+-0.008
+],
+"snap": "cranium"
+},
+"insertion": {
+"rig": "jaw.{s}.001",
+"t": 0,
+"off": [
+-0.006,
+0.004,
+0.016
+],
+"snap": "mandible"
+},
+"radius": 0.0075
+},
+{
+"name": "temporalis",
+"origin": {
+"rig": "temple.{s}",
+"t": 0,
+"off": [
+-0.004,
+0.018,
+0.018
+],
+"snap": "cranium"
+},
+"insertion": {
+"rig": "jaw.{s}",
+"t": 0,
+"off": [
+-0.012,
+-0.012,
+-0.012
+],
+"snap": "mandible"
+},
+"radius": 0.009
+},
+{
+"name": "lateral_pterygoid",
+"origin": {
+"rig": "cheek.T.{s}.001",
+"t": 0,
+"off": [
+-0.02,
+0.038,
+0.0
+],
+"snap": "cranium"
+},
+"insertion": {
+"rig": "jaw.{s}",
+"t": 0,
+"off": [
+-0.014,
+0,
+-0.004
+],
+"snap": "mandible"
+},
+"radius": 0.006
+},
+{
+"name": "medial_pterygoid",
+"origin": {
+"rig": "cheek.T.{s}.001",
+"t": 0,
+"off": [
+-0.024,
+0.034,
+-0.01
+],
+"snap": "cranium"
+},
+"insertion": {
+"rig": "jaw.{s}.001",
+"t": 0,
+"off": [
+-0.01,
+0.01,
+-0.002
+],
+"snap": "mandible"
+},
+"radius": 0.0065
+},
+{
+"name": "digastric_anterior",
+"origin": {
+"rig": "chin",
+"t": 0,
+"off": [
+0.008,
+0.012,
+0.002
+],
+"snap": "mandible"
+},
+"insertion": {
+"rig": "spine.005",
+"t": 0.4,
+"off": [
+0.012,
+-0.024,
+0.004
+],
+"snap": "hyoid"
+},
+"radius": 0.0035
+},
+{
+"name": "digastric_posterior",
+"origin": {
+"rig": "spine.005",
+"t": 0.4,
+"off": [
+0.012,
+-0.024,
+0.004
+],
+"snap": "hyoid"
+},
+"insertion": {
+"rig": "ear.{s}",
+"t": 0,
+"off": [
+-0.022,
+0.012,
+-0.022
+],
+"snap": "cranium"
+},
+"radius": 0.0035
+},
+{
+"name": "mylohyoid",
+"origin": {
+"rig": "jaw.{s}.001",
+"t": 0,
+"off": [
+-0.016,
+-0.02,
+0.004
+],
+"snap": "mandible"
+},
+"insertion": {
+"rig": "spine.005",
+"t": 0.4,
+"off": [
+0.006,
+-0.024,
+0.002
+],
+"snap": "hyoid"
+},
+"radius": 0.003
+},
+{
+"name": "geniohyoid",
+"origin": {
+"rig": "chin",
+"t": 0,
+"off": [
+0.004,
+0.016,
+0.006
+],
+"snap": "mandible"
+},
+"insertion": {
+"rig": "spine.005",
+"t": 0.4,
+"off": [
+0.004,
+-0.024,
+0.0
+],
+"snap": "hyoid"
+},
+"radius": 0.003
+}
+],
+"tongue": [
+{
+"name": "genioglossus",
+"origin": {
+"rig": "chin",
+"t": 0,
+"off": [
+0.004,
+0.018,
+0.012
+],
+"snap": "mandible"
+},
+"insertion": {
+"rig": "tongue.001",
+"t": 0.5,
+"off": [
+0.004,
+0,
+0.002
+],
+"snap": null
+},
+"radius": 0.006
+},
+{
+"name": "hyoglossus",
+"origin": {
+"rig": "spine.005",
+"t": 0.4,
+"off": [
+0.012,
+-0.02,
+0.002
+],
+"snap": "hyoid"
+},
+"insertion": {
+"rig": "tongue.002",
+"t": 0.5,
+"off": [
+0.01,
+0,
+0
+],
+"snap": null
+},
+"radius": 0.004
+},
+{
+"name": "styloglossus",
+"origin": {
+"rig": "ear.{s}",
+"t": 0,
+"off": [
+-0.024,
+0.01,
+-0.018
+],
+"snap": "cranium"
+},
+"insertion": {
+"rig": "tongue.001",
+"t": 0.5,
+"off": [
+0.012,
+0,
+0
+],
+"snap": null
+},
+"radius": 0.003
+},
+{
+"name": "palatoglossus",
+"origin": {
+"rig": "teeth.T",
+"t": 0.9,
+"off": [
+0.012,
+0,
+0.01
+],
+"snap": "cranium"
+},
+"insertion": {
+"rig": "tongue.002",
+"t": 0.6,
+"off": [
+0.01,
+0,
+0
+],
+"snap": null
+},
+"radius": 0.0022
+}
+],
+"trunk": [
+{
+"name": "deltoid_anterior",
+"origin": {
+"rig": "shoulder.{s}",
+"t": 0.6,
+"off": [
+0,
+-0.01,
+0
+],
+"snap": "clavicle_{s}"
+},
+"insertion": {
+"rig": "upper_arm.{s}",
+"t": 0.42,
+"off": [
+0.008,
+-0.002,
+0
+],
+"snap": "humerus_{s}"
+},
+"radius": 0.018
+},
+{
+"name": "deltoid_middle",
+"origin": {
+"rig": "upper_arm.{s}",
+"t": 0.0,
+"off": [
+0.015,
+0.006,
+0.03
+],
+"snap": "scapula_{s}"
+},
+"insertion": {
+"rig": "upper_arm.{s}",
+"t": 0.42,
+"off": [
+0.012,
+0,
+0
+],
+"snap": "humerus_{s}"
+},
+"radius": 0.02
+},
+{
+"name": "deltoid_posterior",
+"origin": {
+"rig": "upper_arm.{s}",
+"t": 0.0,
+"off": [
+-0.02,
+0.04,
+0.018
+],
+"snap": "scapula_{s}"
+},
+"insertion": {
+"rig": "upper_arm.{s}",
+"t": 0.42,
+"off": [
+0.006,
+0.006,
+0
+],
+"snap": "humerus_{s}"
+},
+"radius": 0.017
+},
+{
+"name": "pectoralis_major_clavicular",
+"origin": {
+"rig": "shoulder.{s}",
+"t": 0.3,
+"off": [
+0,
+-0.02,
+-0.01
+],
+"snap": "clavicle_{s}"
+},
+"insertion": {
+"rig": "upper_arm.{s}",
+"t": 0.25,
+"off": [
+0,
+-0.012,
+0
+],
+"snap": "humerus_{s}"
+},
+"radius": 0.012
+},
+{
+"name": "pectoralis_major_sternal",
+"origin": {
+"rig": "spine.003",
+"t": 0.2,
+"off": [
+0.01,
+-0.12,
+0.0
+],
+"snap": "sternum"
+},
+"insertion": {
+"rig": "upper_arm.{s}",
+"t": 0.25,
+"off": [
+0,
+-0.012,
+0
+],
+"snap": "humerus_{s}"
+},
+"radius": 0.018
+},
+{
+"name": "latissimus_dorsi",
+"origin": {
+"rig": "spine.001",
+"t": 0.0,
+"off": [
+0.02,
+0.09,
+0.0
+],
+"snap": "vertebra_L1"
+},
+"insertion": {
+"rig": "upper_arm.{s}",
+"t": 0.22,
+"off": [
+-0.012,
+0.008,
+0
+],
+"snap": "humerus_{s}"
+},
+"radius": 0.018
+},
+{
+"name": "trapezius_upper",
+"origin": {
+"rig": "spine.005",
+"t": 0.0,
+"off": [
+0.01,
+0.03,
+0.01
+],
+"snap": "cranium"
+},
+"insertion": {
+"rig": "shoulder.{s}",
+"t": 0.85,
+"off": [
+0,
+0.01,
+0.01
+],
+"snap": "clavicle_{s}"
+},
+"radius": 0.012
+},
+{
+"name": "trapezius_middle",
+"origin": {
+"rig": "spine.004",
+"t": 0.0,
+"off": [
+0.01,
+0.06,
+0.0
+],
+"snap": "vertebra_T2"
+},
+"insertion": {
+"rig": "shoulder.{s}",
+"t": 0.95,
+"off": [
+0,
+0.02,
+0
+],
+"snap": "scapula_{s}"
+},
+"radius": 0.011
+},
+{
+"name": "trapezius_lower",
+"origin": {
+"rig": "spine.002",
+"t": 0.0,
+"off": [
+0.01,
+0.07,
+0.0
+],
+"snap": "vertebra_T10"
+},
+"insertion": {
+"rig": "shoulder.{s}",
+"t": 0.7,
+"off": [
+0,
+0.04,
+-0.02
+],
+"snap": "scapula_{s}"
+},
+"radius": 0.01
+},
+{
+"name": "rhomboid",
+"origin": {
+"rig": "spine.004",
+"t": 0.0,
+"off": [
+0.015,
+0.07,
+-0.02
+],
+"snap": "vertebra_T3"
+},
+"insertion": {
+"rig": "shoulder.{s}",
+"t": 0.45,
+"off": [
+0,
+0.07,
+-0.06
+],
+"snap": "scapula_{s}"
+},
+"radius": 0.008
+},
+{
+"name": "serratus_anterior",
+"origin": {
+"rig": "shoulder.{s}",
+"t": 0.45,
+"off": [
+0,
+0.07,
+-0.09
+],
+"snap": "scapula_{s}"
+},
+"insertion": {
+"rig": "spine.003",
+"t": 0.0,
+"off": [
+0.12,
+-0.02,
+-0.04
+],
+"snap": "rib_7_{s}"
+},
+"radius": 0.009
+},
+{
+"name": "sternocleidomastoid",
+"origin": {
+"rig": "shoulder.{s}",
+"t": 0.05,
+"off": [
+0.005,
+-0.03,
+0.015
+],
+"snap": "clavicle_{s}"
+},
+"insertion": {
+"rig": "ear.{s}",
+"t": 0,
+"off": [
+-0.008,
+0.015,
+-0.012
+],
+"snap": "cranium"
+},
+"radius": 0.008
+},
+{
+"name": "scalenes",
+"origin": {
+"rig": "spine.005",
+"t": 0.0,
+"off": [
+0.015,
+-0.005,
+0.02
+],
+"snap": "vertebra_C4"
+},
+"insertion": {
+"rig": "shoulder.{s}",
+"t": 0.25,
+"off": [
+0,
+0.0,
+-0.02
+],
+"snap": "rib_1_{s}"
+},
+"radius": 0.006
+},
+{
+"name": "rectus_abdominis",
+"origin": {
+"rig": "spine",
+"t": 0.0,
+"off": [
+0.015,
+-0.09,
+-0.05
+],
+"snap": "hip_{s}"
+},
+"insertion": {
+"rig": "spine.003",
+"t": 0.0,
+"off": [
+0.04,
+-0.12,
+-0.06
+],
+"snap": "costal_cartilages"
+},
+"radius": 0.012
+},
+{
+"name": "external_oblique",
+"origin": {
+"rig": "spine",
+"t": 0.0,
+"off": [
+0.13,
+-0.03,
+0.02
+],
+"snap": "hip_{s}"
+},
+"insertion": {
+"rig": "spine.002",
+"t": 0.3,
+"off": [
+0.12,
+-0.08,
+0.06
+],
+"snap": "rib_8_{s}"
+},
+"radius": 0.012
+},
+{
+"name": "erector_spinae_lumbar",
+"origin": {
+"rig": "spine",
+"t": 0.0,
+"off": [
+0.03,
+0.08,
+-0.01
+],
+"snap": "sacrum"
+},
+"insertion": {
+"rig": "spine.002",
+"t": 0.0,
+"off": [
+0.03,
+0.05,
+0.0
+],
+"snap": "vertebra_T10"
+},
+"radius": 0.016
+},
+{
+"name": "erector_spinae_thoracic",
+"origin": {
+"rig": "spine.002",
+"t": 0.0,
+"off": [
+0.03,
+0.05,
+0.0
+],
+"snap": "vertebra_T10"
+},
+"insertion": {
+"rig": "spine.004",
+"t": 0.0,
+"off": [
+0.025,
+0.06,
+0.0
+],
+"snap": "vertebra_T2"
+},
+"radius": 0.012
+},
+{
+"name": "splenius",
+"origin": {
+"rig": "spine.004",
+"t": 0.0,
+"off": [
+0.012,
+0.06,
+0.0
+],
+"snap": "vertebra_T2"
+},
+"insertion": {
+"rig": "spine.006",
+"t": 0.0,
+"off": [
+0.03,
+0.05,
+0.0
+],
+"snap": "cranium"
+},
+"radius": 0.008
+},
+{
+"name": "biceps_brachii",
+"origin": {
+"rig": "upper_arm.{s}",
+"t": 0.02,
+"off": [
+0.0,
+-0.02,
+0
+],
+"snap": "scapula_{s}"
+},
+"insertion": {
+"rig": "forearm.{s}",
+"t": 0.2,
+"off": [
+0,
+-0.004,
+0
+],
+"snap": "radius_{s}"
+},
+"radius": 0.018
+},
+{
+"name": "triceps_brachii",
+"origin": {
+"rig": "upper_arm.{s}",
+"t": 0.05,
+"off": [
+0,
+0.02,
+-0.02
+],
+"snap": "scapula_{s}"
+},
+"insertion": {
+"rig": "forearm.{s}",
+"t": 0.02,
+"off": [
+0,
+0.012,
+0
+],
+"snap": "ulna_{s}"
+},
+"radius": 0.022
+},
+{
+"name": "brachialis",
+"origin": {
+"rig": "upper_arm.{s}",
+"t": 0.5,
+"off": [
+0,
+-0.005,
+0
+],
+"snap": "humerus_{s}"
+},
+"insertion": {
+"rig": "forearm.{s}",
+"t": 0.1,
+"off": [
+0,
+-0.002,
+0
+],
+"snap": "ulna_{s}"
+},
+"radius": 0.014
+},
+{
+"name": "brachioradialis",
+"origin": {
+"rig": "upper_arm.{s}",
+"t": 0.75,
+"off": [
+0.012,
+0,
+0
+],
+"snap": "humerus_{s}"
+},
+"insertion": {
+"rig": "forearm.{s}",
+"t": 0.92,
+"off": [
+0.008,
+0,
+0
+],
+"snap": "radius_{s}"
+},
+"radius": 0.012
+},
+{
+"name": "forearm_flexors",
+"origin": {
+"rig": "upper_arm.{s}",
+"t": 0.98,
+"off": [
+-0.015,
+0,
+0
+],
+"snap": "humerus_{s}"
+},
+"insertion": {
+"rig": "hand.{s}",
+"t": 0.4,
+"off": [
+0,
+0,
+0
+],
+"snap": "capitate_{s}"
+},
+"radius": 0.018
+},
+{
+"name": "forearm_extensors",
+"origin": {
+"rig": "upper_arm.{s}",
+"t": 0.98,
+"off": [
+0.015,
+0,
+0
+],
+"snap": "humerus_{s}"
+},
+"insertion": {
+"rig": "hand.{s}",
+"t": 0.4,
+"off": [
+0,
+0,
+0
+],
+"snap": "capitate_{s}"
+},
+"radius": 0.016
+},
+{
+"name": "hand_intrinsics",
+"origin": {
+"rig": "hand.{s}",
+"t": 0.5,
+"off": [
+0,
+0,
+0
+],
+"snap": "capitate_{s}"
+},
+"insertion": {
+"rig": "palm.01.{s}",
+"t": 0.9,
+"off": [
+0,
+0,
+0
+],
+"snap": "metacarpal2_{s}"
+},
+"radius": 0.009
+}
+]
+}
