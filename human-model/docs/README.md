@@ -8,7 +8,8 @@ A full-body male and female model built in layers from bones to skin, with no sc
 |---|---|
 | Understand the whole thing in five minutes | The rest of this page |
 | Run it, know every command and parameter | [running.md](running.md) |
-| Change a character's body or face | [character-controls.md](character-controls.md) |
+| **Change a character by hand in Blender** | **[character-editor.md](character-editor.md)** |
+| See every slider and what follows a change | [character-controls.md](character-controls.md) |
 | Understand how one individual gets built | [morphology.md](morphology.md) |
 | Understand the bones, jaw, ribs and walking | [skeleton.md](skeleton.md) |
 | Understand the muscles | [muscles.md](muscles.md) |

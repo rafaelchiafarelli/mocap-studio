@@ -1,0 +1,12 @@
+schema_version = "1.0.0"
+id = "hm_editor"
+version = "0.1.0"
+name = "Human Model Editor"
+tagline = "Change a human's body and face, and rebuild every layer"
+maintainer = "Mocap Studio"
+type = "add-on"
+blender_version_min = "5.2.0"
+license = ["SPDX:GPL-3.0-or-later"]
+
+[permissions]
+files = "Read and write recipes, read built models and build logs"

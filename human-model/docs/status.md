@@ -1,6 +1,6 @@
 # Status
 
-**Declared a good first pass by Rafael on 2026-11-03:** "it is not perfect, but it is good for a first pass." The initiative's plan and task files were removed that day; `git log -- initiatives/human-model` keeps them. The next step is a session that creates the Blender files and handles, so Rafael can test everything by hand.
+**Declared a good first pass by Rafael on 2026-11-03:** "it is not perfect, but it is good for a first pass." The initiative's plan and task files were removed that day; `git log -- initiatives/human-model` keeps them. The first handles exist: the [character editor](character-editor.md), for changing a character and testing it by hand.
 
 ## What works
 
@@ -60,9 +60,7 @@ Removing a layer to gain speed is a different decision and has to be presented a
 
 ## Open work
 
-**For the next session:** Blender files and handles. Start from [running.md](running.md), especially ["What's live and what's baked"](running.md#whats-live-and-whats-baked).
-
-Recommended after that, in order:
+**Next:** Rafael tests the [character editor](character-editor.md) by hand, and what he finds reorders this list. Recommended, in order:
 
 1. **Muscle size as a parameter,** driven by the muscle macros, with bug `human-model/6`.
 2. **Fix the mouth corners on changed faces,** bug `human-model/7`: a face that can't smile blocks every character.
@@ -96,6 +94,7 @@ In `initiatives/bugs/epics/human-model/tasks/`:
 | 5 | The walk jumps at every step |
 | 6 | Muscle thickness doesn't follow the muscle slider |
 | 7 | A smile tears at the mouth's corners on a changed face |
+| 8 | Four of the six test people are below the adult age, so the editor refuses them |
 
 ### Not done, or short of the plan
 

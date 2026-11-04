@@ -114,7 +114,9 @@ This decides how handles have to work.
 | Height, weight, nose, lips, ribs, and so on | **Baked** | Edit the recipe and rebuild. Moving those shape keys in the file moves the skin only, and bones, muscles and fields stay behind |
 | Muscle contraction amounts, ligaments | **Baked** | Edit the data or constants, rebuild from `muscles` or `fields` |
 
-**For a character editor,** the workable loop is: sliders on a plain MPFB human in Blender, for instant feedback; `recipe_from_file.py` to write the recipe; `build_model.py` to rebuild every layer. Reading back a built file gave identical values, but real interface sliders haven't been tried, and it reads only macros and named targets.
+**The character editor** does this loop from a panel: sliders on a plain MPFB human, for instant feedback; save the recipe; rebuild every layer with `build_model.py`. See [character-editor.md](character-editor.md). It reads only macros and named targets, so nothing else done to a human by hand reaches the recipe.
+
+The editor is installed with `python3 human-model/install_editor.py`, with Blender closed.
 
 ## Running a script inside Blender
 
@@ -137,6 +139,7 @@ Runs Windows Blender in the background with auto-run off. Arguments starting wit
 | `speed_measure.py` | Yes, a walk file | `OUT.json` | Frames per second by layer |
 | `retire_trial.py` | Yes, a walk file | `OUT.json` | Removes muscle bodies, measures the skin |
 | `recipe_from_file.py` | Yes | `BODY_OBJECT NAME SEX OUT.json` | Reads a human back into a recipe |
+| `editor_check.py` | Yes, a built model | `RECIPE.json OUT_DIR` | Checks the installed editor without its interface. Needs `install_editor.py` first |
 | `body_drive.py` | Yes | `MOTION.json OUT.blend` | Keys capture onto the rig |
 | `feature_sheet.py` | No | `RECIPE OUT_DIR LIST.json [head\|body]` | Renders what each target does |
 | `macro_sweep.py` | No | `OUT.json` | Real sizes per macro slider |
