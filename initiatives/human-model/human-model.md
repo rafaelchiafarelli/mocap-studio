@@ -3,8 +3,8 @@
 **Status:** Current priority: the MVP is on hold until this model exists (Rafael,
 2026-11-03). Proposed by him on 2026-11-02. All 7 epics implemented on 2026-11-03, on
 the `human-model` branch, with decisions made on his behalf: see
-[decisions](decisions.md). Every check that needs his judgement is still open, so this
-folder stays and the branch isn't in `dev`.
+[decisions](decisions.md). Merged to `dev` the same day at his request. His checks are
+mostly still open, so this folder stays.
 
 **Goal:** our own full-body human model, male and female, built in layers from
 bones to skin. Image and audio processing moves the bones, tongue, eyes and head,
@@ -141,9 +141,10 @@ it as enough for now, and it can move.
 
 | Element | What was compared | Verdict (Rafael's words) | Date | What would reopen it |
 |---|---|---|---|---|
-| Walking | `caminhar_masculino_ossos_e_pele.mp4` | Waiting | — | — |
-| Muscle smile | `sorriso_neutro_arkit_musculo.png`, the current ARKit smile | Waiting | — | — |
-| Face on a recording | `comparacao_faders_hibrido_musculos.mp4`, three variants | Waiting | — | — |
+| Walking | `caminhar_masculino_ossos_e_pele.mp4` | Not enough: "the animation is jumpy... there is some error somewhere that made the model jump" | 2026-11-03 | Fixing bug `human-model/5` |
+| Muscle smile | `sorriso_neutro_arkit_musculo.png`, the current ARKit smile | Neither: the ARKit one is too incisive, "the pure muscle one is too 'biten'... more investigation is required" | 2026-11-03 | The investigation |
+| Face on a recording | `comparacao_faders_hibrido_musculos.mp4`, three variants | "none yet". "Within this sample the pure muscle is clearly the worst". The faders twist the mouth a little more than faders plus muscles, where the actress's mouth twists a little | 2026-11-03 | "something I want to investigate further" |
+| Muscle volume range | ±5%, measured within 0.1% | Yes "for now" | 2026-11-03 | Biomedical tables giving each muscle's values |
 | Six individuals | `seis_individuos_pele.png`, `seis_individuos_ossos_musculos.png` | Waiting | — | — |
 
 For faces, new work still has to beat the mouth faders on the same recording, in

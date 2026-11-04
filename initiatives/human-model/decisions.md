@@ -17,6 +17,19 @@ decision taken on my recommendation, as you asked. This is what to review.
 - **Possibly useful now:** a hybrid, your faders plus muscles adding cheek lift, folds and
   forehead lines. It looks close to the faders. Whether it's better is your call.
 
+## Your answers (2026-11-03)
+
+| # | Question | Your answer | What happened |
+|---|---|---|---|
+| 1 | Hybrid and muscles only against the faders | No verdict yet. Pure muscle is clearly the worst in this sample. The faders twist the mouth a little more than the hybrid. You want to investigate further | In the register |
+| 2 | Muscle smile | Neither: the ARKit one is too incisive and the muscle one too "biten". More investigation | In the register |
+| 3 | Walk | Jumpy, from an error somewhere | Measured and recorded: bug `human-model/5`, not fixed yet |
+| 4 | What's wrong with your body results | Still open | — |
+| 5, 6 | Contract and merge | Merge to `dev`: yes. The contract wasn't answered | Merged. `CharacterBody` still waits on its branch |
+| 7 | Muscle volume range | Yes for now. Biomedical tables might give the values for every muscle | In the register. The tables are a lead, not started |
+
+The table below is the original list of questions.
+
 ## What I need from you
 
 | # | Question | Look at | My recommendation |
