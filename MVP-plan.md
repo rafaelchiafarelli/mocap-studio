@@ -1,7 +1,7 @@
 # MVP plan: one watchable shot
 
 **Status: on hold until the human model exists** (Rafael, 2026-11-03;
-`initiatives/human-model/`). It stopped on step 2, because calibration fails on the
+`human-model/docs/`, a first pass exists since that day). It stopped on step 2, because calibration fails on the
 real tablets. The rules below apply again when it resumes.
 
 **Goal:** a rendered shot of about 10 seconds, at 1080p, of a rigged character

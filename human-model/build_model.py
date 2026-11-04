@@ -13,10 +13,6 @@ def blender(*a):
     subprocess.check_call([sys.executable, os.path.join(HERE, "blender_run.py"), *a], stdout=subprocess.DEVNULL)
 
 
-def rel(p):
-    return os.path.relpath(p, os.path.join(HERE, ".."))
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("recipe")
@@ -24,6 +20,9 @@ def main():
     ap.add_argument("--from", dest="start", default="export", choices=STAGES)
     ap.add_argument("--to", default="assemble", choices=STAGES)
     a = ap.parse_args()
+    out_abs = os.path.abspath(a.out)
+    if not out_abs.startswith(("/mnt/g/", "/tmp/")):
+        sys.exit("OUT_DIR must be under /mnt/g or /tmp: those are the folders hm.sh shares with Docker")
     os.makedirs(a.out, exist_ok=True)
     r = json.load(open(a.recipe))
     name, sex = r["name"], r["sex"]

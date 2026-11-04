@@ -19,4 +19,4 @@
 
 ## Touchpoints
 
-`initiatives/human-model/human-model.md`.
+`../docs/sources-and-validation.md`.

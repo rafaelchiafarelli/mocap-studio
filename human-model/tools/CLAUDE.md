@@ -8,9 +8,10 @@
 
 ## Files
 
+- `fetch_sources.py`: fetches every source to `models/` on G:, keeping what exists (no Docker needed).
 - `pull_ct_sample.py`: fetches the CT sample by byte range (no Docker needed).
 - `ct_stats.py`: per-subject measurements from the sample.
-- `validation_table.py`: the `references/3` tables.
+- `validation_table.py`: the tables in `docs/sources-and-validation.md`.
 - `build_bones.py`: the fitted skeleton of one individual.
 - `spec.py`: adds the jaw table and limits to a skeleton's metadata.
 - `build_muscles.py`, `build_fields.py`: muscle list and skin fields of one individual.

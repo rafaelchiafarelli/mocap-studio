@@ -17,4 +17,4 @@
 
 ## Touchpoints
 
-`initiatives/human-model/epics/references/`.
+[docs/sources-and-validation.md](../docs/sources-and-validation.md).
