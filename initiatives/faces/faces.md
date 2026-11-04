@@ -1,7 +1,7 @@
 # faces — mocap-studio
 
 **Status:** Open problem, recorded 2026-11-02. No epics or tasks; no pipeline chosen.
-[human-model](../human-model/human-model.md) is the path being pursued (Rafael, 2026-11-03),
+[human-model](../../human-model/docs/README.md) is the path being pursued (Rafael, 2026-11-03),
 and it still has to beat the mouth faders.
 
 **Goal:** believable faces.
@@ -14,8 +14,8 @@ on the same recording, in his judgement.
 **Read this before any face, character or planning work.** Believable faces are
 a requirement of this project. **The best tool so far is the mouth faders, below.**
 Rafael says it's much better than he expected, but he's keeping this problem open:
-the realism is in the image, not yet in human mannerisms. His anatomy research led to the proposed
-[human-model](../human-model/human-model.md). No pipeline has been chosen.
+the realism is in the image, not yet in human mannerisms. His anatomy research led to the
+[human-model](../../human-model/docs/README.md). No pipeline has been chosen.
 
 - **Requirement (Rafael):** "I need faces... regardless of what my audience
   really needs." Staging around the face, such as hiding the mouth or using
@@ -177,7 +177,7 @@ Audio2Face:** the tests above are embryonic. Git keeps the plans
 - **`mocap-contracts` already carries a face:** `MocapTakeHeader.face_blendshape_names`,
   `MocapFrame.face_blendshapes` and an optional `emotion`.
 - **Per-character exaggeration must be declared, never inferred by code.** The
-  declaration is planned in `human-model`, epic `morphology`.
+  declaration is on a branch of `mocap-contracts`: see `human-model/docs/status.md`.
 - **When a face method is chosen, it has to enter the pipeline:** audio and sync in P1
   and P2, a new step in P3, a rule in P4 for which source owns each channel, and the
   character's declaration in P5.

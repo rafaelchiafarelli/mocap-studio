@@ -24,7 +24,6 @@ if keys.animation_data:
 for k in keys.key_blocks:
     if not k.name.startswith(("$", "F_")) and k.name != "Basis" and k.name[0].islower():
         k.value = 0.0
-mouth = bpy.data.objects.get("antonio.mouth")
 scene.frame_set(1)
 rig = next(o for o in bpy.data.objects if o.type == "ARMATURE" and o.name.endswith("metarig"))
 if rig.animation_data:

@@ -72,7 +72,7 @@ after cloning.
 | [`DEPENDENCIES.md`](DEPENDENCIES.md) | every external dependency, its pinned version and where it lives |
 | [`docs/diagrams/`](docs/diagrams) | draw.io diagrams: architecture, pipeline, film workflow |
 | [`initiatives/`](initiatives) | this repo's own plan: **the human model (current priority)**, the faces problem, versioning, environment bootstrap, per-take CLI, camera study |
-| [`human-model/`](human-model/CLAUDE.md) | the human model's tools; the plan is in `initiatives/human-model/` |
+| [`human-model/`](human-model/CLAUDE.md) | the human model: first pass done. Read [`human-model/docs/`](human-model/docs/README.md) |
 | [`experiments/`](experiments) | face experiments, kept so results can be repeated; not pipeline code |
 | [`camera-stream-eval/`](camera-stream-eval) | the tool that decides whether an Android device is good enough as a STREAM camera (one command, PASS/WARN/FAIL report) |
 

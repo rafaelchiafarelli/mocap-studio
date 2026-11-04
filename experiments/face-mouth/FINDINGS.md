@@ -122,7 +122,7 @@ and its material support is unconfirmed.
 ## Still open
 
 - **Mannerisms:** Rafael: "o photorealismo está somente na imagem, mas não em todos os
-  trejeitos humanos". Next: [human-model](../../initiatives/human-model/human-model.md).
+  trejeitos humanos". Next: [human-model](../../human-model/docs/README.md).
 - **Emotion in the mouth:** only upper-face tracking and the tracked opening carry performance.
 - **Tongue:** poses only.
 - **A general tool for known words:** this alignment was built for one recording.

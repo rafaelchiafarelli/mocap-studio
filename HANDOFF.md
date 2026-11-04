@@ -17,8 +17,9 @@ image sources can be added later without touching the rest.
   chosen. Read `initiatives/faces/faces.md` before any face, character or planning work.
 - **Body results are also bad** (Rafael, 2026-11-02, no details yet). Ask him before
   planning body work.
-- **The human model is the current priority** (`initiatives/human-model/`, tools in
-  `human-model/`). It still has to beat the mouth faders. Nothing is built yet.
+- **The human model is the current priority; its first pass is done** (Rafael, 2026-11-03;
+  `human-model/docs/`). Next: Blender files and handles to test it by hand. It still has to
+  beat the mouth faders.
 - **The MVP shot (`MVP-plan.md`) is on hold until the human model exists** (Rafael,
   2026-11-03). It stopped on step 2, because calibration fails on the real tablets.
 - **Proposed, nothing built:** `mocap-blender/initiatives/environments/` (sets).

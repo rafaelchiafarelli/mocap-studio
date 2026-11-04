@@ -122,7 +122,7 @@ if jaw:
     bo = jaw["break_o"]
     for i in range(3):
         hb.drive(pb, "location", i, ctrl, "jaw_open", f"max(x-{bo:.4f},0)/{1 - bo:.4f}*{slide[i]:.6f}")
-# The hyoid and larynx follow the jaw, and the head extends a little with it. Both declared, see references/4.
+# The hyoid and larynx follow the jaw, and the head extends a little with it. Both declared.
 pb = rig.pose.bones["hm_hyoid"]
 M = rig.data.bones["hm_hyoid"].matrix_local.to_3x3().inverted()
 follow = M @ Vector((0, -0.006, -0.012))

@@ -37,4 +37,4 @@
 
 ## Touchpoints
 
-`initiatives/faces/` (results), `initiatives/human-model/` (next research), `DEPENDENCIES.md` (apps), and the baseline folder on `G:`.
+`initiatives/faces/` (results), `human-model/docs/` (the model), `DEPENDENCIES.md` (apps), and the baseline folder on `G:`.
