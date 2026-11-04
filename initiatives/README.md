@@ -32,7 +32,7 @@ Rules specific to this repository:
 | Initiative | Status |
 |---|---|
 | [faces](faces/faces.md) | Open — the major open problem, its results and the best tool so far |
-| [human-model](human-model/human-model.md) | **Current priority** — all 7 epics implemented on the `human-model` branch, not merged to `dev`; Rafael's verdicts open. Tools in `human-model/` at the repository root. Decisions: [decisions](human-model/decisions.md) |
+| [human-model](human-model/human-model.md) | **Current priority** — all 7 epics implemented and on `dev`; most of Rafael's verdicts open, with more investigation asked for. Tools in `human-model/` at the repository root. Decisions: [decisions](human-model/decisions.md) |
 | [bugs](bugs/bugs.md) | Backlog |
 | [baseline](baseline/baseline.md) | Planned — not active while the MVP (`MVP-plan.md`) is on hold |
 | [versioning](versioning/versioning.md) | To be planned — one versioning system for the whole workflow |

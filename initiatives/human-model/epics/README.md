@@ -28,7 +28,7 @@ Task files in `references/tasks/`.
 6. `motion-check` — ranges against `references/4`, and no bones passing through
    each other
 
-**Check:** a full range of motion without collisions, and walking looks right to Rafael. *Collisions pass, apart from contact at joints. Walking open.*
+**Check:** a full range of motion without collisions, and walking looks right to Rafael. *Collisions pass, apart from contact at joints. Walking not enough yet: bug `human-model/5`.*
 
 ## 3. muscles — the actuators
 
@@ -41,7 +41,7 @@ Task files in `references/tasks/`.
 6. `tongue` — own controls, with internal structure to be researched
 7. `trunk-and-limb-muscles`
 
-**Check:** volume stays in a range to be agreed, and nothing tears. *Proposed range ±5%; measured within 0.1%. Open: the range is Rafael's.*
+**Check:** volume stays in a range to be agreed, and nothing tears. *Range ±5% for now (Rafael); measured within 0.1%.*
 
 ## 4. skin — what the viewer sees
 
@@ -53,7 +53,7 @@ Task files in `references/tasks/`.
 6. `speed-measure`
 
 **Check, and the plan's biggest bet:** the muscle-driven smile beats the current
-smile, in Rafael's judgement. If it doesn't, stop and rethink before the next epics. *Open. The next epics went ahead on his instruction to implement everything.*
+smile, in Rafael's judgement. If it doesn't, stop and rethink before the next epics. *Neither smile yet; more investigation (Rafael). The next epics went ahead on his instruction to implement everything.*
 
 ## 5. drive — recordings move the model
 
@@ -67,7 +67,7 @@ smile, in Rafael's judgement. If it doesn't, stop and rethink before the next ep
 
 Contracts: new messages or files between applications start in `mocap-contracts`.
 
-**Check:** beats the mouth faders on the same recording, in Rafael's judgement. *Open. Muscles alone don't, in this session's reading; the hybrid is his call.*
+**Check:** beats the mouth faders on the same recording, in Rafael's judgement. *No verdict yet. Pure muscle is clearly the worst in this sample (Rafael); more investigation.*
 
 ## 6. morphology — parameters and the female model
 
@@ -88,4 +88,4 @@ Contracts: new messages or files between applications start in `mocap-contracts`
 
 **Check:** Rafael approves each retirement. Nothing is retired by default. *Nothing retired.*
 
-An epic only merges up into `epics` once all its tasks are `-done` and the suite is green. These epics merged with Rafael's checks open, on his instruction, and stop at the `human-model` branch.
+An epic only merges up into `epics` once all its tasks are `-done` and the suite is green. These epics merged with Rafael's checks open, on his instruction, and reached `dev` at his request.
