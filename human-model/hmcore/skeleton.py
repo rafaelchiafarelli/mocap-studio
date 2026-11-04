@@ -81,17 +81,20 @@ def fit_head(ind, lib):
 
     best = min(np.radians(np.arange(-40, 40.1, 1.0)), key=lambda a: abs(mapping(a)(socket[None])[0, 1] - hinge[1]))
     unshrunk = mapping(best)
-    # A head isn't a box: shrink towards the socket until the cranium stays under the skin.
+    # A head isn't a box: shrink until the cranium stays under the skin. The face stays where it is, or the eyes leave their sockets, so depth shrinks from the front and height from the jaw hinge.
     sample = unshrunk(cr0[:: max(1, len(cr0) // 2500)])
+    front = sample[:, 1].min()
+    mid_x = (sample[:, 0].min() + sample[:, 0].max()) / 2
+
+    def shrunk(p, k):
+        return np.column_stack([(p[:, 0] - mid_x) * k + mid_x, (p[:, 1] - front) * k + front, (p[:, 2] - hinge[2]) * k + hinge[2]])
+
     shrink = 1.0
-    while shrink > 0.8:
-        pts = (sample - hinge) * np.array([shrink, shrink, 1.0]) + hinge
-        pts[:, 2] = (sample[:, 2] - hinge[2]) * shrink + hinge[2]
-        if (fit.winding_number(pts, skin, ind["tris"]) < 0.5).mean() < 0.01:
-            break
+    while shrink > 0.8 and (fit.winding_number(shrunk(sample, shrink), skin, ind["tris"]) < 0.5).mean() >= 0.01:
         shrink -= 0.01
+
     def cranium_map(v):
-        return (unshrunk(v) - hinge) * shrink + hinge
+        return shrunk(unshrunk(v), shrink)
 
     # The jaw in a scan can sit turned; its hinge axis has to run left to right.
     level = fit.rotation_between(c_l - c_r, [1, 0, 0])

@@ -14,6 +14,11 @@
 - `build_bones.py`: the fitted skeleton of one individual.
 - `spec.py`: adds the jaw table and limits to a skeleton's metadata.
 - `build_muscles.py`, `build_fields.py`: muscle list and skin fields of one individual.
+- `solve_take.py`: a take's muscle activations, from shapes and from landmarks.
+- `body_motion.py`: capture to bone directions, and a quality report.
+- `morph_set.py`: writes the test people.
+- `sex_report.py`: the male and female table.
+- `fit_fields.py`: how far the fields compress.
 - `make_gait_table.py`: writes `data/gait_walk.json`.
 - `debug_view.py`: quick point views of a fit, no Blender.
 

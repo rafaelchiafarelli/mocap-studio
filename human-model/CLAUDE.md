@@ -13,7 +13,7 @@
 - `hm.sh`, `Dockerfile`, `requirements.in`, `requirements.txt`: the locked environment for `hmcore`.
 - `ATTRIBUTION.md`: the credits a film has to carry.
 - `human-model.process.md`: the stages.
-- `data/`: `recipes/` (a neutral male and female), `gait_walk.json` (mean walking cycles derived from Fukuchi 2018), `muscles.json` (the declared muscle table).
+- `data/`: `recipes/` (a neutral male and female), `gait_walk.json` (mean walking cycles derived from Fukuchi 2018), `muscles.json` (the declared muscle table), `recipes/test_people/` (six neutral test individuals).
 - `hmcore/`, `blender/`, `tools/`, `references/`: see each folder's `CLAUDE.md`.
 - `tests/`: pytest for `hmcore`.
 - `jaw-poc/`: the jaw test on Z-Anatomy, review only, with its own `CLAUDE.md`.
@@ -22,7 +22,7 @@
 
 - Film-neutral: a character's parameters live in the film root.
 - Z-Anatomy enters no output. Its numbers appear only in validation tables (`references/1`).
-- Blender is the Windows build; paths passed to it must be under `/mnt/g` or `\\wsl.localhost`: `blender_run.py:9`.
+- Blender is the Windows build; paths passed to it must be under `/mnt/g` or `\\wsl.localhost`: `blender_run.py:8`.
 - Built models and CT caches are on `G:` (`models/hm-build`, `models/hm-cache`), not in git.
 
 ## Touchpoints

@@ -24,16 +24,20 @@
 - `binding_compare.py`, `scipy_free_nearest.py`: Surface Deform and Mesh Deform against the direct field.
 - `tissue_experiment.py`: Tissue on a skin patch.
 - `speed_measure.py`: frames per second by layer.
+- `dump_take.py`, `key_take.py`, `render_take.py`: read a take's shapes, key a variant, render it.
+- `body_drive.py`: keys capture onto the rig by bone direction.
+- `retire_trial.py`: removes the muscle bodies and measures the skin.
 - `walk.py`: keys the walking cycle and solves the root from the stance foot.
 
 ## Key facts / gotchas
 
-- MakeHuman's body vertices come first and helpers after, so the first 13,380 indices mean the same on every MPFB character: `export_blend.py:7`.
+- MakeHuman's body vertices come first and helpers after, so the first 13,380 indices mean the same on every MPFB character: `export_blend.py:8`.
 
-- A changed control property reaches its drivers only after `update_tag` and a frame change: `breath_check.py:15`.
+- A changed control property reaches its drivers only after `update_tag` and a frame change: `breath_check.py:12`.
 - Joint limits are stored as the `hm_limit_deg` bone property, not as Blender constraints: `assemble.py`, search `hm_limit_deg`.
 - Muscles have their own armature: on the main rig, a bone following a skin vertex would be a dependency cycle: `hmmuscles.py:1`.
-- MPFB's Rigify metarig deforms the skin; the generated control rig isn't used.
+- Nothing depends on the muscle bodies: skin moves through shape keys and bones. See `retire_trial.py`.
+- MPFB's Rigify metarig deforms the skin; the generated control rig isn't used. Its `DEF-*` weights have to be merged into metarig bones, or vertices stay behind: `assemble.py:28`.
 
 ## Touchpoints
 
