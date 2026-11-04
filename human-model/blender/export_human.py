@@ -11,6 +11,12 @@ from bl_ext.user_default.mpfb.services.humanservice import HumanService
 for o in list(bpy.data.objects):
     bpy.data.objects.remove(o)
 body = HumanService.create_human(macro_detail_dict=recipe["macros"])
+from bl_ext.user_default.mpfb.services.targetservice import TargetService
+for name, value in recipe.get("targets", {}).items():
+    path = TargetService.target_full_path(name)
+    if not path:
+        raise SystemExit(f"no target {name}")
+    TargetService.load_target(body, path, weight=value, name=name)
 rig = HumanService.add_builtin_rig(body, "rigify.human")
 dg = bpy.context.evaluated_depsgraph_get()
 mesh = body.evaluated_get(dg).to_mesh()
