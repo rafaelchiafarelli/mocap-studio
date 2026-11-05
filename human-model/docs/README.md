@@ -13,6 +13,7 @@ A full-body male and female model built in layers from bones to skin, with no sc
 | Understand how one individual gets built | [morphology.md](morphology.md) |
 | Understand the bones, jaw, ribs and walking | [skeleton.md](skeleton.md) |
 | Understand the muscles | [muscles.md](muscles.md) |
+| See what a simulated muscle can do (experiment) | [muscle-physics.md](muscle-physics.md) |
 | Understand how the skin moves | [skin.md](skin.md) |
 | Connect recordings to the model | [drive.md](drive.md) |
 | See what works, what doesn't, what's next | [status.md](status.md) |
