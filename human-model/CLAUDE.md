@@ -14,7 +14,7 @@
 - `hm.sh`, `Dockerfile`, `requirements.in`, `requirements.txt`: the locked environment for `hmcore`.
 - `ATTRIBUTION.md`: the credits a film has to carry.
 - `human-model.process.md`: the stages.
-- `docs/`: written to be read: `README.md`, `running.md`, `character-editor.md`, `character-controls.md`, `morphology.md`, `skeleton.md`, `muscles.md`, `skin.md`, `drive.md`, `status.md`, `decisions.md`, `sources-and-validation.md`.
+- `docs/`: written to be read: `README.md`, `running.md`, `character-editor.md`, `character-controls.md`, `morphology.md`, `skeleton.md`, `muscles.md`, `skin.md`, `drive.md`, `muscle-physics.md`, `status.md`, `decisions.md`, `sources-and-validation.md`.
 - `data/`: `recipes/` (a neutral male and female), `gait_walk.json` (mean walking cycles derived from Fukuchi 2018), `muscles.json` (the declared muscle table), `recipes/test_people/` (six neutral test individuals), `macro_sweep.json` (real sizes per macro slider), `measure_sweep.json` (how far each slider moves each tape measure), `feature_sheets/` (what the slider sheets show).
 - `hmcore/`, `blender/`, `tools/`, `references/`, `hm_editor/`: see each folder's `CLAUDE.md`.
 - `tests/`: pytest for `hmcore`.

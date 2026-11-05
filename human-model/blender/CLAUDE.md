@@ -36,6 +36,9 @@
 - `measure_sweep.py`: how far each slider moves each tape measure.
 - `walk_clearance.py`: skin against bones while walking.
 - `walk.py`: keys the walking cycle and solves the root from the stance foot.
+- `muscle_sphere.py`: a liquid-filled sphere lifting a box, on our own solver: [docs/muscle-physics.md](../docs/muscle-physics.md).
+- `muscle_sphere_cloth.py`: the same on Blender's Cloth, kept as the record of its limits. `muscle_sphere.py` imports its mesh helpers.
+- `muscle_render.py`: renders either one to PNGs.
 
 ## Key facts / gotchas
 
