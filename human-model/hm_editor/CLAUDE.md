@@ -4,7 +4,7 @@
 
 **Entry points:** `../install_editor.py` packs and installs it; `register` in `__init__.py`.
 
-**Inputs → Outputs:** MPFB's `data/targets/target.json`, a recipe or a built `.blend`, slider moves → a recipe `.json`; a build through `build_model.py`.
+**Inputs → Outputs:** MPFB's `data/targets/target.json`, a recipe or a built `.blend`, slider moves and typed measures → a recipe `.json`; a build through `build_model.py`.
 
 ## Files
 
@@ -34,7 +34,7 @@
 - Joint cubes are helpers, which the evaluated mesh has masked away, so the tape mixes positions from the shape keys: `human.all_verts`. A body without rig also has no breast or bone vertex groups, so the level under the breast comes from fixed vertices: `tape.UNDER_BREAST`.
 - The tape's levels must change smoothly with the shape, or the solver chases jumps. Looking for the breast's crease jumped by centimetres, so it was dropped: `tape._underbust`.
 - The hip is the fullest seat, not the largest girth, because the rest pose's spread legs stretch a tape lower down: `tape.landmarks`.
-- `ACROMION_SHARE`, `NECK_BASE_RATIO`, `NECK_RATIO` and `UNDER_BREAST_DROP` are declared, set by eye on the tape's lines and, for the shoulder, by ANSUR II's breadth for the neutral bodies' height.
+- `ACROMION_SHARE`, `NECK_BASE_RATIO`, `NECK_RATIO` and `UNDER_BREAST_DROP` are declared, set by eye on the neutral woman's tape lines and, for the shoulder, by ANSUR II's breadth for the neutral bodies' height.
 - The panel's Portuguese labels are on purpose, in `tape.MEASURES`: they're the trade's terms, as Rafael uses them.
 - Typed measures are held only when typed or on **Reaplicar medidas**. Moving another slider doesn't re-fit, so a slider can still be dragged freely.
 

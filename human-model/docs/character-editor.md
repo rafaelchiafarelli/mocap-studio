@@ -49,9 +49,9 @@ The panel **Medidas de modelagem (cm)** shows the body as a pattern maker would 
 
 **Read only: Altura da cava and Ombro.** No MPFB slider moves them directly. The most any tested slider moved the armhole's depth was 1.2 cm, as a side effect (`data/measure_sweep.json`).
 
-**Where the sliders end.** Typing beyond a slider's range stops at the limit, and the panel says how far it got, as "Punho 16.9 (pediu 40.0)". Some have little range: bust height moves about ±1 cm on a woman and nothing measurable on a man.
+**Where the sliders end.** Typing beyond a slider's range stops at the limit, and the panel says how far it got, as "Punho 16.9 (pediu 40.0)". Some have little range: bust height moves about 1 cm per half slider on a woman and less on a man.
 
-**How far to trust the numbers.** The girths and lengths are true measures of this mesh, and they were checked by eye on eight bodies. They aren't calibrated against people measured in a pattern room, and the rest pose has arms and legs apart, which changes what a tape would read at the armpit and hips. Typed measures change the skin only as far as the table below says: a bigger bust is still skin only.
+**How far to trust the numbers.** The girths and lengths are true measures of this mesh. Their numbers were compared across eight bodies, but the lines were looked at only on the neutral woman. They aren't calibrated against people measured in a pattern room, and the rest pose has arms and legs apart, which changes what a tape would read at the armpit and hips. Typed measures change the skin only as far as the table below says: a bigger bust is still skin only.
 
 The typed values are saved in the recipe as `measures_cm`. The build ignores them, because the sliders already hold the shape.
 
