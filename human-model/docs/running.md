@@ -66,6 +66,7 @@ The only input you need to write. Full example in [character-controls.md](charac
 | `macros.race` | Yes | `african`, `asian`, `caucasian`, summing to 1 | MPFB's ancestry blend |
 | `targets` | No | `{"target-name": 0 to 1}` | Any of MPFB's morph targets. Stay around 0.8 or below |
 | `assets` | No | `eyes`, `teeth`, `tongue` paths | MPFB assets. **Skin material, hair and clothes aren't applied yet** |
+| `measures_cm` | No | `{"bust": 92.0}` | Measures typed in the editor, which it holds. The build doesn't read them |
 
 `human-model/data/recipes/` has a neutral `male.json` and `female.json`, and six extremes in `test_people/`.
 
@@ -139,6 +140,9 @@ Runs Windows Blender in the background with auto-run off. Arguments starting wit
 | `speed_measure.py` | Yes, a walk file | `OUT.json` | Frames per second by layer |
 | `retire_trial.py` | Yes, a walk file | `OUT.json` | Removes muscle bodies, measures the skin |
 | `recipe_from_file.py` | Yes | `BODY_OBJECT NAME SEX OUT.json` | Reads a human back into a recipe |
+| `walk_clearance.py` | Yes, a walk file | `OUT.json [STEP]` | Skin against bones while walking, and how much the nipple moves in the rib cage's frame |
+| `tape_check.py` | No | `OUT.json STILLS_DIR\|- RECIPE.json ...` | Measures people with the editor's tape; a folder also gets stills with its lines |
+| `measure_sweep.py` | No | `OUT.json` | How far each slider moves each measure. Needs `install_editor.py` first |
 | `editor_check.py` | Yes, a built model | `RECIPE.json OUT_DIR` | Checks the installed editor without its interface. Needs `install_editor.py` first |
 | `body_drive.py` | Yes | `MOTION.json OUT.blend` | Keys capture onto the rig |
 | `feature_sheet.py` | No | `RECIPE OUT_DIR LIST.json [head\|body]` | Renders what each target does |

@@ -1,0 +1,875 @@
+{
+ "female": {
+  "base_cm": {
+   "bust": 83.9,
+   "underbust": 67.9,
+   "waist": 65.2,
+   "hip": 90.6,
+   "neck": 30.7,
+   "upper_arm": 24.8,
+   "wrist": 12.1,
+   "thigh": 53.1,
+   "knee": 33.5,
+   "calf": 34.0,
+   "ankle": 17.8,
+   "height": 159.1,
+   "armhole_depth": 13.7,
+   "back_length": 31.1,
+   "bust_height": 25.3,
+   "bust_span": 20.7,
+   "shoulder_width": 36.2,
+   "shoulder": 12.8,
+   "hip_height": 20.5,
+   "rise": 29.2,
+   "inseam": 73.9,
+   "knee_height": 44.6,
+   "arm_length": 45.6
+  },
+  "sliders": {
+   "measure-frontchest-dist-decr-incr": {
+    "0.5": {
+     "bust": 1.0,
+     "bust_span": 0.6
+    },
+    "-0.5": {
+     "bust": -1.3,
+     "underbust": -0.7,
+     "bust_span": -1.5
+    }
+   },
+   "measure-napetowaist-dist-decr-incr": {
+    "0.5": {
+     "hip": 0.3,
+     "thigh": -0.4,
+     "height": 3.9,
+     "armhole_depth": 0.5,
+     "back_length": 3.6,
+     "bust_height": 1.5,
+     "hip_height": 0.5,
+     "rise": 0.6,
+     "inseam": -0.3
+    },
+    "-0.5": {
+     "height": -2.3,
+     "armhole_depth": -0.7,
+     "back_length": -1.7,
+     "bust_height": -0.9,
+     "hip_height": -0.5,
+     "rise": -0.5
+    }
+   },
+   "measure-shoulder-dist-decr-incr": {
+    "0.5": {
+     "bust": 0.5,
+     "shoulder_width": 2.5,
+     "shoulder": 1.1
+    },
+    "-0.5": {
+     "bust": -0.6,
+     "shoulder_width": -1.4,
+     "shoulder": -0.5
+    }
+   },
+   "measure-underbust-circ-decr-incr": {
+    "0.5": {
+     "bust": 5.9,
+     "underbust": 6.6,
+     "waist": 3.8,
+     "back_length": 1.0,
+     "bust_height": 0.7,
+     "bust_span": 1.2,
+     "hip_height": -1.0,
+     "rise": -1.0
+    },
+    "-0.5": {
+     "bust": -1.9,
+     "underbust": -2.2,
+     "waist": -1.4,
+     "bust_height": -0.2,
+     "bust_span": -0.4
+    }
+   },
+   "measure-hips-circ-decr-incr": {
+    "0.5": {
+     "hip": 8.9,
+     "thigh": 3.1
+    },
+    "-0.5": {
+     "hip": -4.4,
+     "thigh": -1.6
+    }
+   },
+   "measure-waist-circ-decr-incr": {
+    "0.5": {
+     "underbust": 2.8,
+     "waist": 4.7
+    },
+    "-0.5": {
+     "underbust": -2.8,
+     "waist": -4.7,
+     "back_length": 1.0,
+     "hip_height": -1.0,
+     "rise": -1.0
+    }
+   },
+   "measure-waisttohip-dist-decr-incr": {
+    "0.5": {
+     "hip": -0.3,
+     "thigh": -0.4,
+     "height": 3.8,
+     "hip_height": 3.5,
+     "rise": 4.1,
+     "inseam": -0.3
+    },
+    "-0.5": {
+     "height": -2.4,
+     "back_length": 0.3,
+     "hip_height": -2.0,
+     "rise": -2.5
+    }
+   },
+   "measure-bust-circ-decr-incr": {
+    "0.5": {
+     "bust": 8.5,
+     "underbust": 5.2,
+     "waist": 0.6,
+     "armhole_depth": 0.5,
+     "back_length": 1.0,
+     "bust_height": 0.5,
+     "bust_span": 0.7,
+     "hip_height": -1.0,
+     "rise": -1.0
+    },
+    "-0.5": {
+     "bust": -7.3,
+     "underbust": -2.1,
+     "bust_height": -0.7,
+     "bust_span": -1.4
+    }
+   },
+   "measure-lowerarm-length-decr-incr": {
+    "0.5": {
+     "arm_length": 3.2
+    },
+    "-0.5": {
+     "arm_length": -2.2
+    }
+   },
+   "measure-upperarm-circ-decr-incr": {
+    "0.5": {
+     "upper_arm": 3.8
+    },
+    "-0.5": {
+     "upper_arm": -3.8
+    }
+   },
+   "measure-upperarm-length-decr-incr": {
+    "0.5": {
+     "arm_length": 3.4
+    },
+    "-0.5": {
+     "arm_length": -2.3
+    }
+   },
+   "measure-wrist-circ-decr-incr": {
+    "0.5": {
+     "wrist": 2.7
+    },
+    "-0.5": {
+     "wrist": -1.2
+    }
+   },
+   "measure-calf-circ-decr-incr": {
+    "0.5": {
+     "knee": 0.6,
+     "calf": 5.0
+    },
+    "-0.5": {
+     "knee": -0.5,
+     "calf": -4.8
+    }
+   },
+   "measure-knee-circ-decr-incr": {
+    "0.5": {
+     "knee": 3.5,
+     "calf": 1.2
+    },
+    "-0.5": {
+     "knee": -2.0,
+     "calf": -0.4
+    }
+   },
+   "measure-lowerleg-height-decr-incr": {
+    "0.5": {
+     "hip": 0.3,
+     "thigh": -0.4,
+     "height": 4.1,
+     "back_length": 0.2,
+     "inseam": 3.8,
+     "knee_height": 4.1
+    },
+    "-0.5": {
+     "hip": 0.2,
+     "height": -3.0,
+     "back_length": 0.2,
+     "inseam": -3.1,
+     "knee_height": -3.0
+    }
+   },
+   "measure-thigh-circ-decr-incr": {
+    "0.5": {
+     "thigh": 2.5
+    },
+    "-0.5": {
+     "thigh": -1.6
+    }
+   },
+   "measure-upperleg-height-decr-incr": {
+    "0.5": {
+     "height": 5.2,
+     "inseam": 4.9
+    },
+    "-0.5": {
+     "hip": -0.3,
+     "thigh": -0.5,
+     "height": -3.8,
+     "back_length": 0.3,
+     "hip_height": -0.5,
+     "inseam": -3.9
+    }
+   },
+   "measure-ankle-circ-decr-incr": {
+    "0.5": {
+     "ankle": 2.9
+    },
+    "-0.5": {
+     "ankle": -2.9
+    }
+   },
+   "measure-neck-circ-decr-incr": {
+    "0.5": {
+     "neck": 2.6,
+     "armhole_depth": -0.8,
+     "back_length": -0.8,
+     "shoulder": -1.0
+    },
+    "-0.5": {
+     "neck": -1.9,
+     "bust_height": 0.3,
+     "shoulder": 0.8
+    }
+   },
+   "measure-neck-height-decr-incr": {
+    "0.5": {
+     "neck": -0.6,
+     "thigh": -0.4,
+     "height": 1.5,
+     "back_length": 0.4,
+     "shoulder": 0.7,
+     "hip_height": -0.5,
+     "inseam": -0.4
+    },
+    "-0.5": {
+     "neck": 1.6,
+     "height": -1.5
+    }
+   },
+   "torso-scale-vert-decr-incr": {
+    "0.5": {
+     "underbust": 0.7,
+     "thigh": -0.3,
+     "height": 5.1,
+     "back_length": 4.3,
+     "bust_height": 0.3,
+     "hip_height": 1.0,
+     "rise": 1.1,
+     "inseam": -0.2
+    },
+    "-0.5": {
+     "hip": 0.2,
+     "thigh": -0.5,
+     "height": -2.2,
+     "armhole_depth": -0.7,
+     "back_length": -2.0,
+     "bust_height": -0.9,
+     "rise": 0.5,
+     "inseam": -0.6
+    }
+   },
+   "hip-scale-vert-decr-incr": {
+    "0.5": {
+     "thigh": -0.4,
+     "back_length": -1.0,
+     "hip_height": 0.5,
+     "rise": 2.5,
+     "inseam": -1.5
+    },
+    "-0.5": {
+     "back_length": 1.0,
+     "hip_height": -0.5,
+     "rise": -2.0,
+     "inseam": 1.0
+    }
+   },
+   "hip-waist-down-up": {
+    "0.5": {
+     "underbust": -0.5,
+     "back_length": -1.5,
+     "hip_height": 1.5,
+     "rise": 1.5
+    },
+    "-0.5": {
+     "underbust": 0.3,
+     "hip": -0.7,
+     "back_length": 3.0,
+     "hip_height": -2.5,
+     "rise": -3.0
+    }
+   },
+   "breast-dist-decr-incr": {
+    "0.5": {
+     "bust": 1.2,
+     "bust_span": 1.9
+    },
+    "-0.5": {
+     "bust": -1.9,
+     "bust_span": -3.3
+    }
+   },
+   "breast-trans-down-up": {
+    "0.5": {
+     "bust": 1.0,
+     "underbust": 0.6,
+     "bust_height": -0.7
+    },
+    "-0.5": {
+     "bust": -2.0,
+     "underbust": -0.8,
+     "waist": 0.3,
+     "back_length": 1.0,
+     "bust_height": 1.3,
+     "hip_height": -1.0,
+     "rise": -1.0
+    }
+   },
+   "breast-volume-vert-down-up": {
+    "0.5": {
+     "bust": 0.4,
+     "bust_height": -0.2
+    },
+    "-0.5": {
+     "bust": -0.6,
+     "underbust": -0.3,
+     "bust_height": 0.3
+    }
+   },
+   "torso-scale-depth-decr-incr": {
+    "0.5": {
+     "bust": 4.9,
+     "underbust": 3.7,
+     "waist": 3.1,
+     "neck": 0.8,
+     "upper_arm": 0.3,
+     "back_length": 1.0,
+     "bust_height": 1.4,
+     "shoulder": 0.7,
+     "hip_height": -1.0,
+     "rise": -1.0
+    },
+    "-0.5": {
+     "bust": -2.6,
+     "underbust": -2.0,
+     "waist": -1.7,
+     "neck": -1.2,
+     "bust_height": -0.8
+    }
+   },
+   "torso-scale-horiz-decr-incr": {
+    "0.5": {
+     "bust": 4.5,
+     "underbust": 4.2,
+     "waist": 2.1,
+     "neck": 0.8,
+     "back_length": 1.0,
+     "bust_height": 0.3,
+     "bust_span": 1.6,
+     "shoulder_width": 3.4,
+     "shoulder": 1.8,
+     "hip_height": -1.0,
+     "rise": -1.0
+    },
+    "-0.5": {
+     "bust": -4.4,
+     "underbust": -4.2,
+     "waist": -4.2,
+     "back_length": 0.5,
+     "bust_span": -1.6,
+     "shoulder_width": -3.4,
+     "shoulder": -0.9,
+     "hip_height": -0.5,
+     "rise": -0.5
+    }
+   },
+   "torso-vshape-decr-incr": {
+    "0.5": {
+     "bust": 2.1,
+     "underbust": 0.5,
+     "waist": -0.9,
+     "back_length": 0.5,
+     "shoulder_width": 2.7,
+     "shoulder": 1.0,
+     "hip_height": -0.5,
+     "rise": -0.5
+    },
+    "-0.5": {
+     "bust": -1.9,
+     "underbust": -0.5,
+     "waist": 1.0,
+     "shoulder_width": -2.7,
+     "shoulder": -1.0
+    }
+   },
+   "upperarm-scale-vert-decr-incr": {
+    "0.5": {
+     "upper_arm": 1.6
+    },
+    "-0.5": {
+     "upper_arm": -1.7
+    }
+   }
+  }
+ },
+ "male": {
+  "base_cm": {
+   "bust": 93.9,
+   "underbust": 85.6,
+   "waist": 74.6,
+   "hip": 91.7,
+   "neck": 40.6,
+   "upper_arm": 29.3,
+   "wrist": 14.6,
+   "thigh": 55.0,
+   "knee": 35.5,
+   "calf": 37.0,
+   "ankle": 21.9,
+   "height": 173.0,
+   "armhole_depth": 16.8,
+   "back_length": 39.4,
+   "bust_height": 25.2,
+   "bust_span": 19.8,
+   "shoulder_width": 43.2,
+   "shoulder": 14.3,
+   "hip_height": 17.5,
+   "rise": 25.0,
+   "inseam": 83.0,
+   "knee_height": 50.5,
+   "arm_length": 53.0
+  },
+  "sliders": {
+   "measure-frontchest-dist-decr-incr": {
+    "0.5": {
+     "bust": 1.0,
+     "bust_span": 0.6
+    },
+    "-0.5": {
+     "bust": -1.0,
+     "underbust": -1.0,
+     "bust_span": -1.5
+    }
+   },
+   "measure-napetowaist-dist-decr-incr": {
+    "0.5": {
+     "bust": -0.3,
+     "height": 3.9,
+     "back_length": 3.6,
+     "bust_height": 1.7,
+     "hip_height": 0.5
+    },
+    "-0.5": {
+     "bust": 0.2,
+     "height": -2.3,
+     "armhole_depth": -0.7,
+     "back_length": -2.2,
+     "bust_height": -1.0
+    }
+   },
+   "measure-shoulder-dist-decr-incr": {
+    "0.5": {
+     "bust": 1.7,
+     "shoulder_width": 2.5,
+     "shoulder": 1.1
+    },
+    "-0.5": {
+     "bust": -1.1,
+     "shoulder_width": -1.4,
+     "shoulder": -0.5
+    }
+   },
+   "measure-underbust-circ-decr-incr": {
+    "0.5": {
+     "bust": 5.4,
+     "underbust": 7.0,
+     "waist": 2.2,
+     "back_length": 2.0,
+     "bust_height": 0.5,
+     "bust_span": 1.2,
+     "hip_height": -2.0,
+     "rise": -2.0
+    },
+    "-0.5": {
+     "bust": -1.7,
+     "underbust": -2.3,
+     "waist": -0.9,
+     "back_length": -0.5,
+     "bust_span": -0.4,
+     "hip_height": 0.5,
+     "rise": 0.5
+    }
+   },
+   "measure-hips-circ-decr-incr": {
+    "0.5": {
+     "hip": 9.3,
+     "thigh": 2.1
+    },
+    "-0.5": {
+     "hip": -4.7,
+     "thigh": -1.0
+    }
+   },
+   "measure-waist-circ-decr-incr": {
+    "0.5": {
+     "underbust": 1.9,
+     "waist": 5.3,
+     "back_length": 0.5,
+     "hip_height": -0.5,
+     "rise": -0.5
+    },
+    "-0.5": {
+     "underbust": -1.9,
+     "waist": -5.2
+    }
+   },
+   "measure-waisttohip-dist-decr-incr": {
+    "0.5": {
+     "height": 3.8,
+     "hip_height": 4.0,
+     "rise": 3.6
+    },
+    "-0.5": {
+     "height": -2.4,
+     "back_length": 0.3,
+     "hip_height": -2.0,
+     "rise": -2.5
+    }
+   },
+   "measure-bust-circ-decr-incr": {
+    "0.5": {
+     "bust": 8.6,
+     "underbust": 7.0,
+     "armhole_depth": 0.5,
+     "back_length": 0.5,
+     "bust_height": 0.3,
+     "bust_span": 0.7,
+     "hip_height": -0.5,
+     "rise": -0.5
+    },
+    "-0.5": {
+     "bust": -7.7,
+     "underbust": -4.0,
+     "bust_height": -0.5,
+     "bust_span": -1.4
+    }
+   },
+   "measure-lowerarm-length-decr-incr": {
+    "0.5": {
+     "arm_length": 3.2
+    },
+    "-0.5": {
+     "arm_length": -2.3
+    }
+   },
+   "measure-upperarm-circ-decr-incr": {
+    "0.5": {
+     "upper_arm": 4.6
+    },
+    "-0.5": {
+     "upper_arm": -4.6
+    }
+   },
+   "measure-upperarm-length-decr-incr": {
+    "0.5": {
+     "arm_length": 3.4
+    },
+    "-0.5": {
+     "shoulder_width": -1.8,
+     "shoulder": -1.1,
+     "arm_length": -1.0
+    }
+   },
+   "measure-wrist-circ-decr-incr": {
+    "0.5": {
+     "wrist": 2.8
+    },
+    "-0.5": {
+     "wrist": -1.2
+    }
+   },
+   "measure-calf-circ-decr-incr": {
+    "0.5": {
+     "knee": 0.9,
+     "calf": 4.9
+    },
+    "-0.5": {
+     "knee": -0.9,
+     "calf": -4.8
+    }
+   },
+   "measure-knee-circ-decr-incr": {
+    "0.5": {
+     "knee": 3.1,
+     "calf": 1.2
+    },
+    "-0.5": {
+     "knee": -1.8,
+     "calf": -0.5
+    }
+   },
+   "measure-lowerleg-height-decr-incr": {
+    "0.5": {
+     "height": 4.1,
+     "back_length": 0.2,
+     "rise": -0.4,
+     "inseam": 4.3,
+     "knee_height": 4.1
+    },
+    "-0.5": {
+     "height": -3.0,
+     "back_length": 0.2,
+     "inseam": -3.1,
+     "knee_height": -3.0
+    }
+   },
+   "measure-thigh-circ-decr-incr": {
+    "0.5": {
+     "thigh": 3.6
+    },
+    "-0.5": {
+     "thigh": -2.4
+    }
+   },
+   "measure-upperleg-height-decr-incr": {
+    "0.5": {
+     "height": 5.2,
+     "rise": -0.4,
+     "inseam": 5.4
+    },
+    "-0.5": {
+     "height": -3.8,
+     "back_length": 0.3,
+     "rise": -0.6,
+     "inseam": -3.4
+    }
+   },
+   "measure-ankle-circ-decr-incr": {
+    "0.5": {
+     "ankle": 2.7
+    },
+    "-0.5": {
+     "ankle": -2.7
+    }
+   },
+   "measure-neck-circ-decr-incr": {
+    "0.5": {
+     "neck": 2.5,
+     "armhole_depth": -1.2,
+     "back_length": -1.2,
+     "bust_height": -0.3,
+     "shoulder": -1.2
+    },
+    "-0.5": {
+     "neck": -1.7
+    }
+   },
+   "measure-neck-height-decr-incr": {
+    "0.5": {
+     "neck": -1.8,
+     "height": 1.5,
+     "back_length": 0.4,
+     "hip_height": -0.5,
+     "rise": -0.5
+    },
+    "-0.5": {
+     "neck": 1.7,
+     "height": -1.5,
+     "armhole_depth": -1.2,
+     "back_length": -1.1,
+     "bust_height": -0.4,
+     "shoulder": -1.1
+    }
+   },
+   "torso-scale-vert-decr-incr": {
+    "0.5": {
+     "bust": -0.2,
+     "underbust": 0.5,
+     "height": 5.1,
+     "back_length": 4.8,
+     "bust_height": 0.4,
+     "hip_height": 0.5,
+     "inseam": 0.3
+    },
+    "-0.5": {
+     "bust": 0.2,
+     "height": -2.2,
+     "armhole_depth": -0.2,
+     "back_length": -2.0,
+     "bust_height": -1.0
+    }
+   },
+   "hip-scale-vert-decr-incr": {
+    "0.5": {
+     "back_length": -1.5,
+     "hip_height": 1.0,
+     "rise": 2.5,
+     "inseam": -1.0
+    },
+    "-0.5": {
+     "hip": 0.2,
+     "back_length": 1.5,
+     "hip_height": -1.0,
+     "rise": -2.5,
+     "inseam": 1.0
+    }
+   },
+   "hip-waist-down-up": {
+    "0.5": {
+     "underbust": -0.4,
+     "back_length": -1.0,
+     "hip_height": 1.0,
+     "rise": 1.0
+    },
+    "-0.5": {
+     "underbust": 0.3,
+     "hip": -0.3,
+     "back_length": 2.5,
+     "hip_height": -2.0,
+     "rise": -2.5
+    }
+   },
+   "breast-dist-decr-incr": {
+    "0.5": {
+     "bust": 0.6,
+     "bust_span": 1.9
+    },
+    "-0.5": {
+     "bust": -1.0,
+     "bust_span": -3.3
+    }
+   },
+   "breast-trans-down-up": {
+    "0.5": {
+     "bust": 0.9,
+     "underbust": 0.7,
+     "bust_height": -0.7
+    },
+    "-0.5": {
+     "bust": -1.4,
+     "underbust": -1.4,
+     "bust_height": 1.4
+    }
+   },
+   "breast-volume-vert-down-up": {
+    "0.5": {
+     "bust": 0.4,
+     "bust_height": -0.3
+    },
+    "-0.5": {
+     "bust": -0.4,
+     "underbust": -0.6,
+     "bust_height": 0.3
+    }
+   },
+   "torso-scale-depth-decr-incr": {
+    "0.5": {
+     "bust": 4.6,
+     "underbust": 4.0,
+     "waist": 1.7,
+     "neck": 0.7,
+     "back_length": 2.0,
+     "bust_height": 0.8,
+     "hip_height": -2.0,
+     "rise": -2.0
+    },
+    "-0.5": {
+     "bust": -2.4,
+     "underbust": -2.1,
+     "waist": -1.6,
+     "neck": -0.9,
+     "bust_height": -0.6
+    }
+   },
+   "torso-scale-horiz-decr-incr": {
+    "0.5": {
+     "bust": 4.9,
+     "underbust": 4.4,
+     "waist": 0.7,
+     "neck": -0.7,
+     "back_length": 1.5,
+     "bust_span": 1.6,
+     "shoulder_width": 2.1,
+     "shoulder": 0.6,
+     "hip_height": -1.5,
+     "rise": -1.5,
+     "arm_length": 0.8
+    },
+    "-0.5": {
+     "bust": -4.8,
+     "underbust": -4.3,
+     "waist": -4.4,
+     "neck": -1.5,
+     "armhole_depth": -1.2,
+     "back_length": -0.7,
+     "bust_height": -0.3,
+     "bust_span": -1.6,
+     "shoulder_width": -3.4,
+     "shoulder": -1.8,
+     "hip_height": -0.5,
+     "rise": -0.5
+    }
+   },
+   "torso-vshape-decr-incr": {
+    "0.5": {
+     "bust": 3.0,
+     "underbust": 1.2,
+     "waist": -0.6,
+     "neck": 0.3,
+     "back_length": -0.5,
+     "shoulder_width": 2.7,
+     "shoulder": 1.0,
+     "hip_height": 0.5,
+     "rise": 0.5
+    },
+    "-0.5": {
+     "bust": -2.7,
+     "underbust": -1.0,
+     "waist": 0.5,
+     "neck": -0.3,
+     "armhole_depth": -1.2,
+     "back_length": -0.7,
+     "bust_height": -0.3,
+     "shoulder_width": -2.7,
+     "shoulder": -1.9,
+     "hip_height": -0.5,
+     "rise": -0.5
+    }
+   },
+   "upperarm-scale-vert-decr-incr": {
+    "0.5": {
+     "upper_arm": 1.8
+    },
+    "-0.5": {
+     "upper_arm": -1.9
+    }
+   }
+  }
+ }
+}

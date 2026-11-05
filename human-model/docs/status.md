@@ -31,6 +31,10 @@ An element's verdict comes only from Rafael. A verdict marks it as enough for no
 | Muscle volume range | ±5%, measured within 0.1% | Yes "for now" | 2026-11-03 | Biomedical tables giving each muscle's values |
 | Six individuals | `seis_individuos_pele.png`, `seis_individuos_ossos_musculos.png` | No separate verdict | — | — |
 
+## What Rafael said about the body (2026-11-04)
+
+"O movimento é duro demais... vamos ter que pensar em uma forma mais equivalente à pele humana e tecido adiposo." He said it after learning that skin isn't simulated, before watching the walk himself. Measured on `female_walk_review.blend` and `male_walk_review.blend`: the nipple moves 0.0 mm in the rib cage's frame, and bones come through the skin more when walking (bug `human-model/9`). **Next decision with him:** how to add soft tissue. Options come first, and nothing has been built.
+
 ## Retiring a layer
 
 A layer can leave the model only when all of these hold (Rafael, 2026-11-02):
@@ -54,7 +58,7 @@ Removing a layer to gain speed is a different decision and has to be presented a
 
 ## Questions still open with Rafael
 
-1. **What's wrong with the body results?** The sample's numbers are in [drive.md](drive.md#body), but that isn't his recording.
+1. **What's wrong with the body results?** So far: stiff movement, above. The sample's numbers are in [drive.md](drive.md#body), but that isn't his recording.
 2. **What is the "character reference"?** See [character-controls.md](character-controls.md#from-a-character-reference).
 3. **Release `CharacterBody`?** My recommendation: after adding state and real units.
 
@@ -65,7 +69,7 @@ Removing a layer to gain speed is a different decision and has to be presented a
 1. **Muscle size as a parameter,** driven by the muscle macros, with bug `human-model/6`.
 2. **Fix the mouth corners on changed faces,** bug `human-model/7`: a face that can't smile blocks every character.
 3. **Fat and breast as layers,** so a hip or a gluteus can be declared bone, muscle or fat.
-4. **Real-unit tables** for weight, shoulders, hips and waist, checked against ANSUR II.
+4. **Calibrate the editor's tape** against ANSUR II and against Rafael's own pattern-room numbers. Weight still has no real unit.
 5. **The word-to-slider vocabulary,** with Rafael's eye on the sheets.
 6. **State and real units in `CharacterBody`,** then release it.
 7. **Fit muscle patterns to recordings of real faces,** so anatomy constrains data instead of being guessed. The most promising way past hand-declared fields.
@@ -95,6 +99,7 @@ In `initiatives/bugs/epics/human-model/tasks/`:
 | 6 | Muscle thickness doesn't follow the muscle slider |
 | 7 | A smile tears at the mouth's corners on a changed face |
 | 8 | Four of the six test people are below the adult age, so the editor refuses them |
+| 9 | Bones come through the skin at the thigh and upper arm when walking |
 
 ### Not done, or short of the plan
 
