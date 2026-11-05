@@ -115,6 +115,41 @@ except ValueError as err:
     check("a child's recipe is refused", True, err)
 check("refusing keeps the human", scene.hm_editor.body is not None)
 
+# ---- the tape
+import time
+ed._start(scene, rc.new("tape_check", "female"))
+e, body = scene.hm_editor, scene.hm_editor.body
+check("the tape measures on load", ed._state["tape"] and 70 < ed._state["tape"]["bust"] * 100 < 110, ed._state["tape"] and ed._state["tape"]["bust"])
+started = time.time()
+e.tape_bust = 92.0
+e.tape_waist = 68.0
+e.tape_hip = 98.0
+e.tape_height = 165.0
+took = time.time() - started
+now = human.measure_body(body)[0]
+for key, want in (("bust", 92.0), ("waist", 68.0), ("hip", 98.0), ("height", 165.0)):
+    check(f"typed {key} holds with the others", abs(now[key] * 100 - want) < 0.5, f"{now[key] * 100:.1f} cm, {took:.1f} s in all")
+e.tape_wrist = 40.0
+check("an unreachable measure says so", "Limite" in ed._state["message"], ed._state["message"])
+pins = ed._pins(scene)
+del pins["wrist"]
+ed._set_pins(scene, pins)
+for s in ed.SLIDERS:
+    if s.name == "measure-wrist-circ-decr-incr":
+        for _, pair in s.sides:
+            human.set_side(body, pair, 0.0)
+e.show_tape = True
+check("the tape's lines appear", "HM_tape" in bpy.data.objects and len(bpy.data.objects["HM_tape"].data.splines) == 23, len(bpy.data.objects["HM_tape"].data.splines))
+e.show_tape = False
+check("the tape's lines go away", "HM_tape" not in bpy.data.objects)
+path = os.path.join(out, "editor_check_tape.recipe.json")
+written = ed._write_recipe(scene, path)
+check("the recipe keeps the typed measures", json.load(open(path, encoding="utf-8")).get("measures_cm", {}).get("bust") == 92.0)
+check("a recipe with measures is valid", rc.problems(written) == [])
+ed._start(scene, written, path)
+check("reloading keeps them", ed._pins(scene).get("hip") == 98.0)
+check("reloading gives the same size", abs(human.measure_body(scene.hm_editor.body)[0]["bust"] * 100 - 92.0) < 0.5)
+
 failed = [k for k, v in results.items() if not v["ok"]]
 json.dump(results, open(os.path.join(out, "editor_check.json"), "w"), indent=1)
 print("checks", len(results), "failed", failed)

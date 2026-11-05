@@ -11,7 +11,8 @@
 - `__init__.py`: properties, operators and panels. `_start` makes the human of a recipe; `_write_recipe` saves one.
 - `catalog.py`: MPFB's sliders by region with readable labels, and the face muscle list. No `bpy`.
 - `recipe.py`: making, checking and reading back a recipe. No `bpy`. `problems` holds the rules: adult age, no genitalia, gender in step with sex.
-- `human.py`: the MPFB human: create, remove, sliders, macros, stature by measuring, and reading a recipe back from a body or a built skin.
+- `tape.py`: the pattern-making measures, their paths on the body, which sliders drive each (`DRIVERS`) and the one-control solver. No `bpy`.
+- `human.py`: the MPFB human: create, remove, sliders, macros, stature by measuring, holding typed measures (`fit_measures`), drawing the tape, and reading a recipe back from a body or a built skin.
 - `builder.py`: `build_model.py` in WSL as a background process, read through its log. No `bpy`.
 - `blender_manifest.toml`: the extension's metadata.
 
@@ -29,6 +30,13 @@
 - A both-sides muscle slider isn't a stored value, so it can't be keyframed; the `m_<name>_L` and `_R` controls can: `HM_PT_face_muscles`.
 - MPFB has no rig on this human, so `human.settle` moves the object to keep the feet on the floor. That location isn't in the recipe.
 - Rounded to 4 decimals on the way out, as `recipe_from_file.py:19` does. A value below 0.00005 reads back as absent.
+
+- Joint cubes are helpers, which the evaluated mesh has masked away, so the tape mixes positions from the shape keys: `human.all_verts`. A body without rig also has no breast or bone vertex groups, so the level under the breast comes from fixed vertices: `tape.UNDER_BREAST`.
+- The tape's levels must change smoothly with the shape, or the solver chases jumps. Looking for the breast's crease jumped by centimetres, so it was dropped: `tape._underbust`.
+- The hip is the fullest seat, not the largest girth, because the rest pose's spread legs stretch a tape lower down: `tape.landmarks`.
+- `ACROMION_SHARE`, `NECK_BASE_RATIO`, `NECK_RATIO` and `UNDER_BREAST_DROP` are declared, set by eye on the tape's lines and, for the shoulder, by ANSUR II's breadth for the neutral bodies' height.
+- The panel's Portuguese labels are on purpose, in `tape.MEASURES`: they're the trade's terms, as Rafael uses them.
+- Typed measures are held only when typed or on **Reaplicar medidas**. Moving another slider doesn't re-fit, so a slider can still be dragged freely.
 
 ## Touchpoints
 

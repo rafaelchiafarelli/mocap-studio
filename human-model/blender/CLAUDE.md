@@ -32,6 +32,9 @@
 - `recipe_from_file.py`: reads an MPFB human back into a recipe.
 - `list_controls.py`: everything a built file offers.
 - `editor_check.py`: checks the installed Human Model Editor without its interface.
+- `tape_check.py`: measures people with the editor's tape, optionally with stills of its lines.
+- `measure_sweep.py`: how far each slider moves each tape measure.
+- `walk_clearance.py`: skin against bones while walking.
 - `walk.py`: keys the walking cycle and solves the root from the stance foot.
 
 ## Key facts / gotchas

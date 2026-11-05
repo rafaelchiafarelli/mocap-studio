@@ -30,6 +30,31 @@ Open `G:\mocap-studio-downloads\apps\blender\5.2.2\blender-5.2.2-windows-x64\ble
 7. **Build full model.** You can keep working in Blender while it runs. The panel shows the stage, 1 to 5.
 8. **Open built model,** then test it.
 
+## Pattern-making measures
+
+The panel **Medidas de modelagem (cm)** shows the body as a pattern maker would measure it, updated whenever a slider stops. Its labels are in Portuguese, the trade's own words.
+
+**Type a value** and the sliders move until the body has it. That measure then stays held, marked with a pin: type bust, waist and hip, and each new one keeps the others. Moving a slider by hand doesn't re-apply them: a held measure that drifted turns red, and **Reaplicar medidas** brings it back. Click the pin to stop holding it. Each typed value takes about two seconds, and Blender waits meanwhile.
+
+**Mostrar as linhas da fita** draws where each measure is taken. Check these first: if a line is in the wrong place for you, the number means something else.
+
+| Measures | Taken as |
+|---|---|
+| Busto, abaixo do busto, cintura, quadril, pescoço, coxa | A tape around a horizontal section, bridging hollows |
+| Braço, punho, joelho, panturrilha, tornozelo | The same, square to the limb, on the left side |
+| Cintura | The smallest girth of the trunk |
+| Quadril | The level of the fullest seat, not the largest girth: in the rest pose the spread legs would stretch the tape lower down |
+| Altura da cava, comprimento de costas | Vertical from the nape. The nape and the armpit are found on the mesh |
+| Largura de ombros, ombro | From the shoulder's tip, set a fixed share along the arm from the joint, so the neutral bodies have about ANSUR II's breadth for their height |
+
+**Read only: Altura da cava and Ombro.** No MPFB slider moves them directly. The most any tested slider moved the armhole's depth was 1.2 cm, as a side effect (`data/measure_sweep.json`).
+
+**Where the sliders end.** Typing beyond a slider's range stops at the limit, and the panel says how far it got, as "Punho 16.9 (pediu 40.0)". Some have little range: bust height moves about ±1 cm on a woman and nothing measurable on a man.
+
+**How far to trust the numbers.** The girths and lengths are true measures of this mesh, and they were checked by eye on eight bodies. They aren't calibrated against people measured in a pattern room, and the rest pose has arms and legs apart, which changes what a tape would read at the armpit and hips. Typed measures change the skin only as far as the table below says: a bigger bust is still skin only.
+
+The typed values are saved in the recipe as `measures_cm`. The build ignores them, because the sliders already hold the shape.
+
 ## Test a built model
 
 Any built `.blend` works, through File > Open. They're in `G:\mocap-studio-downloads\models\hm-build\<name>\`.
@@ -75,6 +100,8 @@ So a very muscular or very heavy character looks right from outside, but with an
 | A smile can tear at the mouth's corners on a changed nose, lips or eyes. Check every new face with the smile test | `human-model/7` |
 | Muscle thickness doesn't follow the muscle slider | `human-model/6` |
 | Joints can bend past their limits | `human-model/3` |
+| Bones come through the skin at the thigh and upper arm when walking | `human-model/9` |
+| Movement is stiff: the skin only follows bones, with no fat or breast tissue | [status.md](status.md) |
 | Skin material, hair and clothes aren't applied: the built model has plain skin | [status.md](status.md) |
 
 The readout's mass is an estimate from the skin's volume at a declared density. Weight's range is narrow: at full weight the body is still at a normal BMI, so a heavy character also needs the belly and fat sliders ([character-controls.md](character-controls.md#real-units)).

@@ -3,10 +3,10 @@ On a built model: the live controls and the layers. Identity is baked in a built
 import json, os, tempfile, textwrap
 import bpy
 from bpy.props import BoolProperty, EnumProperty, FloatProperty, PointerProperty, StringProperty
-from . import builder, catalog, human, recipe as rc
+from . import builder, catalog, human, recipe as rc, tape
 
 SLIDERS = []
-_state = {"message": "", "readout": None, "build": None, "built_blend": None, "unsaved": False, "failed": None}
+_state = {"message": "", "readout": None, "build": None, "built_blend": None, "unsaved": False, "failed": None, "tape": None}
 SETTLE_DELAY_S = 0.3
 MACROS = (("age", "Age", 0.5, 1.0, "From 0.5, adult, to 1, old. Below 0.5 MPFB makes a child's body, so it stops there"), ("height", "Height", 0.0, 1.0, "Not linear: use Stature above for metres"),
           ("weight", "Weight", 0.0, 1.0, "A narrow range: full weight is still a normal BMI. A heavy character also needs Belly and fat sliders"),
@@ -38,7 +38,35 @@ def _settle_now():
     body = _body(scene) if not human.is_built() else None
     if body is not None:
         _state["readout"] = human.settle(body)
+        _refresh_tape(scene, body)
     _redraw()
+
+
+def _refresh_tape(scene, body):
+    values, lines = human.measure_body(body)
+    _state["tape"] = values
+    if scene.hm_editor.show_tape:
+        human.show_tape(lines)
+
+
+def _pins(scene):
+    """The measures typed in by hand, in centimetres."""
+    return json.loads(scene.hm_editor.pins_json or "{}")
+
+
+def _set_pins(scene, pins):
+    scene.hm_editor.pins_json = json.dumps(pins)
+
+
+def _fit(scene, body):
+    """Holds every measure typed so far, and says which ones couldn't be reached."""
+    pins = _pins(scene)
+    by_name = {s.name: s for s in SLIDERS}
+    result = human.fit_measures(body, {k: v / 100 for k, v in pins.items()}, by_name)
+    labels = {m.key: m.label for m in tape.MEASURES}
+    short = [f"{labels[k]} {reached * 100:.1f} (pediu {pins[k]:.1f})" for k, (reached, limit) in result.items() if abs(reached * 100 - pins[k]) > 0.5]
+    _state["message"] = "Limite dos faders: " + ", ".join(short) if short else ""
+    _refresh_tape(scene, body)
 
 
 def _settle_timer():
@@ -106,7 +134,10 @@ def _backup(scene):
 
 def _read(scene):
     e = scene.hm_editor
-    return human.read_recipe(_body(scene), e.character, e.sex, json.loads(e.assets_json) if e.assets_json else None)
+    r = human.read_recipe(_body(scene), e.character, e.sex, json.loads(e.assets_json) if e.assets_json else None)
+    if _pins(scene):
+        r["measures_cm"] = _pins(scene)
+    return r
 
 
 def _start(scene, r, recipe_path=""):
@@ -121,8 +152,10 @@ def _start(scene, r, recipe_path=""):
     human.remove_default_cube()
     e = scene.hm_editor
     e.character, e.sex_stored, e.recipe_path, e.assets_json = r["name"], r["sex"], recipe_path, json.dumps(r.get("assets", {}))
+    e.pins_json = json.dumps(r.get("measures_cm", {}))
     e.body = human.create(r)
     _state["readout"] = human.settle(e.body)
+    _refresh_tape(scene, e.body)
     _state["unsaved"] = False
     _state["message"] = f"Earlier sliders kept in {kept}" if kept else ""
     if not bpy.app.background:
@@ -133,7 +166,7 @@ def _start(scene, r, recipe_path=""):
 @bpy.app.handlers.persistent
 def _file_loaded(_):
     """Another file holds another human, so the readout and the unsaved mark don't carry over."""
-    _state["readout"], _state["unsaved"], _state["message"] = None, False, ""
+    _state["readout"], _state["unsaved"], _state["message"], _state["tape"] = None, False, "", None
     if not bpy.app.background and not human.is_built():
         bpy.app.timers.register(_settle_timer, first_interval=0.1)
 
@@ -233,6 +266,33 @@ def _ancestry_prop(name):
     return FloatProperty(name=name.capitalize(), description="MPFB's ancestry blend. The other two scale so the three sum to 1", min=0.0, max=1.0, get=get, set=set_, precision=2)
 
 
+def _tape_prop(m):
+    def get(self):
+        return _state["tape"][m.key] * 100 if _state["tape"] else 0.0
+    def set_(self, value):
+        scene = self.id_data
+        body = _body(scene)
+        if body is None:
+            return
+        pins = _pins(scene)
+        pins[m.key] = round(value, 1)
+        _set_pins(scene, pins)
+        _fit(scene, body)
+        _changed()
+    return FloatProperty(name=m.label, description=f"{m.text}. Digite o valor em centímetros", min=1.0, max=300.0, precision=1, get=get, set=set_)
+
+
+def _show_tape_set(self, value):
+    self["show_tape_stored"] = value
+    tape_object = bpy.data.objects.get("HM_tape")
+    if value:
+        scene, body = self.id_data, _body(self.id_data)
+        if body is not None:
+            _refresh_tape(scene, body)
+    elif tape_object is not None:
+        bpy.data.objects.remove(tape_object)
+
+
 def _sex_get(self):
     return 0 if self.sex_stored == "male" else 1
 
@@ -319,12 +379,16 @@ def _editor_group():
         "find": StringProperty(name="Find", options={"TEXTEDIT_UPDATE"}, description="Type part of a name, such as jaw or lip"),
         "target_stature": FloatProperty(name="Stature", unit="LENGTH", default=1.75, min=0.5, max=3.0, precision=3, description="The real height to reach, measured on this body"),
         "separate_sides": BoolProperty(name="Left and right apart", description="One slider per side. These are the ones you can keyframe"),
+        "pins_json": StringProperty(options={"HIDDEN"}),
+        "show_tape": BoolProperty(name="Mostrar as linhas da fita", description="Desenha sobre o corpo onde cada medida é tirada. Não entra na receita", get=lambda self: self.get("show_tape_stored", False), set=_show_tape_set),
         "skin_view": EnumProperty(name="Skin", items=(("SOLID", "Solid", ""), ("WIRE", "Wire", "See through to what's inside"), ("HIDDEN", "Hidden", "")), get=_skin_view_get, set=_skin_view_set),
     }
     for name, label, lo, hi, text in MACROS:
         annotations["macro_" + name] = _macro_prop(name, label, lo, hi, text)
     for name in ("african", "asian", "caucasian"):
         annotations["race_" + name] = _ancestry_prop(name)
+    for m in tape.MEASURES:
+        annotations["tape_" + m.key] = _tape_prop(m)
     for prop, collection, label in (("show_bones", "HM_bones", "Bones"), ("show_muscles", "HM_muscles", "Muscles"), ("show_targets", "HM_muscle_targets", "Attachments")):
         get, set_ = _collection_visible(collection)
         annotations[prop] = BoolProperty(name=label, get=get, set=set_)
@@ -415,6 +479,30 @@ class HM_OT_set_stature(bpy.types.Operator):
             self.report({"ERROR"}, str(err))
             return {"CANCELLED"}
         _changed()
+        return {"FINISHED"}
+
+
+class HM_OT_refit(bpy.types.Operator):
+    bl_idname = "hm_editor.refit"
+    bl_label = "Reaplicar medidas"
+    bl_description = "Volta às medidas digitadas, depois de mexer em outros faders"
+
+    def execute(self, context):
+        _fit(context.scene, _body(context.scene))
+        _changed()
+        return {"FINISHED"}
+
+
+class HM_OT_unpin(bpy.types.Operator):
+    bl_idname = "hm_editor.unpin"
+    bl_label = "Soltar"
+    bl_description = "Esta medida deixa de ser mantida. O corpo não muda"
+    key: StringProperty()
+
+    def execute(self, context):
+        pins = _pins(context.scene)
+        pins.pop(self.key, None)
+        _set_pins(context.scene, pins)
         return {"FINISHED"}
 
 
@@ -689,6 +777,40 @@ class HM_PT_find(_Panel, bpy.types.Panel):
         _wrapped(layout, "• = skin only: nothing under it follows")
 
 
+class HM_PT_tape(_Panel, bpy.types.Panel):
+    bl_idname = "HM_PT_tape"
+    bl_label = "Medidas de modelagem (cm)"
+    bl_parent_id = "HM_PT_main"
+
+    @classmethod
+    def poll(cls, context):
+        return _design_ready(context)
+
+    def draw(self, context):
+        scene = context.scene
+        e = scene.hm_editor
+        layout = self.layout
+        layout.prop(e, "show_tape")
+        if not _state["tape"]:
+            layout.label(text="Mexa em um fader para medir")
+            return
+        pins = _pins(scene)
+        col = layout.column(align=True)
+        for m in tape.MEASURES:
+            row = col.row(align=True)
+            value = _state["tape"][m.key] * 100
+            if m.key in tape.DRIVERS or m.key == "height":
+                row.alert = m.key in pins and abs(value - pins[m.key]) > 0.5
+                row.prop(e, "tape_" + m.key)
+                if m.key in pins:
+                    row.operator("hm_editor.unpin", text="", icon="PINNED").key = m.key
+            else:
+                row.label(text=f"{m.label}: {value:.1f}")
+        if pins:
+            layout.operator("hm_editor.refit")
+        _wrapped(layout, "Digite um valor: os faders se ajustam e o valor fica mantido. Altura da cava e Ombro são só leitura: nenhum fader os move diretamente")
+
+
 class HM_PT_changed(_Panel, bpy.types.Panel):
     bl_idname = "HM_PT_changed"
     bl_label = "What I changed"
@@ -840,7 +962,7 @@ class HM_PT_pose(_Panel, bpy.types.Panel):
         self.layout.label(text="Joint limits aren't enforced yet (bug 3)")
 
 
-OPERATORS = (HM_OT_new, HM_OT_open_recipe, HM_OT_save_recipe, HM_OT_set_stature, HM_OT_reset_slider, HM_OT_build, HM_OT_open_built, HM_OT_change_character, HM_OT_reset_controls, HM_OT_pose_mode, HM_OT_reset_pose)
+OPERATORS = (HM_OT_new, HM_OT_open_recipe, HM_OT_save_recipe, HM_OT_set_stature, HM_OT_refit, HM_OT_unpin, HM_OT_reset_slider, HM_OT_build, HM_OT_open_built, HM_OT_change_character, HM_OT_reset_controls, HM_OT_pose_mode, HM_OT_reset_pose)
 _registered = []
 
 
@@ -856,7 +978,7 @@ def register():
     data = _target_json()
     SLIDERS[:] = catalog.sliders(data) if data else []
     groups = [_slider_group(), _muscle_group(), _editor_group()]
-    panels = [HM_PT_main, HM_PT_find, HM_PT_changed, HM_PT_whole_body, *[_region_panel(*r) for r in catalog.REGIONS], HM_PT_layers, HM_PT_face_controls, HM_PT_face_muscles, HM_PT_pose]
+    panels = [HM_PT_main, HM_PT_tape, HM_PT_find, HM_PT_changed, HM_PT_whole_body, *[_region_panel(*r) for r in catalog.REGIONS], HM_PT_layers, HM_PT_face_controls, HM_PT_face_muscles, HM_PT_pose]
     _registered[:] = [*groups, *OPERATORS, *panels]
     for c in _registered:
         bpy.utils.register_class(c)

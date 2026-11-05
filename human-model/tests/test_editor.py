@@ -1,7 +1,8 @@
 import json, os, sys
 import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "hm_editor"))
-import catalog, recipe as rc  # the add-on's package needs bpy; these two modules don't
+import numpy as np
+import catalog, recipe as rc, tape  # the add-on's package needs bpy; these three modules don't
 
 SECTIONS = {
     "nose": {"categories": [{"name": "nose-hump-decr-incr", "has_left_and_right": False, "opposites": {"negative-unsided": "nose-hump-decr", "positive-unsided": "nose-hump-incr"}},
@@ -117,3 +118,63 @@ def test_identity_targets_keep_only_named_sliders():
 
 def test_safe_name():
     assert rc.safe_name(" Old man! 2 ") == "Old_man_2"
+
+
+def box_topology():
+    """A closed box 0.2 wide and 0.1 deep, up to 1 high, without tape.Topology's landmarks."""
+    verts = np.array([(x, y, z) for z in (0.0, 1.0) for x, y in ((-0.1, -0.05), (0.1, -0.05), (0.1, 0.05), (-0.1, 0.05))])
+    faces = [[0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7]]
+    top = tape.Topology.__new__(tape.Topology)
+    edges = {}
+    top.face_edges = np.full((len(faces), 4), -1, dtype=np.int32)
+    for i, f in enumerate(faces):
+        for k, a in enumerate(f):
+            b = f[(k + 1) % 4]
+            top.face_edges[i, k] = edges.setdefault((min(a, b), max(a, b)), len(edges))
+    top.edges = np.array(list(edges), dtype=np.int32)
+    return top, verts
+
+
+def test_a_section_finds_the_loop_and_a_tape_goes_around_it():
+    top, verts = box_topology()
+    loops = tape.section(top, verts, np.array((0, 0, 0.5)), tape.UP)
+    assert len(loops) == 1
+    assert tape.length_of(tape.hull_loop(loops[0], tape.UP)) == pytest.approx(0.6)
+
+
+def test_a_tape_bridges_a_hollow():
+    star = np.array([(1, 0, 0), (0, 1, 0), (-1, 0, 0), (0, -1, 0), (0.1, 0.1, 0), (-0.1, 0.1, 0)], float)
+    assert tape.length_of(tape.hull_loop(star, tape.UP)) == pytest.approx(4 * 2 ** 0.5)
+
+
+def test_solve_reaches_a_target_on_a_curve():
+    state = [0.0]
+    read = lambda: 1.0 + 0.3 * state[0] + 0.1 * state[0] ** 3
+    write = lambda x: state.__setitem__(0, x)
+    reached, limit = tape.solve(read, write, 0.0, 1.2, -0.8, 0.8, tolerance=0.001)
+    assert reached == pytest.approx(1.2, abs=0.001)
+    assert not limit
+
+
+def test_solve_stops_at_the_slider_limit_and_says_so():
+    state = [0.0]
+    reached, limit = tape.solve(lambda: 1.0 + state[0], lambda x: state.__setitem__(0, x), 0.0, 5.0, -0.8, 0.8)
+    assert reached == pytest.approx(1.8)
+    assert limit
+
+
+def test_solve_gives_up_on_a_control_that_does_nothing():
+    reached, limit = tape.solve(lambda: 1.0, lambda x: None, 0.0, 2.0, -0.8, 0.8)
+    assert reached == 1.0
+    assert limit
+
+
+def test_every_driver_names_a_measure():
+    assert set(tape.DRIVERS) <= set(tape.MEASURE_KEYS)
+    assert {"armhole_depth", "shoulder", "height"}.isdisjoint(tape.DRIVERS)
+
+
+def test_a_recipe_may_carry_measures():
+    r = rc.new("a", "female")
+    r["measures_cm"] = {"bust": 92.0}
+    assert rc.problems(r) == []

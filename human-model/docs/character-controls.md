@@ -61,6 +61,8 @@ Genital targets exist in MPFB and stay out, as you decided.
 
 ## Real units
 
+For measures in centimetres, use the editor's pattern-making panel: [character-editor.md](character-editor.md#pattern-making-measures). The tables here are how the macros behave.
+
 From `blender/macro_sweep.py`, kept in `data/macro_sweep.json`, with the other macros at 0.5.
 
 **Height isn't linear:**
