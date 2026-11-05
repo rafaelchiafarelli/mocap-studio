@@ -43,6 +43,8 @@ The volume stays at 1.000000 of its start in every frame.
 
 **The liquid's friction didn't stop the bounce.** Without a damper the box bounces at about 6 Hz for seconds, and ten times the viscosity still leaves it bouncing for almost two seconds, since that motion is the whole box on its spring. `DAMPER` (`muscle_sphere.py:21`) is the declared value that fixes it, and it isn't derived from anything. At its current value the bounce ends in about 0.3 s, which may be too dead.
 
+**The mesh barely matters.** With four times the points (`solver_v6`, against `solver_v5`, same settings), the contracted height is 78.4 mm against 78.7, the lift 28.3 mm against 27.1, and the height at rest 106.7 mm against 105.7.
+
 ## What isn't simulated
 
 Flow inside the liquid, fibres as separate objects, force changing with fibre length or speed as in real muscle, the box turning. The values `FIBRE`, `HOOP`, `SHORTEN`, `VISCOSITY` and `DAMPER` were chosen by trial, not measured from tissue. The caps' flat edge shows small steps in close-up.
