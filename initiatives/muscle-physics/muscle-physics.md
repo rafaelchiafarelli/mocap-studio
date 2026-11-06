@@ -7,3 +7,7 @@
 ## Epics
 
 - `single-muscle`: one muscle, one load.
+
+## Next, proposed and not planned
+
+- **The breast on the body** (Rafael, 2026-11-05: "vamos portar essa solução para o restante do código"). The breast preset moving the model's breasts while it walks. To agree before planning: which patch of skin, how it hangs from the rib cage, how the skin around it follows, its cost per frame, and the body's shape, which another session is discussing.

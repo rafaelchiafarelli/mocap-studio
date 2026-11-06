@@ -30,8 +30,8 @@ The volume stays at 1.000000 of its start in every frame.
 
 `blender/muscle_sphere.py` runs in Blender's Python, with NumPy only. The result is stored in the file as shape keys, so it plays without simulating and without scripts.
 
-- **Liquid:** one pressure, whatever it takes for the volume to hold (`muscle_sphere.py:120`), plus the liquid's weight as hydrostatic pressure (`muscle_sphere.py:94`) and its inertia on the wall's points. There's no flow inside.
-- **Wall:** springs on the mesh's edges. How much an edge counts as fibre depends on how much it runs from pole to pole (`muscle_sphere.py:71`).
+- **Liquid:** one pressure, whatever it takes for the volume to hold (`muscle_sphere.py:122`), plus the liquid's weight as hydrostatic pressure (`muscle_sphere.py:96`) and its inertia on the wall's points. There's no flow inside.
+- **Wall:** springs on the mesh's edges. How much an edge counts as fibre depends on how much it runs from pole to pole (`muscle_sphere.py:73`).
 - **Contraction:** the fibres' rest length shrinks. The lift comes from that force against the load: the box isn't animated.
 - **Load:** the box receives the wall's forces, its weight and the damper. It moves without turning, a simplification.
 
@@ -45,6 +45,18 @@ The volume stays at 1.000000 of its start in every frame.
 
 **The mesh barely matters.** With four times the points (`solver_v6`, against `solver_v5`, same settings), the contracted height is 78.4 mm against 78.7, the lift 28.3 mm against 27.1, and the height at rest 106.7 mm against 105.7.
 
+## The breast preset
+
+Rafael ran his own test, `meu_teste`, and said (2026-11-05): "agora podemos dizer que o meu_teste é o simulador do seio". Its values are `PRESETS["breast"]` (`muscle_sphere.py:27`):
+
+| | Default | Breast |
+|---|---:|---:|
+| `LIQUID`, kg/m³ | 1000 | 2000 |
+| `VISCOSITY`, N s/m | 0.12 | 0.3 |
+| `DAMPER`, N s/m | 20 | 50 |
+
+`preset=breast` reproduces `meu_teste.json` with zero difference. On it, the box rises 27.4 mm, drops 1.0 mm below rest after letting go, and is still within about 8 frames. The density is twice water's, which real fat isn't (fat is lighter than water; general knowledge, not from a source read here): treat it as a value for the look, not tissue data. It's still the sphere and the box: nothing on the body uses it yet.
+
 ## What isn't simulated
 
 Flow inside the liquid, fibres as separate objects, force changing with fibre length or speed as in real muscle, the box turning. The values `FIBRE`, `HOOP`, `SHORTEN`, `VISCOSITY` and `DAMPER` were chosen by trial, not measured from tissue. The caps' flat edge shows small steps in close-up.
@@ -54,4 +66,4 @@ Flow inside the liquid, fibres as separate objects, force changing with fibre le
     python3 human-model/blender_run.py human-model/blender/muscle_sphere.py OUT.blend OUT.json [NAME=value ...]
     python3 human-model/blender_run.py --blend OUT.blend human-model/blender/muscle_render.py FRAMES_DIR
 
-`NAME=value` overrides a constant at the top of the script, as in `FIBRE=3000` or `DAMPER=0`. A run takes about two minutes, without rendering.
+`preset=breast` loads the breast values. `NAME=value` overrides a constant at the top of the script, as in `FIBRE=3000` or `DAMPER=0`, after the preset. A run takes about two minutes, without rendering.
