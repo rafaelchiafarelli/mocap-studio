@@ -1,4 +1,4 @@
-"""A liquid-filled sphere that lifts a 1 kg box: our own solver, run in Blender's Python and stored in the file as shape keys. Args: out.blend out.json [NAME=value overrides the constants below]. Blender's Cloth couldn't do this: muscle_sphere_cloth.py."""
+"""A liquid-filled sphere that lifts a 1 kg box: our own solver, run in Blender's Python and stored in the file as shape keys. Args: out.blend out.json [preset=breast] [NAME=value overrides the constants below, after the preset]. Blender's Cloth couldn't do this: muscle_sphere_cloth.py."""
 import json, math, os, sys
 import bpy
 import numpy as np
@@ -23,6 +23,8 @@ CONTACT = 4000.0  # N/m, the sphere can't enter a box
 DT = 1e-4  # s
 SETTLE = 1.0  # s, off camera, with the load hanging, before frame 1
 FPS = 24.0
+# Rafael, 2026-11-05: his test "meu_teste" is the breast simulator
+PRESETS = {"breast": dict(DAMPER=50.0, LIQUID=2000.0, VISCOSITY=0.3)}
 PULL, RELEASE, END = (40.0, 80.0), (130.0, 134.0), 288.0  # frames
 
 
@@ -191,7 +193,10 @@ if __name__ == "__main__":
     a = hb.args()
     for kv in a[2:]:
         k, x = kv.split("=")
-        globals()[k] = float(x)
+        if k == "preset":
+            globals().update(PRESETS[x])
+        else:
+            globals()[k] = float(x)
     positions, boxes, faces, table = simulate()
     json.dump(table, open(a[1], "w"))
     build(positions, boxes, faces)
