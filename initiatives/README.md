@@ -33,6 +33,7 @@ Rules specific to this repository:
 |---|---|
 | [faces](faces/faces.md) | Open — the major open problem, its results and the best tool so far |
 | **human-model** — our own full-body male and female model in layers, bones to skin | First pass done 2026-11-03, read `human-model/docs/` (history: `git log -- initiatives/human-model`) |
+| [muscle-physics](muscle-physics/muscle-physics.md) | Open — what a simulated muscle can do in Blender, one muscle first |
 | [bugs](bugs/bugs.md) | Backlog |
 | [baseline](baseline/baseline.md) | Planned — not active while the MVP (`MVP-plan.md`) is on hold |
 | [versioning](versioning/versioning.md) | To be planned — one versioning system for the whole workflow |
