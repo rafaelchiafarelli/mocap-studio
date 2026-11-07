@@ -28,6 +28,7 @@
 - `retarget.py`: capture as bone directions, and capture quality measures.
 - `morph.py`: real sizes to sliders; height so far.
 - `retire.py`: a compact linear basis of the fields.
+- `layers.py`: a limb from the inside out: skin patch, voxels labelled bone, muscle or fat, tetrahedra, and the skin tied to them. [docs/muscle-physics.md](../docs/muscle-physics.md#experiment-2-a-thigh-built-from-the-inside-out).
 
 ## Key facts / gotchas
 
@@ -36,6 +37,7 @@
 - Lips tear with cotangent weights, so `softtissue.py` uses uniform ones.
 - Bulge is capped and off where no bone is near, or the chin swells: `softtissue.py`, search `NO_BONE`.
 - Trunk width reads wrong near the armpit, where arms join the trunk: `skeleton.py`, search `armpit_limit`.
+- `layers.cut_patch` keeps whole triangles only, so a patch ends at the ring of vertices short of each cut, about 3 cm on the thigh. `layers.measure` counts between the rings: `layers.py:228`.
 - Model frame: metres, the body faces -Y, its left is +X, up is +Z. Rotation only, never a mirror: `ctbones.py:5`.
 
 ## Touchpoints

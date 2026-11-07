@@ -67,3 +67,46 @@ Flow inside the liquid, fibres as separate objects, force changing with fibre le
     python3 human-model/blender_run.py --blend OUT.blend human-model/blender/muscle_render.py FRAMES_DIR
 
 `preset=breast` loads the breast values. `NAME=value` overrides a constant at the top of the script, as in `FIBRE=3000` or `DAMPER=0`, after the preset. A run takes about two minutes, without rendering.
+
+## Experiment 2: a thigh built from the inside out
+
+Epic `thigh` of `initiatives/muscle-physics/`. Today the skin comes first and the bones are fitted inside it. Here the order is turned round on one thigh: the femur, muscle around it, fat under the skin, and the skin tied to them. Task 2 builds it at rest; task 3 will make it walk on the GPU.
+
+**How it's built** (`hmcore/layers.py`, `tools/thigh_layers.py`):
+
+1. **Cut.** The left thigh's skin between 2 cm under the crotch and 8 cm above the femur's lowest point. Only whole MPFB triangles are kept, so the patch ends at the nearest ring of vertices, about 3 cm short of each cut.
+2. **Close.** Each open end gets a fan to its centre, so inside and outside can be told apart (winding number, `fit.winding_number`).
+3. **Fill.** A 5 mm voxel grid: a voxel counts if its centre is inside the skin, or close enough to it that every skin vertex lies in a counted voxel (`layers.py:187`).
+4. **Label.** Inside the femur is bone. Within the declared fat thickness of the skin is fat. The rest is muscle. A voxel outside the skin is fat (`layers.py:204`). The thickness changes smoothly around the femur between front, back, inner and outer.
+5. **Clean.** Only the largest piece of bone and of muscle is kept. The rest becomes muscle and fat.
+6. **Tetrahedra.** Six per voxel, on shared corners.
+7. **Tie the skin.** Each skin vertex gets the tetrahedron that holds it, with its barycentric weights. The skin stays smooth while the tetrahedra are steps.
+
+**The fat is declared by eye** (agreed with Rafael, 2026-11-07): front 15 mm, back 25 mm, inner 25 mm, outer 22 mm. Measured data is for initiative `tissue-research`.
+
+**Results on the neutral woman, at rest** (`thigh_v3_section-along-femur`):
+
+| | Value |
+|---|---:|
+| Femur points inside the skin, between the two rings | 574 of 574 |
+| Femur's closest approach to the skin | 23.5 mm (median 44.5) |
+| Tetrahedra: bone, muscle, fat | 6,012 · 68,178 · 95,730 |
+| Corners (nodes) | 32,299 |
+| Skin vertices tied | 169 |
+| Fat, median against declared: front, back, inner, outer | 15.6/15 · 23.8/25 · 23.7/25 · 21.4/22 mm |
+| Time on the CPU | 33 s |
+
+**What it shows:**
+
+- **At rest, the bone is well inside.** Bug `human-model/9` happens while walking, which task 3 measures.
+- **MPFB's thigh skin is coarse:** 169 vertices over 16 cm. The tetrahedra can't put more detail in the skin than its own vertices carry.
+- **Fat outnumbers muscle in tetrahedra,** partly because the skin's outer band of voxels counts as fat.
+
+Every run is kept in `G:\mocap-studio-downloads\review\2026-11-07\`: `thigh_v1_first-try_bone-count-wrong-at-cuts` counted femur points past the rings as outside the skin (89), and `thigh_v2_measure-between-rings` cut the section on a flat plane, which missed most of the leaning femur.
+
+**Running it:**
+
+    human-model/hm.sh python human-model/tools/thigh_layers.py BUILD_DIR NAME OUT_DIR [NAME=value ...]
+    python3 human-model/blender_run.py human-model/blender/thigh_view.py OUT_DIR/NAME.thigh_layers.npz OUT_DIR/08_thigh_layers.blend
+
+`NAME=value` overrides a constant at the top of `thigh_layers.py`, as in `FAT_FRONT=20` or `VOXEL=0.004`. In the `.blend`, the collection `thigh_cutaway` is the back half in section.
