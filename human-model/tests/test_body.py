@@ -29,3 +29,21 @@ def test_island_cleanup_moves_only_small_pieces():
     g[8, 8, 8] = body.MUSCLE
     assert body.island_cleanup(g, body.MUSCLE, body.FAT, 27) == 1
     assert g[8, 8, 8] == body.FAT and g[3, 3, 3] == body.MUSCLE
+
+
+def test_outward_turns_an_inside_out_mesh_round():
+    v = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]], float)
+    good = np.array([[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]])
+    assert (body.outward(v, good) == good).all()
+    assert (body.outward(v, good[:, [0, 2, 1]]) == good).all()
+
+
+def test_report_picture_keeps_the_slice_and_adds_a_frame():
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
+    import body_report
+    labels = np.full((20, 30), -1, np.int8)
+    labels[5:10, 5:10] = body.FAT
+    img = body_report.picture(labels, "Cintura: 65.2 cm", "corte")
+    assert img.width >= 30 * body_report.SCALE and img.height == 20 * body_report.SCALE + 110
+    assert img.getpixel((20 + 6 * body_report.SCALE, 70 + 6 * body_report.SCALE)) == body_report.COLORS[body.FAT]

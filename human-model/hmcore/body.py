@@ -133,6 +133,14 @@ def island_cleanup(grid_labels, label, into, min_voxels):
     return int(m.sum())
 
 
+def outward(verts, tris):
+    """The triangles wound so the mesh's volume is positive. The left leg's bones come mirrored and inside out (bug human-model/11),
+    which turns their winding number to -1, so inside-or-outside called them outside: body_v2 had no left femur."""
+    t = verts[tris]
+    volume = np.einsum("ij,ij->i", t[:, 0], np.cross(t[:, 1], t[:, 2])).sum()
+    return tris if volume >= 0 else tris[:, [0, 2, 1]]
+
+
 def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh):
     """Everything for the body. bones: {name: (verts, tris)}. fat_mm: {zone: mm}. structure: declared depths in mm and smoothing.
     gpu_mesh: meshgpu.Mesh, passed in so this module imports without Warp. Returns a dict of arrays, every intermediate kept."""
@@ -163,7 +171,7 @@ def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh):
     for k, name in enumerate(names):
         vtx, tri = bones[name]
         bv.append(vtx)
-        bt.append(tri + n)
+        bt.append(outward(vtx, tri) + n)
         owner.append(np.full(len(tri), k))
         n += len(vtx)
     bone_mesh = gpu_mesh(np.concatenate(bv), np.concatenate(bt))
@@ -175,14 +183,17 @@ def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh):
     trunk_hull = ConvexHull(np.concatenate([bones[b][0] for b in TRUNK_BONES]))
     in_chest = inside_hull(c, chest_hull)
     in_trunk = inside_hull(c, trunk_hull)
-    front_of_spine = c[:, 1] < spine_front(bones, c[:, 2])
+    # The belly's organs reach back beside the vertebral bodies (the kidneys), not only in front of them: at the waist the lumbar spine's
+    # front is 7 cm ahead of the body's middle, and holding the cavity in front of it left only a sliver (body_v3)
+    front_of_spine = c[:, 1] < spine_front(bones, c[:, 2]) + structure["cavity_behind_spine_front_mm"] / 1000
     chest_bone = np.isin(near_bone, CHEST_BONES)
 
     s = {k: v / 1000 for k, v in structure.items() if k.endswith("_mm")}
     lab = np.full(len(c), MUSCLE, np.int8)
     deep = d_skin > t_fat + s["abdominal_wall_mm"]
     lab[in_trunk & front_of_spine & deep & (d_bone > s["cavity_bone_gap_mm"])] = CAVITY
-    lab[in_chest & (d_bone > s["cavity_bone_gap_mm"]) & front_of_spine] = CAVITY
+    # The lungs reach back beside the spine, so the chest's cavity isn't held in front of it as the belly's is (body_v2 was)
+    lab[in_chest & (d_bone > s["cavity_bone_gap_mm"])] = CAVITY
     lab[(z_of == "breast") & ~in_chest & (~chest_bone | (d_bone > s["pectoral_mm"]))] = FAT
     lab[(d_skin < t_fat) & (lab != CAVITY)] = FAT
     lab[(d_skin < structure["skin_band_voxels"] * h) | ~inside[included]] = SKIN

@@ -25,6 +25,7 @@
 - `debug_view.py`: quick point views of a fit, no Blender.
 - `gpu_bench.py`: a soft cube dropped on a floor at several sizes, timed on the GPU and the CPU (`hm.sh --gpu`; task `muscle-physics/thigh/1`).
 - `body_layers.py`: the whole body in layers at rest, with every step numbered, bone poking measured apart from the cuts (`hm.sh --gpu`; task `muscle-physics/body-at-rest/1`).
+- `body_report.py`: the zero point's sections, masses and table, in Portuguese for Rafael (task `muscle-physics/body-at-rest/2`). Plain image; its text uses Blender's Inter font from `G:`.
 - `thigh_walk.py`: the layered thigh through a walk on the GPU, its tissue values from `data/thigh_tissue.json`, with bone-through-skin, motion and volume per frame against the current model (`hm.sh --gpu`; task `muscle-physics/thigh/3`).
 - `thigh_layers.py`: one thigh built from the inside out, with every step kept as a numbered `.ply` (task `muscle-physics/thigh/2`).
 

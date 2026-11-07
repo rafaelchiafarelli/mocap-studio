@@ -40,6 +40,7 @@
 - `muscle_sphere_cloth.py`: the same on Blender's Cloth, kept as the record of its limits. `muscle_sphere.py` imports its mesh helpers.
 - `muscle_render.py`: renders either one to PNGs.
 - `body_view.py`: the layered body as a `.blend`, with its skin painted by zone and front and side sections as stills.
+- `body_tape.py`: a recipe's pattern measures and each girth's height, from the installed editor's tape.
 - `thigh_walk_dump.py`: the left femur's transform and the skin, every frame of a walk file.
 - `thigh_bake.py`: a walked thigh as shape keys per frame, beside the current skin, and its frames for two videos.
 - `thigh_view.py`: the layered thigh as a `.blend`, with a section and two stills.

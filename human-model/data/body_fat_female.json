@@ -11,6 +11,7 @@
   "pectoral_mm": 15,
   "abdominal_wall_mm": 15,
   "cavity_bone_gap_mm": 5,
+  "cavity_behind_spine_front_mm": 30,
   "skin_band_voxels": 1,
   "smoothing_iterations": 10,
   "min_island_voxels": 27
