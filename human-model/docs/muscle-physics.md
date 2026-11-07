@@ -198,4 +198,32 @@ Task 3 of epic `thigh`. The thigh of experiment 2 goes through the neutral woman
     python3 human-model/blender_run.py human-model/blender/thigh_bake.py RUN_DIR/thigh_walk.npz LAYERS.npz OUT/00_female_walk_dump.npz RUN_DIR/thigh_walk.blend RUN_DIR/frames
     ffmpeg -framerate 24 -i RUN_DIR/frames/compare/%04d.png -c:v libx264 -pix_fmt yuv420p RUN_DIR/compare.mp4
 
-`thigh_walk.py`'s default is 40 steps per frame, which isn't converged. Pass `SUBSTEPS=160`.
+`thigh_walk.py` defaults to 160 steps per frame, the converged value.
+
+**Rafael's verdict on v5 (2026-11-07):** "parece um ser humano é forçar a amizade, mas mostra que tem futuro". It looks like cartoon jelly: the damping must go up somewhere, and he expects the rest to be a matter of better values.
+
+| Run | Change | Peak motion against the femur | Settles after stopping |
+|---|---|---:|---:|
+| v5 | damping 5 per second | 21.0 mm | 0.62 s |
+| `v7_damp-20` | damping 20 per second | 14.0 mm | 0.17 s |
+
+### Changing the values and running again
+
+One command, from the `mocap-studio` folder in WSL, does everything up to the videos (about two minutes):
+
+    human-model/thigh_run.sh NAME [NAME=value ...]
+    human-model/thigh_run.sh v8_damp-40_muscle-30k DAMPING=40 MUSCLE_YOUNG=30000
+
+It writes `G:\mocap-studio-downloads\review\<today>\thigh_walk\<NAME>\`, prints the peak motion and the settling time, and refuses a name that already exists, so every run is kept. Put the values in the name, so the folder says what it is.
+
+| Value | Now | What it does |
+|---|---:|---|
+| `DAMPING` | 5 | Per second. **The jelly:** higher stops the wobble sooner. It slows only motion relative to the bone |
+| `FAT_YOUNG` | 3000 | Pa. Fat's stiffness: higher wobbles less and faster |
+| `MUSCLE_YOUNG` | 15000 | Pa. Relaxed muscle's stiffness. A working muscle is much stiffer |
+| `SKIN_YOUNG` | 150000 | Pa. The skin band, which holds the fat in. 0 removes it (as in v2) |
+| `POISSON` | 0.45 | How much the tissue resists changing volume, up to 0.5 |
+| `FAT_DENSITY`, `MUSCLE_DENSITY` | 900, 1060 | kg/m³. Heavier swings more |
+| `SUBSTEPS` | 160 | Steps per frame. Fewer is faster but softer than asked, as v3 and v4 showed |
+
+None of these are measured yet: they're for look, until initiative `tissue-research`.
