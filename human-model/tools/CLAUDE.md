@@ -23,6 +23,7 @@
 - `contact_sheet.py`: a labelled grid of renders.
 - `make_gait_table.py`: writes `data/gait_walk.json`.
 - `debug_view.py`: quick point views of a fit, no Blender.
+- `thigh_layers.py`: one thigh built from the inside out, with every step kept as a numbered `.ply` (task `muscle-physics/thigh/2`).
 
 ## Key facts / gotchas
 
