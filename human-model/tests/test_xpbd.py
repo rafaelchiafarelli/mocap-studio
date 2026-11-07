@@ -105,3 +105,22 @@ def test_mesh_queries_on_a_closed_tube():
     p = np.array([[0, 0, 0.1], [0.06, 0, 0.1], [0, 0, 0.3]])
     assert m.inside(p).tolist() == [True, False, False]
     assert m.closest(p)[0] == pytest.approx([0.05, 0.01, 0.1], abs=1e-3)
+
+
+def test_skinfit_covers_a_rod_that_pokes_through_a_tube():
+    """A rod of radius 2 cm inside a tube of skin 2.5 cm, pushed 1 cm off centre, so it comes 5 mm out. Asked for 3 mm, with 15 mm the most."""
+    from hmcore import meshgpu, skinfit
+    from tests.test_layers import _tube
+    wp.init()
+    skin, tris = _tube(0.025, 0.0, 0.3, n=48, rings=31)
+    rod, rod_tris = _tube(0.02, 0.05, 0.25, n=24, rings=11, closed=True)
+    rod[:, 0] += 0.01
+    mesh = lambda v, f: meshgpu.Mesh(v, f, device="cpu")
+    rig = {"spine.006": {"head": [9, 9, 9]}, "spine.005": {"head": [9, 9, 8], "tail": [9, 9, 9]}}
+    for side in ("L", "R"):
+        rig[f"hand.{side}"] = rig[f"foot.{side}"] = {"head": [9, 9, 9]}
+        rig[f"forearm.{side}"] = rig[f"shin.{side}"] = {"head": [9, 9, 8], "tail": [9, 9, 9]}
+    after, push, rec = skinfit.fit(skin, tris, tris, {"rod": (rod, rod_tris)}, rig, {"default": 3}, 0.015, mesh)
+    assert rec["misplaced"] == []
+    assert rec["depth_after"].min() > 0.0025
+    assert push.max() < 0.015
