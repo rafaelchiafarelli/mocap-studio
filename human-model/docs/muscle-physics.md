@@ -158,7 +158,7 @@ Task 3 of epic `thigh`. The thigh of experiment 2 goes through the neutral woman
 1. `blender/thigh_walk_dump.py` reads, every frame, the femur's transform from rest, and the current skin.
 2. `tools/thigh_walk.py` simulates on the GPU (`hmcore/xpbd.py`):
    - The bone, and both cut ends from each skin ring outward, are carried by the femur.
-   - Each frame the carried nodes move part of the way at every step, so there is no jolt between frames (`xpbd.py:173`).
+   - Each frame the carried nodes move part of the way at every step, so there is no jolt between frames (`xpbd.py:176`).
    - Damping slows only the tissue's motion relative to the femur (`xpbd.py:76`).
    - It measures and writes the table.
 3. `blender/thigh_bake.py` makes the `.blend` and the frames, and `ffmpeg` makes the videos.

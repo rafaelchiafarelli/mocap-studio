@@ -42,6 +42,7 @@
 - `body_view.py`: the layered body as a `.blend`, with its skin painted by zone and front and side sections as stills.
 - `skin_fit_view.py`: the skin before and after the push, painted by how far it moved, with front and back stills.
 - `body_tape.py`: a recipe's pattern measures and each girth's height, from the installed editor's tape.
+- `body_walk_dump.py`: every bone's transform from rest and the skin, every frame of a walk file.
 - `thigh_walk_dump.py`: the left femur's transform and the skin, every frame of a walk file.
 - `thigh_bake.py`: a walked thigh as shape keys per frame, beside the current skin, and its frames for two videos.
 - `thigh_view.py`: the layered thigh as a `.blend`, with a section and two stills.
