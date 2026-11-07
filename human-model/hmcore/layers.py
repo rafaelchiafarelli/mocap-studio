@@ -19,9 +19,11 @@ def crotch_z(skin, midline=0.004):
 
 
 def cut_patch(skin, tris, side, z_lo, z_hi):
-    """The triangles of one limb between two heights: those wholly in the slab on that side (+1 is +X, the body's left), largest connected piece."""
+    """The triangles of one limb between two heights: those wholly in the slab on that side (+1 is +X, the body's left; None for both), largest connected piece."""
     v = skin[tris]
-    keep = np.all((v[:, :, 2] > z_lo) & (v[:, :, 2] < z_hi), axis=1) & (v[:, :, 0].mean(axis=1) * side > 0)
+    keep = np.all((v[:, :, 2] > z_lo) & (v[:, :, 2] < z_hi), axis=1)
+    if side is not None:
+        keep &= v[:, :, 0].mean(axis=1) * side > 0
     t = tris[keep]
     ids, inv = np.unique(t, return_inverse=True)
     local = inv.reshape(-1, 3)
@@ -254,10 +256,15 @@ def measure(result, skin, bone, side, fat_mm, margin=0.01):
             "fat": fat}
 
 
-def write_ply(path, verts, faces=None):
-    """A binary PLY that Blender imports: vertices, and triangles if given."""
+def write_ply(path, verts, faces=None, colors=None):
+    """A binary PLY that Blender imports: vertices, optionally with colours (n x 3, 0 to 255), and triangles if given."""
     verts = np.asarray(verts, "<f4")
     header = ["ply", "format binary_little_endian 1.0", f"element vertex {len(verts)}", "property float x", "property float y", "property float z"]
+    if colors is not None:
+        header += ["property uchar red", "property uchar green", "property uchar blue"]
+        rec = np.zeros(len(verts), dtype=[("p", "<f4", 3), ("c", "u1", 3)])
+        rec["p"], rec["c"] = verts, np.clip(colors, 0, 255)
+        verts = rec
     if faces is not None:
         header += [f"element face {len(faces)}", "property list uchar int vertex_indices"]
     with open(path, "wb") as f:
