@@ -39,6 +39,9 @@
 - `muscle_sphere.py`: a liquid-filled sphere lifting a box, on our own solver: [docs/muscle-physics.md](../docs/muscle-physics.md).
 - `muscle_sphere_cloth.py`: the same on Blender's Cloth, kept as the record of its limits. `muscle_sphere.py` imports its mesh helpers.
 - `muscle_render.py`: renders either one to PNGs.
+- `thigh_walk_dump.py`: the left femur's transform and the skin, every frame of a walk file.
+- `thigh_bake.py`: a walked thigh as shape keys per frame, beside the current skin, and its frames for two videos.
+- `thigh_view.py`: the layered thigh as a `.blend`, with a section and two stills.
 
 ## Key facts / gotchas
 

@@ -2,11 +2,14 @@
 
 **Goal:** learn what a physically simulated muscle can and can't do in Blender, starting from the smallest possible case, before deciding anything about the human model (Rafael, 2026-11-04). Nothing in the current model is removed or changed by this initiative.
 
-**Gate:** Rafael's verdict on each experiment. There is no decision yet to replace the spindles in `human-model/docs/muscles.md`.
+Since 2026-11-07 it also tests building tissue from the inside out, bone then muscle then fat then skin, simulated on the GPU outside Blender. Rafael accepted the workflow it would serve: a fast model blocks the scene, and the realistic one is simulated overnight in batches.
+
+**Gate:** Rafael's verdict on each experiment. There is no decision yet to replace the spindles in `human-model/docs/muscles.md`, or to change how the model's skin is made.
 
 ## Epics
 
-- `single-muscle`: one muscle, one load.
+- `single-muscle`: one muscle, one load. Done.
+- `thigh`: one thigh in layers, simulated on the GPU through a walking step. Order in [epics/README.md](epics/README.md).
 
 ## Next, proposed and not planned
 
