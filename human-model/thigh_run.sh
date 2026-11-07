@@ -2,7 +2,7 @@
 # Runs the walking thigh with other values, all the way to the videos: human-model/thigh_run.sh NAME [NAME=value ...]
 # Example: human-model/thigh_run.sh v7_damp-20 DAMPING=20
 # Writes G:\mocap-studio-downloads\review\<today>\thigh_walk\<NAME>\ and refuses a name that's already there, so nothing is overwritten.
-# The values are the constants at the top of tools/thigh_walk.py. LAYERS and DUMP can be set to use another thigh or walk.
+# Defaults are in human-model/data/thigh_tissue.json: edit it to change them for every run. LAYERS and DUMP can be set to use another thigh or walk.
 set -e
 [ -n "$1" ] || { sed -n 2,5p "$0"; exit 1; }
 NAME=$1; shift
