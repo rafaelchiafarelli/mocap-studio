@@ -14,10 +14,10 @@
 
 **Measured, and reported as measured:** milliseconds per simulation step and peak VRAM at each size; the same cube on the CPU at the smallest size, for comparison. Each run's table kept on `G:\mocap-studio-downloads\review\<date>\` with its size in the name.
 
-## Pre-work, needs Rafael
+## Pre-work, by Rafael
 
-- **Docker can't see the GPU yet:** its only runtime is `runc`. The NVIDIA Container Toolkit has to be installed in WSL, with `sudo`, by Rafael or with his go-ahead. Docker Desktop's own GPU support is the alternative, if that's what runs Docker here.
-- **Library: Warp (recommended) or Taichi.** Both Apache 2.0. Warp is maintained by NVIDIA and has tetrahedral soft-body examples; Taichi is the fallback if Warp fails here.
+- **Docker can't see the GPU yet:** its only runtime is `runc` (Docker 29.1.3 from Ubuntu's `docker.io`, in WSL Ubuntu 24.04). Rafael runs `sudo human-model/setup_gpu_host.sh` (2026-11-07, as he asked): it installs the NVIDIA Container Toolkit from NVIDIA's repository, registers it with Docker and checks `nvidia-smi` inside a container. The version it prints goes in `DEPENDENCIES.md`.
+- **Library: Warp,** agreed 2026-11-07. Apache 2.0, maintained by NVIDIA, with tetrahedral soft-body examples. Taichi (Apache 2.0) is the fallback if Warp fails here.
 
 ## Dependencies
 

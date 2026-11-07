@@ -10,9 +10,10 @@ Every command here was run from a clean folder on 2026-11-03. Run them from WSL 
 | Docker running | `docker ps`. `hm.sh` builds its image the first time |
 | Blender 5.2.2 on Windows | `apps/blender/5.2.2/` on `G:`, or set `HM_BLENDER` to another `blender.exe` |
 | MPFB 2.0.18 and its system assets, installed in that Blender | See `DEPENDENCIES.md`. Without them the build fails on `bl_ext.user_default.mpfb` |
+| The GPU, for tissue simulation only | `sudo human-model/setup_gpu_host.sh`, once. Then `hm.sh --gpu` builds the GPU image the first time |
 | The source data | `python3 -I human-model/tools/fetch_sources.py`. Keeps what's already there |
 
-Tests: `human-model/hm.sh pytest`
+Tests: `human-model/hm.sh pytest`, and `human-model/hm.sh --gpu pytest` for the GPU solver's tests, which the first skips
 
 ## Build a person
 

@@ -19,11 +19,11 @@
 
 Task 1 isn't needed: this runs on the CPU. `hmcore/bonelib.py` and the built female files.
 
-## To agree with Rafael before implementing
+## Agreed with Rafael (2026-11-07)
 
-- **Female, left thigh.** Recommended: the gynoid fat on the thigh makes movement easiest to judge.
-- **Muscle is one volume** between the bone and the fat, not separate muscles. Separate muscles are a later step.
-- **Fat thickness declared by eye,** since we have no measured data yet. CT tissue labels could replace it later, once their license is checked.
+- **Female, left thigh:** the gynoid fat on the thigh makes movement easiest to judge.
+- **Muscle is one volume** between the bone and the fat, not separate muscles.
+- **Fat thickness declared by eye,** since we have no measured data yet. Measured data and separate muscles are for [tissue-research](../../../../tissue-research/tissue-research.md).
 
 ## Out of scope
 
