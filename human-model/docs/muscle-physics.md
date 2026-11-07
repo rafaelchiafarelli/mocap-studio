@@ -148,3 +148,54 @@ Task 1 of epic `thigh`: can the RTX 4080 SUPER simulate soft tissue fast enough 
 
     sudo human-model/setup_gpu_host.sh        # once
     human-model/hm.sh --gpu python human-model/tools/gpu_bench.py OUT_DIR [NAME=value ...]
+
+## Experiment 3: the layered thigh walks
+
+Task 3 of epic `thigh`. The thigh of experiment 2 goes through the neutral woman's walk (`female_walk_review.blend`, 105 frames, 4.4 s), then holds still for one second. The femur is moved exactly as in that file; muscle, fat and skin follow on the GPU. The same steps, measured on the current model's skin, are the comparison.
+
+**How it runs:**
+
+1. `blender/thigh_walk_dump.py` reads, every frame, the femur's transform from rest, and the current skin.
+2. `tools/thigh_walk.py` simulates on the GPU (`hmcore/xpbd.py`):
+   - The bone, and both cut ends from each skin ring outward, are carried by the femur.
+   - Each frame the carried nodes move part of the way at every step, so there is no jolt between frames (`xpbd.py:173`).
+   - Damping slows only the tissue's motion relative to the femur (`xpbd.py:76`).
+   - It measures and writes the table.
+3. `blender/thigh_bake.py` makes the `.blend` and the frames, and `ffmpeg` makes the videos.
+
+**Declared values, by look, no measured data** (see initiative `tissue-research`): passive muscle 15 kPa, fat 3 kPa, a 5 mm skin band 150 kPa (real skin is about 0.5 MPa over 1.5 mm, spread over the band), Poisson 0.45, muscle 1,060 and fat 900 kg/m³, damping 5 per second.
+
+**Six runs, all kept** in `G:\mocap-studio-downloads\review\2026-11-07\thigh_walk\`:
+
+| Run | What changed | Bone through skin | Skin's peak motion against the femur | Lesson |
+|---|---|---:|---:|---|
+| `v1_damping-held-tissue-back` | First try | 10 frames, 45 mm deep | 127 mm | Two faults. Damping slowed the absolute velocity, like moving through honey. The sloping top end was held only at its highest point, so it hung loose |
+| `v2_ends-pinned_no-skin_fat-swings-10cm` | Both fixed | none | 106 mm | Fat at 3 kPa can't hold itself up: the thigh pinches at every step. Videos made, to see it |
+| `v3_skin-150k` | A skin band at 150 kPa | none | 48 mm | The skin holds the fat in |
+| `v4_skin-150k_substeps-80` | 80 steps per frame | none | 25 mm | The answer still depended on the steps: not converged |
+| **`v5_skin-150k_substeps-160`** | **160 steps** | **none** | **21 mm** | **Converged.** Videos made |
+| `v6_skin-150k_substeps-320` | 320 steps | none | 21 mm | Same as v5: confirms it |
+
+**v5, against the three agreed criteria:**
+
+- **No skin point inside the bone, in any frame:** met. **But the current model doesn't poke here either:** between the two skin rings, the femur stayed inside its skin in every frame too. Bug `human-model/9`'s poking must be nearer the hip or the knee, outside this slab, so this experiment doesn't show the difference on that bug.
+- **Under 1 s per frame:** met. 70 ms median and 137 ms at worst, for 169,920 tetrahedra at 160 steps per frame, 12 MiB of VRAM. Times vary between frames for a reason not found: the GPU benchmark's 25 ms for a million suggests some of it is overhead around each frame.
+- **Movement:** Rafael's verdict, from the videos.
+
+**Other measures, v5:**
+- Volume held within 2% for both fat and muscle.
+- After the walk stops, the skin settles in 0.62 s.
+- Measured against the femur, the current model's skin moves 33 mm at its peak. That comes from its other bones' weights near the hip and knee, not from any tissue.
+
+**What the walk itself does:** the thigh's centre reaches 45 m/s², about 4.5 g, at its hardest moment. That's high for a walk and may come from bug `human-model/5`, the jumps at each step. The tissue responds to whatever the input does, so a smoother walk will move it less.
+
+**Videos:** in v2 and v5, `<run>_compare.mp4` shows our skin on the left and the current model's on the right, from the front, following the thigh. `<run>_inside.mp4` shows the back half in section with the femur. Each run's `.blend` plays without simulating, and its `thigh_walk_frames.csv` has every frame's numbers.
+
+**Running it:**
+
+    python3 human-model/blender_run.py --blend .../female_walk_review.blend human-model/blender/thigh_walk_dump.py OUT/00_female_walk_dump.npz
+    human-model/hm.sh --gpu python human-model/tools/thigh_walk.py LAYERS.npz OUT/00_female_walk_dump.npz RUN_DIR [SUBSTEPS=160 ...]
+    python3 human-model/blender_run.py human-model/blender/thigh_bake.py RUN_DIR/thigh_walk.npz LAYERS.npz OUT/00_female_walk_dump.npz RUN_DIR/thigh_walk.blend RUN_DIR/frames
+    ffmpeg -framerate 24 -i RUN_DIR/frames/compare/%04d.png -c:v libx264 -pix_fmt yuv420p RUN_DIR/compare.mp4
+
+`thigh_walk.py`'s default is 40 steps per frame, which isn't converged. Pass `SUBSTEPS=160`.

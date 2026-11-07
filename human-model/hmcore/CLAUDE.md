@@ -39,8 +39,9 @@
 - Bulge is capped and off where no bone is near, or the chin swells: `softtissue.py`, search `NO_BONE`.
 - Trunk width reads wrong near the armpit, where arms join the trunk: `skeleton.py`, search `armpit_limit`.
 - `layers.cut_patch` keeps whole triangles only, so a patch ends at the ring of vertices short of each cut, about 3 cm on the thigh. `layers.measure` counts between the rings: `layers.py:228`.
-- `xpbd.Solver` needs tetrahedra in colours that share no node: `voxel_colours` for voxel tetrahedra, `colours` otherwise (`xpbd.py:107`). Within a colour the solve writes positions in place.
-- `xpbd.Solver.step` records a CUDA graph on its second call and replays it while `dt` and substeps stay the same (`xpbd.py:153`). Launching one by one cost more than the work.
+- `xpbd.Solver` needs tetrahedra in colours that share no node: `voxel_colours` for voxel tetrahedra, `colours` otherwise (`xpbd.py:126`). Within a colour the solve writes positions in place.
+- `xpbd.Solver.drive` with `all_rest` damps motion relative to the carried frame. Without it damping acts like air and a carried body trails behind: `xpbd.py:173`.
+- `xpbd.Solver.step` records a CUDA graph on its second call and replays it while `dt` and substeps stay the same (`xpbd.py:198`). Launching one by one cost more than the work.
 - Model frame: metres, the body faces -Y, its left is +X, up is +Z. Rotation only, never a mirror: `ctbones.py:5`.
 
 ## Touchpoints
