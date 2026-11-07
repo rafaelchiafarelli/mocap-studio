@@ -46,9 +46,9 @@
 - `body.build` turns every bone mesh outward first: the left leg's come inside out (bug `human-model/11`), and Warp's winding number then calls their inside outside: `body.py:147`.
 - `skinfit.spread` shrinks the push at each step (`falloff`); without it the push spread over the whole skin and grew the bust 3.2 cm: `skinfit.py:23`.
 - `layers.cut_patch` takes `side=None` to keep both sides, as `body.cut_skin` does.
-- `xpbd.Solver` needs tetrahedra in colours that share no node: `voxel_colours` for voxel tetrahedra, `colours` otherwise (`xpbd.py:126`). Within a colour the solve writes positions in place.
-- `xpbd.Solver.drive` with `all_rest` damps motion relative to the carried frame. Without it damping acts like air and a carried body trails behind: `xpbd.py:173`.
-- `xpbd.Solver.step` records a CUDA graph on its second call and replays it while `dt` and substeps stay the same (`xpbd.py:198`). Launching one by one cost more than the work.
+- `xpbd.Solver` needs tetrahedra in colours that share no node: `voxel_colours` for voxel tetrahedra, `colours` otherwise (`xpbd.py:129`). Within a colour the solve writes positions in place.
+- `xpbd.Solver.drive` takes one transform per bone: `bone` for each driven node, `all_bone` for each node's nearest, whose motion its damping follows. With `all_rest` it damps motion relative to the carried frame. Without it damping acts like air and a carried body trails behind: `xpbd.py:176`.
+- `xpbd.Solver.step` records a CUDA graph on its second call and replays it while `dt` and substeps stay the same (`xpbd.py:206`). Launching one by one cost more than the work.
 - Model frame: metres, the body faces -Y, its left is +X, up is +Z. Rotation only, never a mirror: `ctbones.py:5`.
 
 ## Touchpoints
