@@ -47,3 +47,14 @@ def test_report_picture_keeps_the_slice_and_adds_a_frame():
     img = body_report.picture(labels, "Cintura: 65.2 cm", "corte")
     assert img.width >= 30 * body_report.SCALE and img.height == 20 * body_report.SCALE + 110
     assert img.getpixel((20 + 6 * body_report.SCALE, 70 + 6 * body_report.SCALE)) == body_report.COLORS[body.FAT]
+
+
+def test_report_masses_come_from_inside_the_skin():
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
+    import body_report
+    built = {"litres": {"bone": 3.0, "muscle": 17.0, "fat": 11.0, "skin": 11.0, "cavity": 7.0}, "enclosed_litres": 45.0, "skin_area_m2": 1.2}
+    litres = body_report.inside_skin(built)
+    assert litres["skin"] == pytest.approx(1.2 * body_report.REAL_SKIN_MM)
+    assert litres["fat"] == pytest.approx(45.0 - 3.0 - 17.0 - 7.0 - 1.8)
+    assert sum(litres.values()) == pytest.approx(45.0)

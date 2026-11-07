@@ -333,3 +333,31 @@ Epic `inside-out-skin`, task 1. The zero point found bones through the skin at r
 
     human-model/hm.sh --gpu python human-model/tools/skin_over_bone.py BUILD_DIR NAME TAPE.json OUT_DIR [depth.<prefix>=mm ...] [MAX_PUSH_MM=mm]
     python3 human-model/blender_run.py human-model/blender/skin_fit_view.py OUT_DIR/NAME.skin_fit.npz BUILD_DIR/NAME.export.npz OUT_DIR/04_skin_fit.blend
+
+### The zero point on the pushed skin
+
+Task 2. The layers rebuilt inside the pushed skin (`body_layers.py ... SKIN=<name>.skin_fit.npz`). The masses now come from the volume inside the skin, not from the voxels (`body_report.inside_skin`):
+- bone, muscle and cavity from their voxels, which lie deep;
+- real skin as its area times 1.5 mm;
+- fat as what's left.
+
+The voxels had counted 4.7 L too many, because their band reaches past the skin.
+
+| | Before the push, same count (`body_v4b`) | After (`body_v5_pushed-skin`) | Usual for an adult woman* |
+|---|---:|---:|---|
+| Bone | 12% | 12% | 12–15% |
+| Muscle | 40% | 40% | 30–36% |
+| Fat | 30% | 30% | 25–31% |
+| Skin | 4% | 4% | — |
+| Cavity | 14% | 14% | — |
+| Bones through the skin | 28 | **4**, the misplaced ones | — |
+| Bust, waist, hip | 83.9, 65.2, 90.6 cm | 84.3, 65.3, 90.7 cm | — |
+
+\* General knowledge, not from a source read here.
+
+**What it shows:**
+- **The push fixes the bones through the skin** without changing the figure: 24 of 28 bones are now covered. The other four are bones out of place: the right scapula, the left clavicle and both fibulae.
+- **The fat's share was a counting problem, not a body problem.** Counted inside the skin, it's 30%, within the usual range, both before and after the push.
+- **Muscle reads high** (40% against 30–36%). Everything that isn't bone, fat or cavity is called muscle, including the tissue between organs, the neck's and the pelvic floor's.
+
+`marco_zero.md` in `body_v5_pushed-skin` has both columns side by side.

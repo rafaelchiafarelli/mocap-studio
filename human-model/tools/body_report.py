@@ -1,5 +1,7 @@
 """The zero point: what the layered body is made of, measured (task muscle-physics/body-at-rest/2).
-    hm.sh python human-model/tools/body_report.py LAYERS_DIR NAME TAPE.json OUT_DIR
+    hm.sh python human-model/tools/body_report.py LAYERS_DIR NAME TAPE.json OUT_DIR [PREVIOUS_DIR]
+PREVIOUS_DIR holds an earlier marco_zero.json to compare with, side by side. If the layers were built on a pushed skin, the girths
+are taken from its <NAME>.skin_fit.json beside the npz it came from.
 LAYERS_DIR holds <NAME>.body_layers.npz and .json from tools/body_layers.py; TAPE.json is from blender/body_tape.py on the same recipe.
 Writes OUT_DIR/10_section_<level>.png (crosswise, at each girth of the tape: seen from the feet, front at the top, the body's left on the right),
 11_section_<cut>.png (lengthwise: the middle, and through the left leg; front on the left), 12_sections.png (all of them on one sheet),
@@ -69,7 +71,17 @@ def sheet(images, columns=4):
     return out
 
 
-def main(layers_dir, name, tape_json, out_dir):
+def inside_skin(built):
+    """Masses from the volume inside the skin, not from the voxels: bone, muscle and cavity from their voxels, which lie deep,
+    real skin as its area times REAL_SKIN_MM, and fat as what's left. The voxels' 5 mm band made a 9 mm "skin" (body_v4)."""
+    litres = dict(built["litres"])
+    skin_l = built["skin_area_m2"] * REAL_SKIN_MM
+    litres["skin"] = round(skin_l, 2)
+    litres["fat"] = round(built["enclosed_litres"] - litres["bone"] - litres["muscle"] - litres["cavity"] - skin_l, 2)
+    return litres
+
+
+def main(layers_dir, name, tape_json, out_dir, previous_dir=None):
     os.makedirs(out_dir, exist_ok=True)
     L = np.load(os.path.join(layers_dir, f"{name}.body_layers.npz"))
     built = json.load(open(os.path.join(layers_dir, f"{name}.body_layers.json")))
@@ -94,52 +106,62 @@ def main(layers_dir, name, tape_json, out_dir):
     pictures.append(legend())
     sheet(pictures).save(f"{out_dir}/12_sections.png")
 
-    litres = built["litres"]
+    litres = inside_skin(built)
     mass = {k: litres[k] * DENSITY[k] / 1000 for k in body.LABELS}
     total = sum(mass.values())
-    patch = L["patch"]
-    v = L["skin"][patch]
-    area = float(np.linalg.norm(np.cross(v[:, 1] - v[:, 0], v[:, 2] - v[:, 0]), axis=1).sum() / 2)
-    band_mm = litres["skin"] / 1000 / area * 1000
-    real_skin = area * REAL_SKIN_MM / 1000 * DENSITY["skin"]
-    corrected_fat = mass["fat"] + (litres["skin"] / 1000 - area * REAL_SKIN_MM / 1000) * DENSITY["fat"]
-    corrected_total = total - mass["skin"] + real_skin + (litres["skin"] / 1000 - area * REAL_SKIN_MM / 1000) * DENSITY["fat"]
     share = {k: mass[k] / total for k in body.LABELS}
-    report = {"name": name, "densities_kg_m3": DENSITY, "litres": litres, "kg": {k: round(m, 2) for k, m in mass.items()}, "kg_total": round(total, 2),
-              "share_of_mass": {k: round(s, 3) for k, s in share.items()},
-              "skin_area_m2": round(area, 3), "skin_band_mean_mm": round(band_mm, 1),
-              "fat_share_if_band_beyond_real_skin_is_fat": round(corrected_fat / corrected_total, 3), "real_skin_mm": REAL_SKIN_MM,
+    measures = {k: v["cm"] for k, v in tape["measures"].items()}
+    if built.get("skin_source", "build") != "build":
+        fit_json = built["skin_source"].replace(".npz", ".json")
+        if os.path.exists(fit_json):
+            for k, g in json.load(open(fit_json))["girths_cm"].items():
+                if g.get("after") is not None:
+                    measures[k] = g["after"]
+    previous = json.load(open(os.path.join(previous_dir, "marco_zero.json"), encoding="utf-8")) if previous_dir else None
+    report = {"name": name, "skin_source": built.get("skin_source", "build"), "densities_kg_m3": DENSITY, "litres": litres,
+              "voxel_litres": built["litres"], "enclosed_litres": built["enclosed_litres"], "kg": {k: round(m, 2) for k, m in mass.items()},
+              "kg_total": round(total, 2), "share_of_mass": {k: round(s, 3) for k, s in share.items()},
+              "skin_area_m2": built["skin_area_m2"], "real_skin_mm": REAL_SKIN_MM, "previous": previous,
               "usual_adult_woman_share": USUAL, "fat_by_zone": built["fat"], "bones_with_points_outside_skin": built["bones_with_points_outside_skin"],
-              "measures_cm": {k: v["cm"] for k, v in tape["measures"].items()}, "note": "Head, hands and feet are outside the layered body."}
+              "measures_cm": measures, "note": "Head, hands and feet are outside the layered body."}
     with open(f"{out_dir}/marco_zero.json", "w", encoding="utf-8") as f:
         json.dump(report, f, indent=1, ensure_ascii=False)
     with open(f"{out_dir}/marco_zero.md", "w", encoding="utf-8") as f:
         f.write(markdown(report, tape))
-    print(json.dumps({k: report[k] for k in ("kg", "kg_total", "share_of_mass", "skin_band_mean_mm", "fat_share_if_band_beyond_real_skin_is_fat")}, indent=1))
+    print(json.dumps({k: report[k] for k in ("litres", "kg", "kg_total", "share_of_mass", "enclosed_litres")}, indent=1))
 
 
 def markdown(r, tape):
-    lines = [f"# Marco zero: {r['name']}", "", "Sem cabeça, mãos e pés. Densidades declaradas, não medidas.", "",
-             "## Do que o corpo é feito", "", "| Tecido | Litros | kg | % da massa | Faixa usual numa mulher adulta |", "|---|---:|---:|---:|---|"]
+    prev = r["previous"]
+    lines = [f"# Marco zero: {r['name']}", "", f"Pele: {'empurrada sobre os ossos' if r['skin_source'] != 'build' else 'a do MPFB, sem mudança'}. "
+             "Sem cabeça, mãos e pés. Densidades declaradas, não medidas.", "",
+             f"Massas pelo volume dentro da pele ({r['enclosed_litres']} L): osso, músculo e cavidade pelos seus cubinhos, "
+             f"pele real como {r['real_skin_mm']} mm sobre {r['skin_area_m2']} m², e gordura o que sobra.", "",
+             "## Do que o corpo é feito", ""]
+    head = "| Tecido | Litros | kg | % da massa |" + (" Antes (%) |" if prev else "") + " Faixa usual numa mulher adulta |"
+    lines += [head, "|---|---:|---:|---:|" + ("---:|" if prev else "") + "---|"]
     for k in body.LABELS:
-        usual = r["usual_adult_woman_share"].get(k)
-        lines.append(f"| {NAMES_PT[k]} | {r['litres'][k]} | {r['kg'][k]} | {r['share_of_mass'][k] * 100:.0f}% | "
+        usual = USUAL.get(k)
+        before = f" {prev['share_of_mass'][k] * 100:.0f}% |" if prev else ""
+        lines.append(f"| {NAMES_PT[k]} | {r['litres'][k]} | {r['kg'][k]} | {r['share_of_mass'][k] * 100:.0f}% |{before} "
                      f"{f'{usual[0] * 100:.0f}–{usual[1] * 100:.0f}%' if usual else '—'} |")
-    lines += [f"| **total** | {sum(r['litres'].values()):.1f} | {r['kg_total']} | | |", "",
-              f"A faixa de pele tem em média {r['skin_band_mean_mm']} mm, contra {r['real_skin_mm']} mm de pele real. "
-              f"Contando o resto da faixa como gordura, a gordura é {r['fat_share_if_band_beyond_real_skin_is_fat'] * 100:.0f}% da massa.", "",
+    lines += [f"| **total** | {sum(r['litres'].values()):.1f} | {r['kg_total']} | |" + (" |" if prev else "") + " |", "",
               "As faixas usuais são conhecimento geral, não de uma fonte lida aqui: servem de comparação, não de meta.", "",
               "## Gordura por zona (mm)", "", "| Zona | Declarada | Medida (mediana) | 10% a 90% |", "|---|---:|---:|---|"]
     for z, v in r["fat_by_zone"].items():
         lines.append(f"| {z} | {v['declared_mm']} | {v['median_mm']} | {v['p10_mm']} a {v['p90_mm']} |")
-    lines += ["", "## Ossos que saem da pele, em repouso", "", "| Osso | Pontos fora | Mais fundo (mm) |", "|---|---:|---:|"]
-    for b, v in r["bones_with_points_outside_skin"].items():
-        lines.append(f"| {b} | {v['points_outside_skin']} | {v['deepest_mm']} |")
-    lines += ["", "## Ficha de modelagem (cm)", "", "| Medida | cm |", "|---|---:|"]
+    lines += ["", "## Ossos que saem da pele, em repouso", ""]
+    if r["bones_with_points_outside_skin"]:
+        lines += ["| Osso | Pontos fora | Mais fundo (mm) |", "|---|---:|---:|"]
+        for b, v in r["bones_with_points_outside_skin"].items():
+            lines.append(f"| {b} | {v['points_outside_skin']} | {v['deepest_mm']} |")
+    else:
+        lines.append("Nenhum.")
+    lines += ["", "## Ficha de modelagem (cm)", "", "| Medida | cm |" + (" Antes |" if prev else ""), "|---|---:|" + ("---:|" if prev else "")]
     for k, v in tape["measures"].items():
-        lines.append(f"| {v['label']} | {v['cm']} |")
+        lines.append(f"| {v['label']} | {r['measures_cm'][k]} |" + (f" {prev['measures_cm'].get(k)} |" if prev else ""))
     return "\n".join(lines) + "\n"
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:5])
+    main(*sys.argv[1:6])
