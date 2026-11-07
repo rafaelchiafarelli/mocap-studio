@@ -76,8 +76,8 @@ Epic `thigh` of `initiatives/muscle-physics/`. Today the skin comes first and th
 
 1. **Cut.** The left thigh's skin between 2 cm under the crotch and 8 cm above the femur's lowest point. Only whole MPFB triangles are kept, so the patch ends at the nearest ring of vertices, about 3 cm short of each cut.
 2. **Close.** Each open end gets a fan to its centre, so inside and outside can be told apart (winding number, `fit.winding_number`).
-3. **Fill.** A 5 mm voxel grid: a voxel counts if its centre is inside the skin, or close enough to it that every skin vertex lies in a counted voxel (`layers.py:187`).
-4. **Label.** Inside the femur is bone. Within the declared fat thickness of the skin is fat. The rest is muscle. A voxel outside the skin is fat (`layers.py:204`). The thickness changes smoothly around the femur between front, back, inner and outer.
+3. **Fill.** A 5 mm voxel grid: a voxel counts if its centre is inside the skin, or close enough to it that every skin vertex lies in a counted voxel (`layers.py:189`).
+4. **Label.** Inside the femur is bone. Within the declared fat thickness of the skin is fat. The rest is muscle. A voxel outside the skin is fat (`layers.py:206`). The thickness changes smoothly around the femur between front, back, inner and outer.
 5. **Clean.** Only the largest piece of bone and of muscle is kept. The rest becomes muscle and fat.
 6. **Tetrahedra.** Six per voxel, on shared corners.
 7. **Tie the skin.** Each skin vertex gets the tetrahedron that holds it, with its barycentric weights. The skin stays smooth while the tetrahedra are steps.
