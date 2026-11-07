@@ -11,6 +11,7 @@
 - `build_model.py`: the stages in order.
 - `blender_run.py`: runs a script in Windows Blender from WSL, auto-run off.
 - `install_editor.py`: packs `hm_editor/` and installs it in Windows Blender.
+- `setup_gpu_host.sh`: run once with `sudo` in WSL; installs the NVIDIA Container Toolkit so Docker can use the GPU, and checks it from a container. Changes the host, not the image.
 - `hm.sh`, `Dockerfile`, `requirements.in`, `requirements.txt`: the locked environment for `hmcore`.
 - `ATTRIBUTION.md`: the credits a film has to carry.
 - `human-model.process.md`: the stages.

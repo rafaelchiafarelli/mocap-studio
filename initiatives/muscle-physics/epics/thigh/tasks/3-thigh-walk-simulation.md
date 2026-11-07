@@ -21,7 +21,7 @@
 
 ## What counts as working
 
-To confirm with Rafael:
+Agreed with Rafael, 2026-11-07:
 - **No skin point inside the bone,** in any frame.
 - **Fast enough for overnight:** a two-minute scene is 2,880 frames, and eight hours is 10 s per frame for the **whole body**. The thigh is a small part of it, so it should take under 1 s per frame.
 - **Movement:** Rafael's verdict, from the videos.
