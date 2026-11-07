@@ -35,6 +35,17 @@ def cut_skin(skin, tris, rig):
     return layers.cut_patch(skin, t, None, -np.inf, np.inf)
 
 
+def near_a_cut(points, rig):
+    """Points past or at the head's, a hand's or a foot's cut: a bone there leaves the cut skin by design, it isn't poking through."""
+    out = np.zeros(len(points), bool)
+    for joint, along, reach in CUTS:
+        p = np.asarray(rig[joint]["head"])
+        n = np.asarray(rig[along]["tail"]) - np.asarray(rig[along]["head"])
+        n = n / np.linalg.norm(n)
+        out |= ((points - p) @ n > -0.02) & (np.linalg.norm(points - p, axis=1) < reach + 0.05)
+    return out
+
+
 def segment_distance(points, a, b):
     """Distance from each point to the segment a-b, and the closest point on it."""
     d = b - a
