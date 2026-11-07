@@ -110,3 +110,41 @@ Every run is kept in `G:\mocap-studio-downloads\review\2026-11-07\`: `thigh_v1_f
     python3 human-model/blender_run.py human-model/blender/thigh_view.py OUT_DIR/NAME.thigh_layers.npz OUT_DIR/08_thigh_layers.blend
 
 `NAME=value` overrides a constant at the top of `thigh_layers.py`, as in `FAT_FRONT=20` or `VOXEL=0.004`. In the `.blend`, the collection `thigh_cutaway` is the back half in section.
+
+## The GPU: what tissue costs
+
+Task 1 of epic `thigh`: can the RTX 4080 SUPER simulate soft tissue fast enough for overnight batches? `tools/gpu_bench.py` drops a 20 cm cube of soft tetrahedra 5 cm onto a floor, for one second at 24 frames per second, and times it (`hm.sh --gpu`).
+
+**The solver** (`hmcore/xpbd.py`): XPBD, the method made for GPUs, in NVIDIA Warp. The tissue is Neo-Hookean, set by Young's modulus and Poisson's ratio per tetrahedron, as two constraints: one resists change of shape, the other change of volume (Macklin and Müller 2021). The tetrahedra are solved in 48 groups that share no corner.
+
+**Three versions, all kept** in `G:\mocap-studio-downloads\review\2026-11-07\`:
+
+| Version | What it did | Result |
+|---|---|---|
+| `gpu_bench_v1_edges-jacobi_cube-collapses` | Springs on edges plus volume, all solved at once and averaged | Fast, but far too weak: the cube flattened and lost up to 93% of its volume |
+| `gpu_bench_v2_neo-hookean-coloured` | Neo-Hookean, in groups | Holds its shape up to 330,000 tetrahedra; 1,000,000 collapses. 17 ms per frame at every size: launching a thousand small jobs cost more than the work |
+| `gpu_bench_v3_cuda-graph_substeps-{20,40,80}` | The frame recorded once and replayed (CUDA graph), with 20, 40 or 80 steps per frame | Below |
+
+**Measured, v3,** soft tissue (20 kPa, Poisson 0.45, 1,000 kg/m³; declared):
+
+| Tetrahedra | Steps per frame | ms per frame | Peak VRAM | Volume kept |
+|---:|---:|---:|---:|---:|
+| 10,368 | 20 | 3.4 | 0.7 MiB | 98.6% |
+| 105,456 | 20 | 3.4 | 7.2 MiB | 97.9% |
+| 329,232 | 20 | 3.4 | 22.4 MiB | 93.6% |
+| 998,250 | 20 | 6.0 | 67.6 MiB | **0.1%: collapses** |
+| 998,250 | 40 | 11.9 | 67.6 MiB | 97.3% |
+| 998,250 | 80 | 24.8 | 67.6 MiB | 99.0% |
+| 10,368 on the CPU (Warp, one core) | 80 | 77.8 | — | 99.0% |
+
+**What it shows:**
+
+- **Speed isn't the problem.** A million tetrahedra, about five times the thigh, take 25 ms per frame. The goal for the thigh is under 1 s.
+- **Finer tetrahedra need more steps per frame.** A million collapse at 20 steps and hold at 40. The thigh will need the same check.
+- **Memory is small:** 68 MiB of the card's 16 GB for a million.
+- **The CPU is about six times slower** on the smallest cube, and that's Warp on one core. The GPU's lead grows with size.
+
+**Running it:**
+
+    sudo human-model/setup_gpu_host.sh        # once
+    human-model/hm.sh --gpu python human-model/tools/gpu_bench.py OUT_DIR [NAME=value ...]
