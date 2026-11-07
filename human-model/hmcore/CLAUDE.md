@@ -40,8 +40,9 @@
 - Lips tear with cotangent weights, so `softtissue.py` uses uniform ones.
 - Bulge is capped and off where no bone is near, or the chin swells: `softtissue.py`, search `NO_BONE`.
 - Trunk width reads wrong near the armpit, where arms join the trunk: `skeleton.py`, search `armpit_limit`.
-- `layers.cut_patch` keeps whole triangles only, so a patch ends at the ring of vertices short of each cut, about 3 cm on the thigh. `layers.measure` counts between the rings: `layers.py:228`.
+- `layers.cut_patch` keeps whole triangles only, so a patch ends at the ring of vertices short of each cut, about 3 cm on the thigh. `layers.measure` counts between the rings: `layers.py:230`.
 - `body.zones` reads the trunk's zone by height against the rib cage's bottom and the hip bones' top, and front, back or side from the trunk's middle; the breast zone is wherever the rig's breast bone is nearest, which is most of the front of the chest: `body.py:46`.
+- `body.build` turns every bone mesh outward first: the left leg's come inside out (bug `human-model/11`), and Warp's winding number then calls their inside outside: `body.py:136`.
 - `layers.cut_patch` takes `side=None` to keep both sides, as `body.cut_skin` does.
 - `xpbd.Solver` needs tetrahedra in colours that share no node: `voxel_colours` for voxel tetrahedra, `colours` otherwise (`xpbd.py:126`). Within a colour the solve writes positions in place.
 - `xpbd.Solver.drive` with `all_rest` damps motion relative to the carried frame. Without it damping acts like air and a carried body trails behind: `xpbd.py:173`.
