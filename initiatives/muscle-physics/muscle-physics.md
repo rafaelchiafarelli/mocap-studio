@@ -9,7 +9,9 @@ Since 2026-11-07 it also tests building tissue from the inside out, bone then mu
 ## Epics
 
 - `single-muscle`: one muscle, one load. Done.
-- `thigh`: one thigh in layers, simulated on the GPU through a walking step. Order in [epics/README.md](epics/README.md).
+- `thigh`: one thigh in layers, simulated on the GPU through a walking step. Done.
+- `body-at-rest`: the whole woman in layers, standing still. Done.
+- `inside-out-skin`: the skin pushed out over the bones. Order in [epics/README.md](epics/README.md).
 
 ## Next, proposed and not planned
 

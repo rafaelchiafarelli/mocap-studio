@@ -76,8 +76,8 @@ Epic `thigh` of `initiatives/muscle-physics/`. Today the skin comes first and th
 
 1. **Cut.** The left thigh's skin between 2 cm under the crotch and 8 cm above the femur's lowest point. Only whole MPFB triangles are kept, so the patch ends at the nearest ring of vertices, about 3 cm short of each cut.
 2. **Close.** Each open end gets a fan to its centre, so inside and outside can be told apart (winding number, `fit.winding_number`).
-3. **Fill.** A 5 mm voxel grid: a voxel counts if its centre is inside the skin, or close enough to it that every skin vertex lies in a counted voxel (`layers.py:187`).
-4. **Label.** Inside the femur is bone. Within the declared fat thickness of the skin is fat. The rest is muscle. A voxel outside the skin is fat (`layers.py:204`). The thickness changes smoothly around the femur between front, back, inner and outer.
+3. **Fill.** A 5 mm voxel grid: a voxel counts if its centre is inside the skin, or close enough to it that every skin vertex lies in a counted voxel (`layers.py:189`).
+4. **Label.** Inside the femur is bone. Within the declared fat thickness of the skin is fat. The rest is muscle. A voxel outside the skin is fat (`layers.py:206`). The thickness changes smoothly around the femur between front, back, inner and outer.
 5. **Clean.** Only the largest piece of bone and of muscle is kept. The rest becomes muscle and fat.
 6. **Tetrahedra.** Six per voxel, on shared corners.
 7. **Tie the skin.** Each skin vertex gets the tetrahedron that holds it, with its barycentric weights. The skin stays smooth while the tetrahedra are steps.
@@ -232,3 +232,132 @@ It writes `G:\mocap-studio-downloads\review\<today>\thigh_walk\<NAME>\`, prints 
 | `SUBSTEPS` | 160 | Steps per frame. Fewer is faster but softer than asked, as v3 and v4 showed |
 
 None of these are measured yet: they're for look, until initiative `tissue-research`.
+
+## Experiment 4: the whole woman in layers, at rest
+
+Epic `body-at-rest`: the zero point ("marco zero") for body shapes. The thigh's method, applied to the whole body: bone, muscle, fat by plastic-surgery zone, a skin band, and the trunk's organs as one soft **cavity**, all inside today's MPFB skin. Head, hands and feet are cut off at the neck, wrists and ankles (agreed with Rafael, 2026-11-07).
+
+**How it's built** (task 1: `hmcore/body.py`, `tools/body_layers.py`, on the GPU through `hmcore/meshgpu.py`):
+
+1. **Cut.** Near each joint, skin vertices past the joint's plane are dropped, then the largest piece is kept (`body.py:26`).
+2. **Zones.** Each skin vertex gets a zone from its nearest rig bone (`body.py:57`). On the trunk, the zone also depends on height (against the bottom of the rib cage and the top of the hip bones) and on whether the vertex faces front, back or side. The thicknesses are smoothed over the skin, so they change gradually.
+3. **Fill.** The same 5 mm voxels as the thigh. Inside-or-outside and distances are computed on the GPU, about 4 million points in seconds. Bone meshes are first turned outward (`body.py:147`), because the left leg's come inside out (bug `human-model/11`).
+4. **Label.** Bone wins over everything. Within one voxel of the skin is skin. Within the zone's fat thickness is fat.
+   - **Cavity** (`body.py:205`):
+     - in the chest: everything inside the rib cage, beside the spine too, where the lungs reach;
+     - lower down: inside the hull of ribs, spine and pelvis, no more than 30 mm behind the spine's front, and deeper than the fat plus a 15 mm abdominal wall.
+   - **Breast** (`body.py:208`): fat down to a 15 mm chest muscle over the ribs.
+   - **Muscle:** whatever remains.
+5. **Clean, tetrahedra, tie the skin.** As on the thigh.
+
+The values are in `data/body_fat_female.json`, by eye (agreed with Rafael, 2026-11-07). A run can override one, as `fat.belly=30` or `structure.pectoral_mm=20`.
+
+**The report** (task 2: `blender/body_tape.py`, `tools/body_report.py`):
+- **Sections**, as a CT scan or a pattern room would cut them: crosswise at the bust, under the bust, the waist, the hip and the thigh, at the heights where the editor's tape takes those girths; lengthwise through the middle and through the left leg.
+- **The table** `marco_zero.md`, in Portuguese: masses, fat by zone, bones through the skin, the pattern-making measures.
+
+**Results** (`body_v4_belly-beside-spine`, 15 s on the GPU):
+
+| | Litres | kg | Share of mass | Usual for an adult woman* |
+|---|---:|---:|---:|---|
+| Bone | 3.6 | 5.4 | 10% | 12–15% |
+| Muscle | 17.0 | 18.0 | 35% | 30–36% |
+| Fat | 11.2 | 10.1 | 19% | 25–31% |
+| Skin band | 11.1 | 12.2 | 24% | — |
+| Cavity | 7.0 | 6.3 | 12% | — |
+| **Total**, without head, hands and feet | 49.9 | 52.0 | | |
+
+\* General knowledge, not from a source read here: a comparison, not a target. The densities are declared too.
+
+Other figures:
+- 2.4 million tetrahedra.
+- The fat measures within 2.5 mm of the declared value in 15 of 19 zones.
+- Pattern measures: bust 83.9 cm, under the bust 67.9, waist 65.2, hip 90.6, height 159.1.
+
+**What it shows:**
+
+- **Superficial bones come through the skin even at rest** (bug `human-model/10`):
+  - the right scapula by 27 mm, while the left is out by only 7.6, so the right one sits wrong;
+  - the larynx, the left clavicle and the fibulae by about 11 mm, the tibiae 10, the patellae 9, the right hip bone 7, the sacrum 5.
+
+  Today's skin comes first and the bones are fitted into it, and this is where that order fails. The next step is to build the skin from the inside, with a least depth of tissue over each bone.
+- **The skin band decides the fat share.** It averages 9.2 mm, against about 1.5 mm of real skin. The fat is 19% of the mass if the band is all skin, and 37% if everything in it beyond 1.5 mm is fat. The usual range sits between the two. A thinner skin layer is needed before the fat share means anything.
+- **The cavity**, 7 L, is still on the small side of the 10 to 15 L of organs in a woman's trunk (general knowledge).
+- **The breast zone covers most of the front of the chest,** because its rig bone is the nearest there.
+- **A ragged collar under the chin:** the neck's cut leaves part of the jaw's underside.
+
+**Every run is kept** in `G:\mocap-studio-downloads\review\2026-11-07\`:
+
+| Run | What it got wrong |
+|---|---|
+| `body_v1_first-try_cut-bones-counted-as-poking` | Counted the bones past the cuts as poking |
+| `body_v2_cuts-apart` | **No bone in the left leg,** whose meshes are inside out. The lungs stopped in front of the spine. Couldn't be renamed: a file in it was open |
+| `body_v3_bones-outward_lungs-beside-spine` | The belly's cavity stopped in front of the lumbar spine, so the waist had only a sliver of it |
+| `body_v4_belly-beside-spine` | **The current one**: `12_sections.png`, `marco_zero.md`, `08_body_layers.blend`, and `08_body_layers_zones.png` with the zones painted |
+
+**Running it:**
+
+    human-model/hm.sh --gpu python human-model/tools/body_layers.py BUILD_DIR NAME OUT_DIR [fat.<zone>=mm ...] [structure.<name>=value ...]
+    python3 human-model/blender_run.py human-model/blender/body_view.py OUT_DIR/NAME.body_layers.npz OUT_DIR/08_body_layers.blend
+    python3 human-model/blender_run.py human-model/blender/body_tape.py human-model/data/recipes/female.json OUT_DIR/09_tape.json
+    human-model/hm.sh python human-model/tools/body_report.py OUT_DIR NAME OUT_DIR/09_tape.json OUT_DIR
+
+## Experiment 5: the skin pushed out over the bones
+
+Epic `inside-out-skin`, task 1. The zero point found bones through the skin at rest (bug `human-model/10`). Here, for the first time, the layers shape the skin: wherever a bone has less tissue over it than declared, the skin moves out.
+
+**How** (`hmcore/skinfit.py`, `tools/skin_over_bone.py`, on the GPU):
+
+1. **Each bone point asks for its least depth of tissue**, from `data/skin_over_bone_female.json`, set by eye: 3 mm over the patella, the shin's front and the larynx; 4 mm over the clavicles, scapulae, spinous processes and ankle; 6 mm over the sacrum and the hip bones' crests; 2 mm elsewhere. Bones past the neck, wrist and ankle cuts are left out (`body.near_a_cut`).
+2. **A bone that needs more than 15 mm anywhere is left alone** and reported as misplaced (`skinfit.py:70`): moving the skin that far would grow a hump.
+3. **The skin vertices of the nearest triangle move out along their normals** by what's missing.
+4. **The push is spread** to neighbours, shrinking by a fifth at each step, so it fades over a few centimetres (`skinfit.py:23`). The cuts' rings stay put, so the head, hands and feet still join.
+5. **Repeat** until nothing changes. It takes 0.7 s. MPFB's mesh and vertex order are kept.
+
+**Result on the neutral woman** (`skin_v4_along-skin-normal`):
+
+- **Every bone pushed for now has its tissue,** except the sacrum, which reaches the skin (0 mm) but no further. It sits in the cleft between the buttocks, where no push along the skin covers it. Bug `human-model/2` says the pelvis sits too far back, so this is likely a bone fault too.
+- **Misplaced, left alone:** the right scapula (needs 31 mm), and, just over the limit, the left clavicle and both fibulae (about 15.2 mm each). A limit of 16 mm would include those three.
+- **The figure barely changes:** bust +0.4 cm, under the bust +0.6, waist +0.1, hip +0.1, thigh 0, knee +1.2, ankle +1.0. 636 vertices moved more than 1 mm; at most 15.6 mm, on the neck and buttocks.
+
+**Every run is kept** in `G:\mocap-studio-downloads\review\2026-11-07\`:
+
+| Run | What went wrong |
+|---|---|
+| `skin_v1_spread-everywhere_hump-on-scapula` | The push spread over the whole skin, so the bust grew 3.2 cm and the ankle 3.8. The right scapula was pushed 15 mm anyway, growing a hump |
+| `skin_v2_falloff_misplaced-left-alone` | Fixed both. The sacrum stopped at 0 mm |
+| `skin_v3_push-away-from-bone_sacrum-worse` | Pushing away from the bone instead of along the skin: the sacrum came 7 mm out (`skinfit.py:94`) |
+| `skin_v4_along-skin-normal` | **The current one,** the same as v2: `04_skin_fit.blend` and its front and back stills, before and after, painted by how far the skin moved |
+
+**Running it:**
+
+    human-model/hm.sh --gpu python human-model/tools/skin_over_bone.py BUILD_DIR NAME TAPE.json OUT_DIR [depth.<prefix>=mm ...] [MAX_PUSH_MM=mm]
+    python3 human-model/blender_run.py human-model/blender/skin_fit_view.py OUT_DIR/NAME.skin_fit.npz BUILD_DIR/NAME.export.npz OUT_DIR/04_skin_fit.blend
+
+### The zero point on the pushed skin
+
+Task 2. The layers rebuilt inside the pushed skin (`body_layers.py ... SKIN=<name>.skin_fit.npz`). The masses now come from the volume inside the skin, not from the voxels (`body_report.inside_skin`):
+- bone, muscle and cavity from their voxels, which lie deep;
+- real skin as its area times 1.5 mm;
+- fat as what's left.
+
+The voxels had counted 4.7 L too many, because their band reaches past the skin.
+
+| | Before the push, same count (`body_v4b`) | After (`body_v5_pushed-skin`) | Usual for an adult woman* |
+|---|---:|---:|---|
+| Bone | 12% | 12% | 12–15% |
+| Muscle | 40% | 40% | 30–36% |
+| Fat | 30% | 30% | 25–31% |
+| Skin | 4% | 4% | — |
+| Cavity | 14% | 14% | — |
+| Bones through the skin | 28 | **4**, the misplaced ones | — |
+| Bust, waist, hip | 83.9, 65.2, 90.6 cm | 84.3, 65.3, 90.7 cm | — |
+
+\* General knowledge, not from a source read here.
+
+**What it shows:**
+- **The push fixes the bones through the skin** without changing the figure: 24 of 28 bones are now covered. The other four are bones out of place: the right scapula, the left clavicle and both fibulae.
+- **The fat's share was a counting problem, not a body problem.** Counted inside the skin, it's 30%, within the usual range, both before and after the push.
+- **Muscle reads high** (40% against 30–36%). Everything that isn't bone, fat or cavity is called muscle, including the tissue between organs, the neck's and the pelvic floor's.
+
+`marco_zero.md` in `body_v5_pushed-skin` has both columns side by side.
