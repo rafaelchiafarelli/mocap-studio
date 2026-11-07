@@ -9,7 +9,7 @@ import warp as wp
 from scipy.spatial import cKDTree
 from hmcore import fit, layers, xpbd
 
-SUBSTEPS = 40  # per frame
+SUBSTEPS = 160  # per frame: converged here, 40 and 80 weren't (docs/muscle-physics.md)
 SETTLE = 1.0  # s in the first frame's pose before frame 1, so the tissue hangs under gravity first
 HOLD = 1.0  # s in the last frame's pose after the walk, to see the tissue settle
 # Declared, by look, no measured tissue data yet (tissue-research): passive muscle stiffer than fat

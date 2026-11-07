@@ -12,6 +12,7 @@
 - `blender_run.py`: runs a script in Windows Blender from WSL, auto-run off.
 - `install_editor.py`: packs `hm_editor/` and installs it in Windows Blender.
 - `setup_gpu_host.sh`: run once with `sudo` in WSL; installs the NVIDIA Container Toolkit so Docker can use the GPU, and checks it from a container. Changes the host, not the image.
+- `thigh_run.sh`: re-runs the walking thigh with other values, up to the videos, in one command: [docs/muscle-physics.md](docs/muscle-physics.md#changing-the-values-and-running-again).
 - `hm.sh`, `Dockerfile`, `requirements.in`, `requirements.txt`: the locked environment for `hmcore`.
 - `Dockerfile.gpu`, `requirements-gpu.in`, `requirements-gpu.txt`: the same plus NVIDIA Warp, for `hmcore/xpbd.py`. `hm.sh --gpu` builds and runs it.
 - `ATTRIBUTION.md`: the credits a film has to carry.
