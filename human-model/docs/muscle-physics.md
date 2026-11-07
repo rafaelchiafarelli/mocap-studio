@@ -232,3 +232,52 @@ It writes `G:\mocap-studio-downloads\review\<today>\thigh_walk\<NAME>\`, prints 
 | `SUBSTEPS` | 160 | Steps per frame. Fewer is faster but softer than asked, as v3 and v4 showed |
 
 None of these are measured yet: they're for look, until initiative `tissue-research`.
+
+## Experiment 4: the whole woman in layers, at rest
+
+Epic `body-at-rest`, task 1: the zero point ("marco zero") for body shapes. The thigh's method, applied to the whole body: bone, muscle, fat by plastic-surgery zone, a skin band, and the trunk's organs as one soft **cavity**, all inside today's MPFB skin. Head, hands and feet are cut off at the neck, wrists and ankles (agreed with Rafael, 2026-11-07).
+
+**How it's built** (`hmcore/body.py`, `tools/body_layers.py`, on the GPU through `hmcore/meshgpu.py`):
+
+1. **Cut.** Near each joint, skin vertices past the joint's plane are dropped, then the largest piece is kept (`body.py:26`).
+2. **Zones.** Each skin vertex gets a zone from its nearest rig bone (`body.py:46`). On the trunk, the zone also depends on height (against the bottom of the rib cage and the top of the hip bones) and on whether the vertex faces front, back or side. The thicknesses are then smoothed over the skin, so they change gradually.
+3. **Fill.** The same 5 mm voxels as the thigh. Inside-or-outside and distances are computed on the GPU, about 4 million points in seconds.
+4. **Label.** Bone wins over everything. Within one voxel of the skin is skin. Within the zone's fat thickness is fat.
+   - **Cavity** (`body.py:184`):
+     - in the chest: inside the rib cage;
+     - lower down: inside the hull of ribs, spine and pelvis, in front of the spine and deeper than the fat plus a 15 mm abdominal wall.
+   - **Breast** (`body.py:186`): fat down to a 15 mm chest muscle over the ribs.
+   - **Muscle:** whatever remains.
+5. **Clean, tetrahedra, tie the skin.** As on the thigh.
+
+The values are in `data/body_fat_female.json`, by eye (agreed with Rafael, 2026-11-07). A run can override one, as `fat.belly=30` or `structure.pectoral_mm=20`.
+
+**Results** (`body_v2_cuts-apart`, 15 s on the GPU):
+
+| | Value |
+|---|---:|
+| Tetrahedra | 2.4 million, 438,403 nodes |
+| Volumes: bone, muscle, fat, skin band, cavity | 2.8 · 20.3 · 11.3 · 11.2 · 4.4 L, 50 L in all without head, hands and feet |
+| Skin vertices tied | 4,445 |
+| Fat against declared, median | within 2.5 mm of the declared value in 15 of 19 zones. Hips 23 of 30 mm and buttocks 26 of 30, where muscle or bone is close. Breast 18 of 15, because the breast is filled with fat |
+
+**What it shows:**
+
+- **Superficial bones come through the skin even at rest** (bug `human-model/10`):
+  - the right scapula by 27 mm, while the left is out by only 7.6 mm, so the right one sits wrong;
+  - the larynx and left clavicle by about 11 mm, the fibulae 11, the tibiae 10, the patellae 9, the right hip bone 7, the sacrum 5.
+  
+  Today's skin comes first and the bones are fitted into it, and this is where that order fails. A layered body can't add tissue over a bone that's already outside, so the next step is to build the skin from the inside, with a least depth of tissue over each bone.
+- **The skin band is too much volume:** 11 L. A 5 mm voxel is three times real skin's thickness, and the band also counts the voxels just outside the surface. In masses, part of it is really fat.
+- **The cavity is small,** 4.4 L against roughly 10 to 15 L of organs in a woman's trunk (general knowledge, not from a source read here). The rules are conservative and still to be judged on the sections.
+- **The breast zone covers most of the front of the chest,** because its rig bone is the nearest there.
+- **A ragged collar under the chin:** the neck's cut leaves part of the jaw's underside.
+
+Every run is kept in `G:\mocap-studio-downloads\review\2026-11-07\`:
+- `body_v1_first-try_cut-bones-counted-as-poking` counted the bones past the cuts as poking.
+- In `body_v2_cuts-apart`, `08_body_layers_zones.png` shows the zones, and `_section_front.png` and `_section_side.png` the layers.
+
+**Running it:**
+
+    human-model/hm.sh --gpu python human-model/tools/body_layers.py BUILD_DIR NAME OUT_DIR [fat.<zone>=mm ...] [structure.<name>=value ...]
+    python3 human-model/blender_run.py human-model/blender/body_view.py OUT_DIR/NAME.body_layers.npz OUT_DIR/08_body_layers.blend
