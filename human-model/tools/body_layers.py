@@ -1,5 +1,6 @@
 """The whole woman in layers, at rest (task muscle-physics/body-at-rest/1).
-    hm.sh --gpu python human-model/tools/body_layers.py BUILD_DIR NAME OUT_DIR [fat.<zone>=mm ...] [structure.<name>=value ...] [VOXEL=m]
+    hm.sh --gpu python human-model/tools/body_layers.py BUILD_DIR NAME OUT_DIR [fat.<zone>=mm ...] [structure.<name>=value ...] [VOXEL=m] [SKIN=skin_fit.npz]
+SKIN takes the skin from tools/skin_over_bone.py in place of the build's.
 Reads <NAME>.export.npz, .export.json and .bones.npz from BUILD_DIR, and the fat per zone from data/body_fat_<sex>.json.
 Writes to OUT_DIR, every step numbered: 01_skin_cut.ply, 02_skin_capped.ply, 03_zones.ply, 04_fat_thickness.ply (coloured),
 05_raw_<label>.ply (voxel centres), 06_<label>_surface.ply, 07_cutaway_<label>.ply (the back half), <NAME>.body_layers.npz and .json."""
@@ -32,6 +33,10 @@ def measure(r, skin, bones, fat_mm, gpu_mesh, rig):
     v = r["nodes"][r["tets"]]
     vol = np.einsum("ij,ij->i", np.cross(v[:, 1] - v[:, 0], v[:, 2] - v[:, 0]), v[:, 3] - v[:, 0]) / 6
     litres = {name: round(float(vol[labels == k].sum()) * 1000, 2) for k, name in enumerate(body.LABELS)}
+    cv, ct = r["capped_verts"], r["capped_tris"]
+    enclosed = abs(float(np.einsum("ij,ij->i", cv[ct[:, 0]], np.cross(cv[ct[:, 1]], cv[ct[:, 2]])).sum()) / 6)
+    pv = skin[r["patch"]]
+    area = float(np.linalg.norm(np.cross(pv[:, 1] - pv[:, 0], pv[:, 2] - pv[:, 0]), axis=1).sum() / 2)
 
     closed = gpu_mesh(r["capped_verts"], r["capped_tris"])
     surface = gpu_mesh(skin, r["patch"])
@@ -61,13 +66,14 @@ def measure(r, skin, bones, fat_mm, gpu_mesh, rig):
             fat[z] = {"declared_mm": fat_mm[z], "median_mm": round(float(np.median(actual[m])) * 1000, 1),
                       "p10_mm": round(float(np.percentile(actual[m], 10)) * 1000, 1), "p90_mm": round(float(np.percentile(actual[m], 90)) * 1000, 1),
                       "skin_points": int(m.sum())}
-    return {"litres": litres, "tetrahedra": {name: int((labels == k).sum()) for k, name in enumerate(body.LABELS)}, "nodes": int(len(r["nodes"])),
+    return {"litres": litres, "enclosed_litres": round(enclosed * 1000, 2), "skin_area_m2": round(area, 4), "tetrahedra": {name: int((labels == k).sum()) for k, name in enumerate(body.LABELS)}, "nodes": int(len(r["nodes"])),
             "islands_moved": r["moved"], "skin_points_tied": int(len(ids)), "skin_tie_worst_weight": round(float(r["skin_score"].min()), 6),
             "bones_measured": len(report), "bones_with_points_outside_skin": outside, "bones_closest_to_skin_mm": closest, "fat": fat}
 
 
 def main(build_dir, name, out_dir, overrides):
     global VOXEL
+    skin_file = None
     os.makedirs(out_dir, exist_ok=True)
     meta = json.load(open(os.path.join(build_dir, f"{name}.export.json")))
     sex = "female" if meta["macros"]["gender"] < 0.5 else "male"
@@ -79,13 +85,16 @@ def main(build_dir, name, out_dir, overrides):
         if k == "VOXEL":
             VOXEL = float(val)
             continue
+        if k == "SKIN":
+            skin_file = val
+            continue
         group, _, key = k.partition(".")
         table = {"fat": fat_mm, "structure": structure}.get(group)
         if table is None or key not in table:
             raise ValueError(f"unknown value {k}")
         table[key] = float(val)
     e = np.load(os.path.join(build_dir, f"{name}.export.npz"))
-    skin = e["verts"].astype(float)[:N_BODY]
+    skin = (np.load(skin_file)["verts"] if skin_file else e["verts"]).astype(float)[:N_BODY]
     tris = fit.triangles(e["starts"], e["sizes"], e["loops"])
     tris = tris[tris.max(axis=1) < N_BODY]
     b = np.load(os.path.join(build_dir, f"{name}.bones.npz"))
@@ -120,7 +129,7 @@ def main(build_dir, name, out_dir, overrides):
                         zone=np.array([z or "" for z in r["zone"]]), thickness=r["thickness"].astype(np.float32),
                         origin=r["origin"], shape=r["shape"], h=r["h"], labels_clean=r["labels_clean"],
                         **{f"surface_{k}": v.astype(np.int32) for k, v in surfaces.items()})
-    report = {"name": name, "sex": sex, "declared": {"voxel_m": VOXEL, "fat_mm": fat_mm, "structure": structure}, "seconds": round(seconds, 1), **m}
+    report = {"name": name, "sex": sex, "skin_source": skin_file or "build", "declared": {"voxel_m": VOXEL, "fat_mm": fat_mm, "structure": structure}, "seconds": round(seconds, 1), **m}
     with open(f"{out_dir}/{name}.body_layers.json", "w") as fh:
         json.dump(report, fh, indent=1)
     print(json.dumps(report, indent=1))
