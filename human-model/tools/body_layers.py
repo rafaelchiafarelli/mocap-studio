@@ -27,16 +27,6 @@ def ramp(values, lo, hi):
     return (1 - t) * np.array([40, 60, 200]) + t * np.array([250, 220, 40])
 
 
-def near_a_cut(points, rig):
-    """Points past the head's, a hand's or a foot's cut: a bone there is outside the cut skin by design, not poking through."""
-    out = np.zeros(len(points), bool)
-    for joint, along, reach in body.CUTS:
-        p = np.asarray(rig[joint]["head"])
-        n = (np.asarray(rig[along]["tail"]) - np.asarray(rig[along]["head"])) / np.linalg.norm(np.asarray(rig[along]["tail"]) - np.asarray(rig[along]["head"]))
-        out |= ((points - p) @ n > -0.02) & (np.linalg.norm(points - p, axis=1) < reach + 0.05)
-    return out
-
-
 def measure(r, skin, bones, fat_mm, gpu_mesh, rig):
     labels = r["tet_label"]
     v = r["nodes"][r["tets"]]
@@ -52,7 +42,7 @@ def measure(r, skin, bones, fat_mm, gpu_mesh, rig):
         if inside.mean() < 0.5:
             continue  # beyond the cuts: head, hands, feet
         d = surface.closest(bv)[0]
-        cut = near_a_cut(bv, rig)
+        cut = body.near_a_cut(bv, rig)
         poking = ~inside & ~cut
         report[name] = {"points_outside_skin": int(poking.sum()), "deepest_mm": round(float(d[poking].max()) * 1000, 1) if poking.any() else 0.0,
                         "points_at_a_cut": int((~inside & cut).sum()),
