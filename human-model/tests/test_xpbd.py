@@ -94,3 +94,14 @@ def test_relative_damping_doesnt_hold_a_carried_body_back():
     relative, absolute = _carried(True), _carried(False)
     assert abs(relative) < 1.0
     assert absolute > 2.0
+
+
+def test_mesh_queries_on_a_closed_tube():
+    from hmcore import meshgpu
+    from tests.test_layers import _tube
+    wp.init()
+    v, f = _tube(0.05, 0.0, 0.2, n=64, closed=True)
+    m = meshgpu.Mesh(v, f, device="cpu")
+    p = np.array([[0, 0, 0.1], [0.06, 0, 0.1], [0, 0, 0.3]])
+    assert m.inside(p).tolist() == [True, False, False]
+    assert m.closest(p)[0] == pytest.approx([0.05, 0.01, 0.1], abs=1e-3)
