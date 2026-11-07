@@ -1,0 +1,12 @@
+{
+ "_about": "Default tissue values for tools/thigh_walk.py and thigh_run.sh. Edit them here; a run can still override any one as NAME=value. Chosen by look, not measured (initiative tissue-research). Units: Pa, kg/m3, 1/s, steps per frame.",
+ "_source": "Rafael's run rafa8, 2026-11-07: \"agora parece que está bom\"",
+ "SUBSTEPS": 160,
+ "DAMPING": 20.0,
+ "FAT_YOUNG": 4000.0,
+ "MUSCLE_YOUNG": 15000.0,
+ "SKIN_YOUNG": 100000.0,
+ "FAT_DENSITY": 750.0,
+ "MUSCLE_DENSITY": 900.0,
+ "POISSON": 0.45
+}

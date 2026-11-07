@@ -1,5 +1,6 @@
 """The layered thigh walks: the femur is moved, muscle, fat and skin follow on the GPU (task muscle-physics/thigh/3).
-    hm.sh --gpu python human-model/tools/thigh_walk.py LAYERS.npz WALK_DUMP.npz OUT_DIR [NAME=value overrides the constants below]
+    hm.sh --gpu python human-model/tools/thigh_walk.py LAYERS.npz WALK_DUMP.npz OUT_DIR [NAME=value ...]
+The tissue values are read from data/thigh_tissue.json; NAME=value overrides one of them, or a constant below, for this run.
 LAYERS.npz is from tools/thigh_layers.py, WALK_DUMP.npz from blender/thigh_walk_dump.py on the same person's walk_review file.
 Writes OUT_DIR/thigh_walk.npz (skin and nodes per frame, for blender/thigh_bake.py), thigh_walk_frames.csv and thigh_walk.json."""
 import csv, json, os, sys, time
@@ -9,18 +10,15 @@ import warp as wp
 from scipy.spatial import cKDTree
 from hmcore import fit, layers, xpbd
 
-SUBSTEPS = 160  # per frame: converged here, 40 and 80 weren't (docs/muscle-physics.md)
+TISSUE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "thigh_tissue.json")
+# Read from TISSUE, with what each one means: SUBSTEPS per frame (160 converged here, 40 and 80 didn't, docs/muscle-physics.md);
+# DAMPING (1/s) of motion relative to the femur; FAT_YOUNG, MUSCLE_YOUNG, SKIN_YOUNG (Pa); FAT_DENSITY, MUSCLE_DENSITY (kg/m3); POISSON
+TISSUE_KEYS = ("SUBSTEPS", "DAMPING", "FAT_YOUNG", "MUSCLE_YOUNG", "SKIN_YOUNG", "FAT_DENSITY", "MUSCLE_DENSITY", "POISSON")
 SETTLE = 1.0  # s in the first frame's pose before frame 1, so the tissue hangs under gravity first
 HOLD = 1.0  # s in the last frame's pose after the walk, to see the tissue settle
-# Declared, by look, no measured tissue data yet (tissue-research): passive muscle stiffer than fat
-MUSCLE_YOUNG, FAT_YOUNG = 15000.0, 3000.0  # Pa
-POISSON = 0.45
-MUSCLE_DENSITY, FAT_DENSITY = 1060.0, 900.0  # kg/m3
 # Skin holds the fat in. Without it the fat swung up to 10 cm at each step (thigh_walk_v2). Real skin is far stiffer but 1 to 2 mm thick;
-# here it's the band of tetrahedra within SKIN_BAND voxels of the surface, so its modulus is lowered to match: about 0.5 MPa x 1.5 mm / 5 mm. Declared
-SKIN_YOUNG = 150000.0  # Pa; 0 leaves the band as fat
+# here it's the band of tetrahedra within SKIN_BAND voxels of the surface, so SKIN_YOUNG is lowered to match. SKIN_YOUNG 0 leaves the band as fat
 SKIN_BAND = 1.0  # voxels
-DAMPING = 5.0  # 1/s
 CUT_PIN = 1.0  # voxels: the ends move with the femur, as the contract says: every node past the skin's end ring, and this far inside it
 
 
@@ -36,8 +34,16 @@ def bone_through_skin(bone, skin, patch, spacing):
 
 def main(layers_npz, dump_npz, out_dir, overrides):
     g = globals()
+    with open(TISSUE) as fh:
+        tissue = {k: v for k, v in json.load(fh).items() if not k.startswith("_")}
+    if set(tissue) != set(TISSUE_KEYS):
+        raise ValueError(f"{TISSUE} must give exactly {', '.join(TISSUE_KEYS)}")
+    g.update(tissue)
+    g["SUBSTEPS"] = int(g["SUBSTEPS"])
     for o in overrides:
         k, v = o.split("=")
+        if k not in g or k.startswith("_") or not isinstance(g[k], (int, float)):
+            raise ValueError(f"unknown value {k}")
         g[k] = type(g[k])(float(v))
     os.makedirs(out_dir, exist_ok=True)
     L, D = np.load(layers_npz), np.load(dump_npz)
@@ -127,7 +133,7 @@ def main(layers_npz, dump_npz, out_dir, overrides):
     final = after[-1] if after else 0.0
     settle = next((i for i in range(len(after)) if all(abs(a - final) < 1.0 for a in after[i:])), None)
     peak = max(walk, key=lambda r: r["skin_motion_max_mm"])
-    summary = {"declared": {k: g[k] for k in ("SUBSTEPS", "SETTLE", "HOLD", "MUSCLE_YOUNG", "FAT_YOUNG", "POISSON", "MUSCLE_DENSITY", "FAT_DENSITY",
+    summary = {"tissue_file": os.path.abspath(TISSUE), "declared": {k: g[k] for k in ("SUBSTEPS", "SETTLE", "HOLD", "MUSCLE_YOUNG", "FAT_YOUNG", "POISSON", "MUSCLE_DENSITY", "FAT_DENSITY",
                                               "DAMPING", "CUT_PIN", "SKIN_YOUNG", "SKIN_BAND")},
                "gpu": wp.get_device("cuda:0").name, "tetrahedra": int(len(tets)), "nodes": int(len(nodes)), "driven_nodes": int(len(driven)), "skin_band_tetrahedra": int(skin_band.sum()) if SKIN_YOUNG > 0 else 0,
                "frames_walking": n_walk, "frames_holding": hold,
