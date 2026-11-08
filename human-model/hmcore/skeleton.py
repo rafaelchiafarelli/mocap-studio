@@ -9,6 +9,9 @@ TRUNK_MARGIN = {"lateral": 0.018, "front": 0.012, "spinous": 0.012}
 # Bones that lie just under the skin are moved rigidly until this much tissue covers them: the same least depths as
 # data/skin_over_bone_female.json, so the pushed skin has nothing left to do for them.
 SETTLE_TISSUE = 0.004  # m
+AC_JOINT = 0.003  # declared: the gap between the clavicle's end and the acromion, m
+ACROMION_TISSUE = 0.008  # declared: skin and fat over the acromion's top, m; it lies just under the skin
+MOST_RAISE = 0.06  # the most the shoulder girdle may be raised, m
 VERTEBRAE = ["C1", "C2", "C3", "C4", "C5", "C6", "C7"] + [f"T{i}" for i in range(1, 13)] + ["L1", "L2", "L3", "L4", "L5"]
 SIDE = {"L": "left", "R": "right"}
 FINGER_BONES = {"index": "f_index", "middle": "f_middle", "ring": "f_ring", "little": "f_pinky"}
@@ -154,6 +157,38 @@ def fit_foot(ind, legs, side, ankle):
     return lambda name, v: turned[name] * s + offset
 
 
+def girdle_raise(ind, lib, side, trunk_map):
+    """How far the girdle must go up for the acromion to lie ACROMION_TISSUE under the shoulder's skin, hung from the humeral head's
+    centre on the rig's joint. The acromion is the scapula's highest point within 6 cm of the joint, seen from above."""
+    s, skin = SIDE[side], ind["skin"]
+    shoulder = head_tail(ind, f"upper_arm.{side}")[0]
+    scap_v, hum_v = lib[f"scapula_{s}"][0], lib[f"humerus_{s}"][0]
+    ends = end_centres(hum_v)
+    c = scap_v.mean(axis=0)
+    near = ends[0] if np.linalg.norm(ends[0] - c) < np.linalg.norm(ends[1] - c) else ends[1]
+    placed = trunk_map(scap_v, "T3")
+    placed = placed + (shoulder - trunk_map(humeral_head(hum_v, near)[None], "T3")[0])
+    close = placed[np.linalg.norm((placed - shoulder)[:, :2], axis=1) < 0.06]
+    acromion = close[np.argmax(close[:, 2])]
+    above = skin[(np.abs(skin[:, 0] - acromion[0]) < 0.012) & (np.abs(skin[:, 1] - acromion[1]) < 0.012) & (skin[:, 2] > acromion[2])]
+    return float(np.clip(above[:, 2].max() - ACROMION_TISSUE - acromion[2], 0.0, MOST_RAISE)) if len(above) else 0.0
+
+
+def humeral_head(hum_v, near, reach=0.035):
+    """Centre of the humeral head: a sphere fitted to the humerus's points within reach of its proximal end's centre."""
+    p = hum_v[np.linalg.norm(hum_v - near, axis=1) < reach].astype(float)
+    A = np.column_stack([2 * p, np.ones(len(p))])
+    return np.linalg.lstsq(A, (p ** 2).sum(axis=1), rcond=None)[0][:3]
+
+
+def glenoid_fossa(scapula, head, sign, reach=0.045):
+    """Middle of the glenoid fossa: the scapula's points near the humeral head's centre that lie toward the body's middle from it."""
+    d = scapula - head
+    dist = np.linalg.norm(d, axis=1)
+    m = (dist < reach) & ((d[:, 0] * -sign) > 0.6 * dist)
+    return scapula[m].mean(axis=0) if m.any() else head + np.array([-sign * 0.025, 0.0, 0.0])
+
+
 def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
     """Returns {bone name: {"verts", "faces", "parent", "source"}} and the anchor points later steps need (jaw pivot and so on)."""
     skin = ind["skin"]
@@ -273,6 +308,9 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
     anchors["rig_edits"] = {f"thigh.{k}": v.tolist() for k, v in sockets.items()}
 
     # Shoulder girdle and upper arm
+    raises = {side: girdle_raise(ind, lib, side, trunk_map) for side in ("L", "R")}
+    raise_z = float(np.mean(list(raises.values())))  # both sides alike: the CT donor's shoulders weren't level, and the rig's are
+    anchors["shoulder_raise_mm"] = {"each": {k: round(v * 1000, 1) for k, v in raises.items()}, "applied": round(raise_z * 1000, 1)}
     for side in ("L", "R"):
         s = SIDE[side]
         sign = 1 if side == "L" else -1
@@ -283,13 +321,19 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
         # the humeral head is the end nearer the scapula, wherever the arms were in the scanner
         scap_c = scap_v.mean(axis=0)
         near, far = (ends if np.linalg.norm(ends[0] - scap_c) < np.linalg.norm(ends[1] - scap_c) else (ends[1], ends[0]))
-        glenoid = scap_v[np.argsort(np.linalg.norm(scap_v - near, axis=1))[:80]].mean(axis=0)
+        # The girdle hangs from the humeral head's centre, a sphere fitted to the CT humerus, placed on the rig's shoulder joint: the
+        # scapula keeps the CT's own relation to the head. It used to hang from the scapula's points nearest the humerus's end, which are
+        # the acromion's underside, 25 mm above the head, so the girdle sat 4 to 5 cm low and the clavicle fell to it (bug human-model/18).
+        head = humeral_head(hum_v, near)
         placed = trunk_map(scap_v, "T3")
-        g = trunk_map(glenoid[None], "T3")[0]
-        placed = placed + (shoulder - g) + np.array([-sign * 0.012, 0.0, 0.0])
+        placed = placed + (shoulder - trunk_map(head[None], "T3")[0])
+        placed = placed + np.array([0.0, 0.0, raise_z])
+        shoulder = shoulder + np.array([0.0, 0.0, raise_z])
+        anchors["rig_edits"][f"upper_arm.{side}"] = shoulder.tolist()
         put(f"scapula_{side}", placed, scap_f, f"shoulder.{side}", "ct")
-        anchors[f"glenoid_{side}"] = shoulder + np.array([-sign * 0.012, 0.0, 0.0])
+        anchors[f"glenoid_{side}"] = glenoid_fossa(placed, shoulder, sign)
         ua_h, ua_t = head_tail(ind, f"upper_arm.{side}")
+        ua_h = shoulder  # the raised joint
         fa_h, fa_t = head_tail(ind, f"forearm.{side}")
         hinge = np.cross(ua_t - ua_h, fa_t - fa_h)
         if np.linalg.norm(hinge) < 1e-6:
@@ -298,8 +342,9 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
             hinge = -hinge
         distal = hum_v[np.linalg.norm(hum_v - far, axis=1) < 0.035]
         wide = np.linalg.svd(distal - distal.mean(axis=0), full_matrices=False)[2][0]
-        R = fit.frame_rotation(far - near, wide, ua_t - ua_h, np.cross(hinge, ua_t - ua_h))
-        put(f"humerus_{side}", fit.segment_fit(hum_v, near, far, ua_h, ua_t, rotation=R), hum_f, f"upper_arm.{side}", "ct")
+        R = fit.frame_rotation(far - head, wide, ua_t - ua_h, np.cross(hinge, ua_t - ua_h))
+        # from the head's centre, so the head turns in place at the joint; from the end's centre, 19 mm off, it came through the shoulder
+        put(f"humerus_{side}", fit.segment_fit(hum_v, head, far, ua_h, ua_t, rotation=R), hum_f, f"upper_arm.{side}", "ct")
         clav_v, clav_f = lib[f"clavicula_{s}"]
         c_ends = sorted(end_centres(clav_v), key=lambda e: abs(e[0]))
         target_m = anchors["sternum_top"] + np.array([sign * 0.022, 0.0, 0.0])
@@ -364,6 +409,30 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
     return out, anchors
 
 
+def reach_acromion(out, side, medial, lateral):
+    """Stretches or shortens the clavicle about its sternal end, and turns it, until its lateral end meets the placed scapula's acromion
+    with AC_JOINT between them (bug human-model/18: aimed at a fixed offset from the rig's shoulder, it stopped 17 to 20 mm short).
+    The acromion is the scapula's point nearest the clavicle's end. Returns the new lateral end."""
+    from scipy.spatial import cKDTree
+    scap = cKDTree(out[f"scapula_{side}"]["verts"])
+    v0 = out[f"clavicle_{side}"]["verts"].astype(float)
+    acromion = out[f"scapula_{side}"]["verts"][scap.query(lateral)[1]].astype(float)
+    inward = (medial - acromion) / np.linalg.norm(medial - acromion)
+
+    def placed(back):
+        target = acromion + inward * back
+        return fit.similarity(v0, medial, lateral, medial, target), target
+
+    lo, hi = 0.0, 0.04  # how far short of the acromion the lateral end's centre sits; the bone's tip reaches past it
+    for _ in range(12):
+        mid = (lo + hi) / 2
+        gap = scap.query(placed(mid)[0])[0].min()
+        lo, hi = (lo, mid) if gap > AC_JOINT else (mid, hi)
+    v, target = placed(hi)
+    out[f"clavicle_{side}"]["verts"] = v.astype(np.float32)
+    return target
+
+
 def settle_superficial(out, anchors, depth_of):
     """Moves the scapulae, clavicles and fibulae until SETTLE_TISSUE covers them (bug human-model/12): the scapula turns about the
     glenoid, the fibula about its head, the clavicle about its sternal end and back. Placed whole from the CT, the right scapula came
@@ -381,7 +450,13 @@ def settle_superficial(out, anchors, depth_of):
             (f"fibula_{side}", anchors[f"fibula_head_{side}"], [("turn", [1, 0, 0], 8.0), ("turn", [0, 1, 0], 8.0)], cKDTree(out[f"tibia_{side}"]["verts"])),
         ]
         for name, pivot, moves, avoid in jobs:
-            move, before, after, amounts = fit.settle(out[name]["verts"], pivot, depth_of, SETTLE_TISSUE, moves, avoid=avoid)
+            keep = ()
+            if name.startswith("clavicle"):
+                lateral = reach_acromion(out, side, medial, lateral)
+                anchors[f"clavicle_lateral_{side}"] = lateral
+                moves = [("turn", lateral - medial, 30.0), ("turn", [0, 0, 1], 10.0), ("shift", [0, 1, 0], 0.016)]
+                keep = ((lateral, 0.004),)  # the joint with the acromion holds
+            move, before, after, amounts = fit.settle(out[name]["verts"], pivot, depth_of, SETTLE_TISSUE, moves, avoid=avoid, keep=keep)
             out[name]["verts"] = move(out[name]["verts"]).astype(np.float32)
             report[name] = {"moves": [round(float(a) * (1000 if m[0] == "shift" else 1), 1) for m, a in zip(moves, amounts)],
                             "short_before_mm": round(before * 1000, 1), "short_after_mm": round(after * 1000, 1)}

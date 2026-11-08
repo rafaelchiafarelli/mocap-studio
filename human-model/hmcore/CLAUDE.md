@@ -41,10 +41,12 @@
 - Lips tear with cotangent weights, so `softtissue.py` uses uniform ones.
 - Bulge is capped and off where no bone is near, or the chin swells: `softtissue.py`, search `NO_BONE`.
 - Trunk width reads wrong near the armpit, where arms join the trunk: `skeleton.py`, search `armpit_limit`.
-- The CT sternum's highest point lies off the midline, so `anchors["sternum_top"]` takes the sternum's middle x: `skeleton.py:261`.
+- The CT sternum's highest point lies off the midline, so `anchors["sternum_top"]` takes the sternum's middle x: `skeleton.py:296`.
 - `fit.SkinDepth` signs a depth by the nearest sample's triangle normal, so it is off by up to half its spacing, and can be wrong in a deep crease; `fit.winding_number` is the exact test: `fit.py:145`.
 - `fit.settle` searches a grid, so a bone with three moves costs about 2,000 skin queries; the settling takes about 4 of the build's minutes: `fit.py:156`.
-- The clavicle's lateral end stops 17 to 20 mm short of the scapula's acromion (bug [human-model/18](../../initiatives/bugs/epics/human-model/tasks/18-clavicle-misses-acromion.md)).
+- The shoulder girdle hangs from the CT humerus's head centre (a fitted sphere) on the rig's shoulder joint. The scapula's points nearest the humerus's end are the acromion's underside, 25 mm above the head, not the glenoid; hung from them the girdle sat 4 to 5 cm low: `skeleton.py:177`.
+- MPFB's shoulder joint sits low: the girdle and the rig's `upper_arm` heads go up together (`anchors.rig_edits`) until the acromion lies 8 mm under the shoulder's skin, by the mean of both sides so the shoulders stay level (19 mm on the neutral woman): `skeleton.py:160`.
+- The clavicle is stretched to the placed acromion with a 3 mm joint before it settles, and settling may not move its lateral end more than 4 mm (`fit.settle`'s `keep`): `skeleton.py:412`.
 - `layers.cut_patch` keeps whole triangles only, so a patch ends at the ring of vertices short of each cut, about 3 cm on the thigh. `layers.measure` counts between the rings: `layers.py:230`.
 - `body.zones` reads the trunk's zone by height against the rib cage's bottom and the hip bones' top, and front, back or side from the trunk's middle; the breast zone is wherever the rig's breast bone is nearest, which is most of the front of the chest: `body.py:103`.
 - BMF's left leg comes wound inward in the source file itself, so `bonelib.bmf_library` turns every BMF mesh outward (`fit.outward`). `body.build` and the tools still turn every bone outward before use, since builds made earlier have the left leg inside out, and Warp's winding number then calls their inside outside: `body.py:193`.

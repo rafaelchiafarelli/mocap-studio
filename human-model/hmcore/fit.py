@@ -153,12 +153,13 @@ def axis_rotation(axis, angle):
     return np.eye(3) + np.sin(angle) * k + (1 - np.cos(angle)) * k @ k
 
 
-def settle(verts, pivot, depth_of, need, moves, avoid=None, clearance=0.003, steps=9, sample=400, seed=0):
+def settle(verts, pivot, depth_of, need, moves, avoid=None, clearance=0.003, keep=(), steps=9, sample=400, seed=0):
     """The smallest rigid move of a bone that leaves at least need metres of tissue over all of it, or as near as it gets.
     moves lists what the bone may do, each ("turn", axis, most degrees) about pivot or ("shift", direction, most metres). Every
     combination on a grid of steps values per move is tried, then a finer grid around the best; among moves that leave the same
     shortfall (to half a millimetre) the smallest wins, each move counted as a fraction of its most. avoid is a cKDTree of neighbouring
-    bones' points: no point may come closer to them than clearance, or than it already was if that's less.
+    bones' points: no point may come closer to them than clearance, or than it already was if that's less. keep lists (point,
+    tolerance) pairs, such as a joint's end: the moved point may stray no further than tolerance from where it was.
     Returns (move as a function of points, worst shortfall before, after in metres, the chosen amounts)."""
     v = np.asarray(verts, float)
     v = v[np.random.default_rng(seed).choice(len(v), min(sample, len(v)), replace=False)]
@@ -179,7 +180,10 @@ def settle(verts, pivot, depth_of, need, moves, avoid=None, clearance=0.003, ste
         short = need - depth_of(p)
         if floor is not None:
             short = np.maximum(short, floor - avoid.query(p)[0])
-        return max(float(short.max()), 0.0)
+        worst = float(short.max())
+        for point, tol in keep:
+            worst = max(worst, float(np.linalg.norm(apply(amounts, np.asarray(point, float)[None])[0] - point)) - tol)
+        return max(worst, 0.0)
 
     def search(centre, half):
         axes = [np.linspace(-h, h, steps) for h in half]
