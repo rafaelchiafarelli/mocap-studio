@@ -1,8 +1,0 @@
-# The clavicle doesn't reach the scapula's acromion
-
-- **Symptom:** the clavicle's lateral end stops 17 to 20 mm short of the scapula on the neutral woman (left 19.5 mm, right 16.6 mm), where in a person it joins the acromion at the acromioclavicular joint.
-- **Where:** `human-model/hmcore/skeleton.py`, shoulder girdle: the clavicle runs from the sternum to a fixed offset from the rig's shoulder (`target_l`), and the scapula is placed from the glenoid; neither looks at the other.
-- **Reproduce:** distance from the clavicle's lateral end (`end_centres`) to the nearest scapula vertex in `female.bones.npz` (found on 2026-11-07 while fixing bug 12).
-- **Impact:** hidden under the skin; a shoulder that shrugs or reaches would show the two bones moving apart, and the joint has no place to be.
-- **Cause (2026-11-08):** the girdle hung from the scapula's points nearest the CT humerus's end, which are the acromion's underside, 25 mm above the humeral head, and MPFB's shoulder joint sits low too: the acromion lay 56 mm under the shoulder's skin instead of 5 to 10, and the humeral head's top came 7.6 mm through it when the girdle was first raised alone.
-- **Status:** Fixed (2026-11-08) — fixes/0000d5/clavicle-misses-acromion. The girdle hangs from the humeral head's fitted centre; girdle and the rig's shoulder joints go up 18.6 mm together until the acromion lies 8 mm under the skin; the clavicle reaches the acromion with a 3 mm joint and falls 7 to 9° from the sternum (17° when it was aimed at the low acromion). Stills: `G:\mocap-studio-downloads\review\2026-11-08\ombro\`; every attempt in `models\hm-build\female_bug18_*`.
