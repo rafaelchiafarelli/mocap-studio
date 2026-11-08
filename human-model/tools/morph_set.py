@@ -2,9 +2,9 @@
 import json, os, sys
 BASE = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "recipes", "male.json")))
 PEOPLE = {
-    "slim_tall": {"height": 0.85, "weight": 0.2, "muscle": 0.3, "age": 0.4, "proportions": 0.6},
+    "slim_tall": {"height": 0.85, "weight": 0.2, "muscle": 0.3, "age": 0.5, "proportions": 0.6},
     "heavy_short": {"height": 0.2, "weight": 0.9, "muscle": 0.4, "age": 0.75, "proportions": 0.4},
-    "muscular_young": {"height": 0.55, "weight": 0.55, "muscle": 0.9, "age": 0.25, "proportions": 0.7},
+    "muscular_young": {"height": 0.55, "weight": 0.55, "muscle": 0.9, "age": 0.5, "proportions": 0.7},
 }
 out = sys.argv[1]
 os.makedirs(out, exist_ok=True)

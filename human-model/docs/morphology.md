@@ -56,6 +56,8 @@ Skin margins, in metres, are at the top of `hmcore/skeleton.py`: `TISSUE` for th
 
 ## Checks on every person
 
+These results were measured before bug `human-model/8` was fixed: four of the six people were then below the adult age, 0.25 and 0.4, and haven't been rebuilt at 0.5.
+
 | Check | Tool | Result on the six test people |
 |---|---|---|
 | All build with no repair | `build_model.py` | Yes |

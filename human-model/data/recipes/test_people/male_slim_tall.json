@@ -3,7 +3,7 @@
  "sex": "male",
  "macros": {
   "gender": 1.0,
-  "age": 0.4,
+  "age": 0.5,
   "muscle": 0.3,
   "weight": 0.2,
   "height": 0.85,

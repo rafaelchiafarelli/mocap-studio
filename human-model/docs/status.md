@@ -98,7 +98,7 @@ In `initiatives/bugs/epics/human-model/tasks/`:
 | 5 | The walk jumps at every step (fixed 2026-11-07) |
 | 6 | Muscle thickness doesn't follow the muscle slider |
 | 7 | A smile tears at the mouth's corners on a changed face |
-| 8 | Four of the six test people are below the adult age, so the editor refuses them |
+| 8 | Fixed 2026-11-08: the test people are now all adult (age 0.5 or above); the builds and measures from before are still the younger bodies |
 | 9 | Bones come through the skin at the thigh and upper arm when walking |
 
 ### Not done, or short of the plan
