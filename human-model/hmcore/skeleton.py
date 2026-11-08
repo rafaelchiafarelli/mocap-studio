@@ -9,6 +9,8 @@ TRUNK_MARGIN = {"lateral": 0.018, "front": 0.012, "spinous": 0.012}
 # Bones that lie just under the skin are moved rigidly until this much tissue covers them: the same least depths as
 # data/skin_over_bone_female.json, so the pushed skin has nothing left to do for them.
 SETTLE_TISSUE = 0.004  # m
+KNEE_TISSUE = 0.003  # declared, as for the patella in data/skin_over_bone_female.json, m
+LARYNX_TISSUE = 0.003  # declared, as in data/skin_over_bone_female.json, m
 PELVIS_TISSUE = 0.006  # declared: least tissue over the sacrum and the hip bones' crests, as in data/skin_over_bone_female.json, m
 AC_JOINT = 0.003  # declared: the gap between the clavicle's end and the acromion, m
 ACROMION_TISSUE = 0.008  # declared: skin and fat over the acromion's top, m; it lies just under the skin
@@ -260,8 +262,13 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
     anchors["hyoid"] = hy_c
     la_c = hy_c + np.array([0, 0.002, -0.034])
     v, f = parametric.thyroid_shield(la_c)
-    put("larynx", v, f, "hm_larynx", "parametric")
+    # sized from the skin, about the shield's back edge, since MPFB's neck is too thin for it and behind it lies the spine (bug human-model/20)
+    back = la_c + np.array([0, v[:, 1].max() - la_c[1], 0])
+    s_la = fit.largest_scale(lambda s: float((LARYNX_TISSUE - depth(back + (v - back) * s)).max()))
+    put("larynx", back + (v - back) * s_la, f, "hm_larynx", "parametric")
+    la_c = back + (la_c - back) * s_la
     anchors["larynx"] = la_c
+    anchors["slimmed"] = {"larynx": round(s_la, 3)}
 
     # Rib cage: one map for ribs, sternum and cartilage, with each rib carried by its own vertebra's depth.
     ribs = np.vstack([lib[f"rib_{s}_{i}"][0] for s in ("left", "right") for i in range(1, 13)])
@@ -386,6 +393,12 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
             if not name.endswith(side) or not any(k in name for k in FOOT_PARTS):
                 continue
             put(f"{name[:-1].lower()}_{side}", foot_map(name, v), f, f"toe.{side}" if "Phalanx" in name else f"foot.{side}", "bmf")
+        # MPFB's knee and ankle are thinner than these bones (bug human-model/20): narrowed where the skin leaves them too little tissue.
+        for names, top, bottom, need, key in ((("femur", "patella"), hip, knee, KNEE_TISSUE, "knee"), (("tibia", "fibula"), knee, ankle, SETTLE_TISSUE, "ankle")):
+            placed, least = fit.slim_to_skin([out[f"{n}_{side}"]["verts"] for n in names], top, bottom, skin, depth, need)
+            for n, p in zip(names, placed):
+                out[f"{n}_{side}"]["verts"] = p.astype(np.float32)
+            anchors["slimmed"][f"{key}_{side}"] = round(least, 3)
         fib = out[f"fibula_{side}"]["verts"]
         anchors[f"fibula_head_{side}"] = fib[fib[:, 2] > np.quantile(fib[:, 2], 0.97)].mean(axis=0)
 
