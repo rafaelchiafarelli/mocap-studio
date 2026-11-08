@@ -40,6 +40,7 @@ def measure(r, skin, bones, fat_mm, gpu_mesh, rig):
 
     closed = gpu_mesh(r["capped_verts"], r["capped_tris"])
     surface = gpu_mesh(skin, r["patch"])
+    planes = body.cut_planes(skin, r["patch"])
     report = {}
     for name in r["bone_names"]:
         bv = bones[name][0]
@@ -47,7 +48,7 @@ def measure(r, skin, bones, fat_mm, gpu_mesh, rig):
         if inside.mean() < 0.5:
             continue  # beyond the cuts: head, hands, feet
         d = surface.closest(bv)[0]
-        cut = body.near_a_cut(bv, rig)
+        cut = body.near_a_cut(bv, rig, planes)
         poking = ~inside & ~cut
         report[name] = {"points_outside_skin": int(poking.sum()), "deepest_mm": round(float(d[poking].max()) * 1000, 1) if poking.any() else 0.0,
                         "points_at_a_cut": int((~inside & cut).sum()),

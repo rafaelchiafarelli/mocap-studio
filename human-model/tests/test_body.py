@@ -65,3 +65,20 @@ def test_head_vertices_follow_the_weights_border():
     groups = {"spine.005": [[0, 1.0], [1, 0.6], [2, 0.2]], "spine.006": [[2, 0.3]], "jaw": [[1, 0.3], [2, 0.5]],
               "joint-head": [[0, 5.0]], "DEF-neck": [[3, 1.0]]}
     assert body.head_vertices(4, rig, groups).tolist() == [False, False, True, False]
+
+
+def test_near_a_cut_follows_the_cut_skins_border():
+    # a tube from z=0 to z=1, open at both ends: two border loops
+    n = 24
+    a = np.linspace(0, 2 * np.pi, n, endpoint=False)
+    rings = [np.column_stack([np.cos(a), np.sin(a), np.full(n, z)]) for z in np.linspace(0, 1, 5)]
+    skin = np.vstack(rings)
+    tris = []
+    for k in range(4):
+        for i in range(n):
+            p, q, r_, s = k * n + i, k * n + (i + 1) % n, (k + 1) * n + i, (k + 1) * n + (i + 1) % n
+            tris += [(p, q, r_), (q, s, r_)]
+    planes = body.cut_planes(skin, np.array(tris))
+    assert len(planes) == 2
+    pts = np.array([[0, 0, 1.2], [0, 0, 0.5], [0, 0, -0.3]])
+    assert body.near_a_cut(pts, {}, planes).tolist() == [True, False, True]
