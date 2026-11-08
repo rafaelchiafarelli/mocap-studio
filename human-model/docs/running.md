@@ -103,7 +103,7 @@ Shape keys are `F_<muscle>_<side>` (face) and `B_<name>` (body). Drive the contr
 
 Pose `HM_rig` directly. Main bones: `spine`, `spine.001` to `.006`, `thigh.*`, `shin.*`, `foot.*`, `toe.*`, `shoulder.*`, `upper_arm.*`, `forearm.*`, `hand.*`, fingers `f_index.01.*` and so on, `palm.*`, `thumb.*`.
 
-Joint limits are stored as the bone property `hm_limit_deg` and **not enforced**: a new session could turn them into Limit Rotation constraints. Note that the bones' own axes differ: `blender/posing.py` converts rotations from the rest pose's axes, where +X is the body's left, +Y its back and +Z up. In those axes hip flexion is negative about X, and knee flexion positive.
+Joint limits are stored as the bone property `hm_limit_deg` , enforced with a Limit Rotation on hip, knee and ankle only, at the mean plus 10° (bug `human-model/3`). Note that the bones' own axes differ: `blender/posing.py` converts rotations from the rest pose's axes, where +X is the body's left, +Y its back and +Z up. In those axes hip flexion is negative about X, and knee flexion positive.
 
 ## What's live and what's baked
 

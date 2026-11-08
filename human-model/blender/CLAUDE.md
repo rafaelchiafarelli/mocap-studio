@@ -56,10 +56,10 @@
 - A changed control property reaches its drivers only after `update_tag` and a frame change: `breath_check.py:12`.
 - The gait data's hip angle is measured against a pelvis tilted about 10° forward; `walk.py` takes `PelvisAngleZ` off it, since the rig's rest pelvis is level. Without it the walk jumped at every step: `walk.py`, search `PelvisAngleZ`.
 - The patella hangs from `hm_patella.<side>`, on the thigh, shaped like the shin and copying its local rotation at `PATELLA_SHARE` (0.5, declared), so it takes half the knee's bend (bug `human-model/19`, fixed): `assemble.py`, search `PATELLA_SHARE`.
-- Joint limits are stored as the `hm_limit_deg` bone property, not as Blender constraints: `assemble.py`, search `hm_limit_deg`.
+- Joint limits are stored as the `hm_limit_deg` bone property. Hip, knee and ankle also get a Limit Rotation at the mean plus `LIMIT_MARGIN_DEG` (10°); shoulder and elbow don't, since their bones lie skewed to the limits' axis (bug `human-model/3`): `assemble.py`, search `hm_limit_deg`.
 - Muscles have their own armature: on the main rig, a bone following a skin vertex would be a dependency cycle: `hmmuscles.py:1`.
 - Nothing depends on the muscle bodies: skin moves through shape keys and bones. See `retire_trial.py`.
-- MPFB's Rigify metarig deforms the skin; the generated control rig isn't used. Its `DEF-*` weights have to be merged into metarig bones, or vertices stay behind: `assemble.py:35`.
+- MPFB's Rigify metarig deforms the skin; the generated control rig isn't used. Its `DEF-*` weights have to be merged into metarig bones, or vertices stay behind: `assemble.py:36`.
 
 ## Touchpoints
 
