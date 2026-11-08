@@ -95,7 +95,7 @@ In `initiatives/bugs/epics/human-model/tasks/`:
 | 2 | Sacrum partly outside the skin in male builds |
 | 3 | Joint limits aren't enforced |
 | 4 | Walking stride is short |
-| 5 | The walk jumps at every step |
+| 5 | The walk jumps at every step (fixed 2026-11-07) |
 | 6 | Muscle thickness doesn't follow the muscle slider |
 | 7 | A smile tears at the mouth's corners on a changed face |
 | 8 | Four of the six test people are below the adult age, so the editor refuses them |

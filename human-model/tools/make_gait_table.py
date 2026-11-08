@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 import numpy as np
 from hmcore import gait
 
-KEEP = [c for side in "RL" for c in (f"{side}PelvisAngleX", f"{side}PelvisAngleY", f"{side}HipAngleX", f"{side}HipAngleZ", f"{side}KneeAngleZ", f"{side}AnkleAngleZ")]
+KEEP = [c for side in "RL" for c in (f"{side}PelvisAngleX", f"{side}PelvisAngleY", f"{side}PelvisAngleZ", f"{side}HipAngleX", f"{side}HipAngleZ", f"{side}KneeAngleZ", f"{side}AnkleAngleZ")]
 CYCLE_S = 1.1  # declared: the ascii files are normalized in time, so this sets pace only; checked through the speed it gives
 
 

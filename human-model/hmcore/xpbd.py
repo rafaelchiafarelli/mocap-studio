@@ -74,11 +74,13 @@ def _velocity(x: wp.array(dtype=wp.vec3), x_prev: wp.array(dtype=wp.vec3), v: wp
 
 @wp.kernel
 def _velocity_relative(x: wp.array(dtype=wp.vec3), x_prev: wp.array(dtype=wp.vec3), v: wp.array(dtype=wp.vec3), inv_mass: wp.array(dtype=float),
-                       rest: wp.array(dtype=wp.vec3), T0: wp.array(dtype=wp.mat44), T1: wp.array(dtype=wp.mat44), frame: float, dt: float, damping: float):
-    """Damps only the motion relative to the driven frame: a limb carried at speed isn't slowed, as if by air."""
+                       rest: wp.array(dtype=wp.vec3), bone: wp.array(dtype=int), T0: wp.array(dtype=wp.mat44), T1: wp.array(dtype=wp.mat44),
+                       frame: float, dt: float, damping: float):
+    """Damps only the motion relative to the node's bone: a limb carried at speed isn't slowed, as if by air."""
     i = wp.tid()
     if inv_mass[i] > 0.0:
-        carried = (wp.transform_point(T1[0], rest[i]) - wp.transform_point(T0[0], rest[i])) / frame
+        b = bone[i]
+        carried = (wp.transform_point(T1[b], rest[i]) - wp.transform_point(T0[b], rest[i])) / frame
         own = (x[i] - x_prev[i]) / dt - carried
         v[i] = carried + own * (1.0 - damping * dt)
 
@@ -90,10 +92,11 @@ def _place(x: wp.array(dtype=wp.vec3), ids: wp.array(dtype=int), positions: wp.a
 
 
 @wp.kernel
-def _drive(x: wp.array(dtype=wp.vec3), ids: wp.array(dtype=int), rest: wp.array(dtype=wp.vec3), T0: wp.array(dtype=wp.mat44), T1: wp.array(dtype=wp.mat44),
-           a: float):
+def _drive(x: wp.array(dtype=wp.vec3), ids: wp.array(dtype=int), rest: wp.array(dtype=wp.vec3), bone: wp.array(dtype=int),
+           T0: wp.array(dtype=wp.mat44), T1: wp.array(dtype=wp.mat44), a: float):
     i = wp.tid()
-    M = T0[0] * (1.0 - a) + T1[0] * a
+    b = bone[i]
+    M = T0[b] * (1.0 - a) + T1[b] * a
     x[ids[i]] = wp.transform_point(M, rest[i])
 
 
@@ -170,26 +173,31 @@ class Solver:
         wp.launch(_place, len(ids), [self.x, wp.array(np.asarray(ids, np.int32), dtype=int, device=self.device),
                                      wp.array(np.asarray(positions, np.float32), dtype=wp.vec3, device=self.device)], device=self.device)
 
-    def drive(self, ids, rest, all_rest=None):
+    def drive(self, ids, rest, all_rest=None, bone=None, all_bone=None, n_bones=1):
         """These nodes follow a rigid transform from now on: each frame, set_drive gives the transform at its start and end,
         and every substep places them part of the way, so a bone moves smoothly within the frame. Their mass is set to infinite.
         all_rest, every node's position in the same rest frame, makes damping act only on motion relative to that frame.
-        Without it, damping slows the absolute velocity, like air: a block carried at walking speed trailed by 12 mm (thigh_walk_v1)."""
+        Without it, damping slows the absolute velocity, like air: a block carried at walking speed trailed by 12 mm (thigh_walk_v1).
+        With several bones, bone gives each driven node's bone and all_bone each node's nearest, whose motion its damping follows;
+        set_drive then takes one transform per bone. Left out, everything follows bone 0."""
         ids = np.asarray(ids, np.int32)
         inv = self.inv_mass.numpy()
         inv[ids] = 0.0
         self.inv_mass.assign(inv)
         self.drive_ids = wp.array(ids, dtype=int, device=self.device)
         self.drive_rest = wp.array(np.asarray(rest, np.float32), dtype=wp.vec3, device=self.device)
-        self.T0 = wp.array(np.eye(4, dtype=np.float32)[None], dtype=wp.mat44, device=self.device)
-        self.T1 = wp.array(np.eye(4, dtype=np.float32)[None], dtype=wp.mat44, device=self.device)
+        self.drive_bone = wp.array(np.zeros(len(ids), np.int32) if bone is None else np.asarray(bone, np.int32), dtype=int, device=self.device)
+        self.node_bone = wp.array(np.zeros(self.n, np.int32) if all_bone is None else np.asarray(all_bone, np.int32), dtype=int, device=self.device)
+        eye = np.repeat(np.eye(4, dtype=np.float32)[None], n_bones, axis=0)
+        self.T0 = wp.array(eye, dtype=wp.mat44, device=self.device)
+        self.T1 = wp.array(eye, dtype=wp.mat44, device=self.device)
         if all_rest is not None:
             self.all_rest = wp.array(np.asarray(all_rest, np.float32), dtype=wp.vec3, device=self.device)
 
     def set_drive(self, start, end):
-        """The driven nodes' transform (4 x 4, from rest) at the start and the end of the next frame."""
-        self.T0.assign(np.asarray(start, np.float32)[None])
-        self.T1.assign(np.asarray(end, np.float32)[None])
+        """The driven nodes' transform (4 x 4, from rest, or one per bone) at the start and the end of the next frame."""
+        self.T0.assign(np.asarray(start, np.float32).reshape(-1, 4, 4))
+        self.T1.assign(np.asarray(end, np.float32).reshape(-1, 4, 4))
 
     def step(self, dt, substeps):
         self.frame = dt
@@ -214,7 +222,8 @@ class Solver:
     def _substeps(self, h, substeps):
         for k in range(substeps):
             if self.drive_ids is not None:
-                wp.launch(_drive, len(self.drive_ids), [self.x, self.drive_ids, self.drive_rest, self.T0, self.T1, (k + 1) / substeps], device=self.device)
+                wp.launch(_drive, len(self.drive_ids), [self.x, self.drive_ids, self.drive_rest, self.drive_bone, self.T0, self.T1, (k + 1) / substeps],
+                          device=self.device)
             wp.launch(_predict, self.n, [self.x, self.v, self.x_prev, self.inv_mass, self.gravity, h], device=self.device)
             for c in range(len(self.slices) - 1):
                 start, stop = int(self.slices[c]), int(self.slices[c + 1])
@@ -222,7 +231,8 @@ class Solver:
                           device=self.device)
             wp.launch(_floor, self.n, [self.x, self.x_prev, self.floor], device=self.device)
             if self.all_rest is not None:
-                wp.launch(_velocity_relative, self.n, [self.x, self.x_prev, self.v, self.inv_mass, self.all_rest, self.T0, self.T1, self.frame, h, self.damping],
+                wp.launch(_velocity_relative, self.n, [self.x, self.x_prev, self.v, self.inv_mass, self.all_rest, self.node_bone, self.T0, self.T1,
+                                                       self.frame, h, self.damping],
                           device=self.device)
             else:
                 wp.launch(_velocity, self.n, [self.x, self.x_prev, self.v, self.inv_mass, h, self.damping], device=self.device)

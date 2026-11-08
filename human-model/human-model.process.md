@@ -19,7 +19,7 @@ What `build_model.py` does, stage by stage.
 
 ## Afterwards, on a built model
 
-- **Walking:** `blender/walk.py` keys `data/gait_walk.json`.
+- **Walking:** `blender/walk.py` keys `data/gait_walk.json`, with the pelvis's tilt taken off the hip, the toes rolling and each stance foot planted; `blender/walk_check.py` measures it.
 - **Body capture:** `tools/body_motion.py`, then `blender/body_drive.py`.
 - **Existing character:** `blender/export_blend.py` replaces the export stage, and `blender/add_fields.py` adds the shape keys to its own file.
 - **Take:** `blender/dump_take.py`, `tools/solve_take.py`, `blender/key_take.py` for each variant, `blender/render_take.py`.
