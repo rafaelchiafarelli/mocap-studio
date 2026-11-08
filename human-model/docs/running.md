@@ -192,6 +192,12 @@ Paths must be under the repository (relative), `/mnt/g` or `/tmp`.
 
 `fetch_sources.py` and `pull_ct_sample.py` need no Docker: run them with `python3 -I`.
 
+## Following a long run
+
+    python3 human-model/tools/hm_status.py
+
+From WSL, refreshing until Ctrl+C, which leaves the run going: what Docker and Blender are running, the GPU, each stage's state and the newest log's last line. `--once` prints once, `--every` sets the seconds, `--hours` how recent an output must be to count as done. It shows what has been written, not how much is left.
+
 ## Using an existing character file
 
 For a character that already exists as a `.blend`, built with MPFB's topology and metarig:

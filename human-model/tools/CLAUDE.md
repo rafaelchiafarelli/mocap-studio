@@ -29,6 +29,7 @@
 - `body_report.py`: the zero point's sections, masses from the volume inside the skin, and the table in Portuguese for Rafael, optionally beside an earlier run (tasks `muscle-physics/body-at-rest/2`, `inside-out-skin/2`). Plain image; its text uses Blender's Inter font from `G:`.
 - `body_walk.py`: the body walking on the GPU, every bone carrying its tissue and every cut ring held by its nearest bone, bones through the skin against the current model: the lower body by default, the whole body with `ABOVE_HIP=10` (`hm.sh --gpu`; tasks `muscle-physics/leg-walk/2`, `body-walk/1`).
 - `thigh_walk.py`: the layered thigh through a walk on the GPU, its tissue values from `data/thigh_tissue.json`, with bone-through-skin, motion and volume per frame against the current model (`hm.sh --gpu`; task `muscle-physics/thigh/3`).
+- `hm_status.py`: what the long runs are doing now, refreshing until Ctrl+C: containers, Blender, the GPU, each stage's output and the newest log (from WSL, no Docker; `--once` prints once). A stage counts as running by the script of its command line, and as done by its output's age.
 - `thigh_layers.py`: one thigh built from the inside out, with every step kept as a numbered `.ply` (task `muscle-physics/thigh/2`).
 
 ## Key facts / gotchas
