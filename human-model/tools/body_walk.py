@@ -1,8 +1,9 @@
-"""The woman's lower body walks: legs and pelvis in layers, every bone carrying its tissue, on the GPU (task muscle-physics/leg-walk/2).
-    hm.sh --gpu python human-model/tools/lower_body_walk.py LAYERS.npz BONES.npz WALK_DUMP.npz OUT_DIR [NAME=value ...]
+"""The body walks in layers, every bone carrying its tissue, on the GPU: the lower body (task muscle-physics/leg-walk/2) or the whole
+body with ABOVE_HIP=10 (task muscle-physics/body-walk/1).
+    hm.sh --gpu python human-model/tools/body_walk.py LAYERS.npz BONES.npz WALK_DUMP.npz OUT_DIR [NAME=value ...]
 LAYERS.npz is from tools/body_layers.py (on the pushed skin), BONES.npz the build's bones, WALK_DUMP.npz from blender/body_walk_dump.py.
 Tissue values from data/body_tissue.json; NAME=value overrides one, or a constant below, for this run.
-Writes OUT_DIR/lower_body_walk.npz (for blender/lower_body_bake.py), lower_body_walk_frames.csv and lower_body_walk.json."""
+Writes OUT_DIR/body_walk.npz (for blender/body_walk_bake.py), body_walk_frames.csv and body_walk.json."""
 import csv, json, os, sys, time
 import numpy as np
 from scipy.sparse import coo_matrix
@@ -14,11 +15,12 @@ from hmcore import body, layers, meshgpu, xpbd
 
 TISSUE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "body_tissue.json")
 TISSUE_KEYS = ("SUBSTEPS", "DAMPING", "FAT_YOUNG", "MUSCLE_YOUNG", "SKIN_YOUNG", "FAT_DENSITY", "MUSCLE_DENSITY", "POISSON", "CAVITY_YOUNG", "CAVITY_DENSITY")
-ABOVE_HIP = 0.02  # m above the hip bones' top: where the region is cut at the waist
+ABOVE_HIP = 0.02  # m above the hip bones' top: where the region is cut at the waist. 10 keeps the whole body
 RAMP = 1.0  # s from the rest pose into the walk's first pose, so the tissue isn't jolted
 SETTLE = 0.5  # s held in the first pose before frame 1
 HOLD = 1.0  # s held in the last pose after the walk
-CUT_PIN = 1.0  # voxels: nodes this close to the waist's and the ankles' cuts move with their nearest bone
+CUT_PIN = 1.0  # voxels: nodes past each cut ring's plane, less this, move with their nearest bone
+CHECK_CLEAR = 0.03  # m: bone points this close to a cut aren't checked against the skin: a bone leaves the cut skin there by design
 SKIN_DENSITY = 1100.0  # kg/m3, the band's
 
 
@@ -36,6 +38,26 @@ def region(nodes, tets, z_top):
     keep = keep[comp[t[:, 0]] == main]
     used, inv = np.unique(tets[keep], return_inverse=True)
     return keep, used, inv.reshape(-1, 4)
+
+
+def cut_zones(skin, rings, inside_point):
+    """Each ring where the skin is cut, as (centre, outward normal, radius): its plane faces away from inside_point."""
+    out = []
+    for r in rings:
+        p = skin[r]
+        c = p.mean(axis=0)
+        n = np.linalg.svd(p - c, full_matrices=False)[2][2]
+        n = n if (c - inside_point) @ n > 0 else -n
+        out.append((c, n, float(np.linalg.norm(p - c, axis=1).max())))
+    return out
+
+
+def near_cuts(points, zones, margin):
+    """Points past a cut ring's plane, less margin, and within half again its radius of its centre."""
+    out = np.zeros(len(points), bool)
+    for c, n, radius in zones:
+        out |= ((points - c) @ n > -margin) & (np.linalg.norm(points - c, axis=1) < 1.5 * radius + margin)
+    return out
 
 
 def moved(M, p):
@@ -88,9 +110,9 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
     in_region[skin_ids] = True
     patch = L["patch"][in_region[L["patch"]].all(axis=1)]
     patch = layers.cut_patch(L["skin"].astype(float), patch, None, -np.inf, np.inf)
-    rings = layers.boundary_loops(patch)
-    ankle_top = max(L["skin"][r, 2].max() for r in rings if L["skin"][r, 2].mean() < 0.3)
-    cut = np.flatnonzero((nodes[:, 2] > z_top - (CUT_PIN + 1) * h) | (nodes[:, 2] < ankle_top + CUT_PIN * h))
+    # Every ring where the skin is cut (the waist, if any, the neck, wrists, ankles) is held by its nearest bone
+    cut_rings = cut_zones(L["skin"].astype(float), layers.boundary_loops(patch), nodes.mean(axis=0))
+    cut = np.flatnonzero(near_cuts(nodes, cut_rings, CUT_PIN * h))
     driven = np.union1d(bone_nodes, cut)
 
     young = np.choose(label, [MUSCLE_YOUNG, MUSCLE_YOUNG, FAT_YOUNG, SKIN_YOUNG, CAVITY_YOUNG])
@@ -118,9 +140,9 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
     wp.synchronize()
 
     # Bone points to check against the skin: bones inside the region, away from the cuts
-    check = [i for i, n in enumerate(names) if n not in ("vertebra_L1", "vertebra_L2", "vertebra_L3", "vertebra_T12")]
+    check = list(range(len(names)))
     check_pts = [bones[names[i]][0] for i in check]
-    keep_pts = [(p[:, 2] < z_top - 0.03) & (p[:, 2] > ankle_top + 0.03) for p in check_pts]
+    keep_pts = [~near_cuts(p, cut_rings, CHECK_CLEAR) for p in check_pts]
     frames = np.concatenate([walk, np.repeat(walk[-1:], int(round(HOLD * fps)), axis=0)])
     skin_rest = L["skin"].astype(float)
     current_all = D["skins"].astype(float)
@@ -181,7 +203,8 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
 
     walking = [r for r in rows if r["walking"]]
     zones = sorted({z for r in rows for z in r["zone_motion"]})
-    summary = {"declared": {k: g[k] for k in TISSUE_KEYS + ("ABOVE_HIP", "RAMP", "SETTLE", "HOLD", "CUT_PIN", "SKIN_DENSITY")},
+    summary = {"declared": {k: g[k] for k in TISSUE_KEYS + ("ABOVE_HIP", "RAMP", "SETTLE", "HOLD", "CUT_PIN", "CHECK_CLEAR", "SKIN_DENSITY")},
+               "cuts": len(cut_rings),
                "gpu": wp.get_device("cuda:0").name, "tetrahedra": int(len(tets)), "nodes": int(len(nodes)), "driven_nodes": int(len(driven)),
                "bones": names, "frames_walking": n_walk, "ms_per_frame": {"median": round(float(np.median(ms)), 1), "max": round(float(np.max(ms)), 1)},
                "peak_vram_mib": round(wp.get_mempool_used_mem_high("cuda:0") / 2 ** 20, 1),
@@ -195,15 +218,15 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
                "inverted_tetrahedra_max": max(r["inverted_tetrahedra"] for r in rows),
                "skin_motion_peak_by_zone_mm": {z: round(max(r["zone_motion"].get(z, 0.0) for r in walking), 1) for z in zones},
                "volume_range": {k: [min(r[f"{k}_volume"] for r in rows), max(r[f"{k}_volume"] for r in rows)] for k in label_vol}}
-    np.savez_compressed(f"{out_dir}/lower_body_walk.npz", skins=np.array(skins), skin_ids=skin_ids, patch=patch, cut_nodes=cut_nodes,
+    np.savez_compressed(f"{out_dir}/body_walk.npz", skins=np.array(skins), skin_ids=skin_ids, patch=patch, cut_nodes=cut_nodes,
                         cut_frames=np.array(cut_frames), frames_walking=n_walk, fps=fps, bone_names=np.array(names), transforms=frames,
                         **{f"cut_{k}": np.searchsorted(cut_nodes, f) for k, f in cut_faces.items()})
     keys = [k for k in rows[-1] if k != "zone_motion"] + [k for k in walking[0] if k not in rows[-1]]
-    with open(f"{out_dir}/lower_body_walk_frames.csv", "w", newline="") as fh:
+    with open(f"{out_dir}/body_walk_frames.csv", "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=keys, extrasaction="ignore")
         w.writeheader()
         w.writerows(rows)
-    with open(f"{out_dir}/lower_body_walk.json", "w") as fh:
+    with open(f"{out_dir}/body_walk.json", "w") as fh:
         json.dump(summary, fh, indent=1)
     print(json.dumps(summary, indent=1))
 

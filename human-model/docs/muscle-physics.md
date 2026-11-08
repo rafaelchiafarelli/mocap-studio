@@ -364,9 +364,9 @@ The voxels had counted 4.7 L too many, because their band reaches past the skin.
 
 ## Experiment 6: the woman's lower body walks
 
-Epic `leg-walk`, the agreed second stage (Rafael, 2026-11-07, "faça a perna e o quadril caminhando"). Bug `human-model/9` is about bones coming through the skin near the hip while walking, so the walk now carries the pelvis and both legs, built from the inside out on the pushed skin (`body_v5_pushed-skin`).
+Epic `leg-walk`, the agreed second stage. Since `body-walk`, the tool is `tools/body_walk.py` and the bake `blender/body_walk_bake.py`, with every cut ring held by its nearest bone; the run below used the waist and ankle rules they replaced (Rafael, 2026-11-07, "faça a perna e o quadril caminhando"). Bug `human-model/9` is about bones coming through the skin near the hip while walking, so the walk now carries the pelvis and both legs, built from the inside out on the pushed skin (`body_v5_pushed-skin`).
 
-**How** (`tools/lower_body_walk.py`, on the GPU):
+**How** (then `tools/lower_body_walk.py`, now `tools/body_walk.py`, on the GPU):
 
 1. **The region:** the voxels below 2 cm over the hip bones' top, as one connected piece. The hands hang that low in the rest pose but join it nowhere, so they drop out. Whole voxels only, since the solve colours them by sixes.
 2. **Every node has a bone,** the nearest bone vertex among those holding some of the region's bone voxels: 17 bones, from the lumbar vertebrae to the ankles.
@@ -407,5 +407,37 @@ Other figures:
 **Running it:**
 
     python3 human-model/blender_run.py --blend .../female_walk_review.blend human-model/blender/body_walk_dump.py OUT/00_female_body_walk_dump.npz
-    human-model/hm.sh --gpu python human-model/tools/lower_body_walk.py LAYERS.npz BONES.npz OUT/00_female_body_walk_dump.npz RUN_DIR [NAME=value ...]
-    python3 human-model/blender_run.py human-model/blender/lower_body_bake.py RUN_DIR/lower_body_walk.npz LAYERS.npz BONES.npz DUMP.npz RUN_DIR/lower_body_walk.blend RUN_DIR/frames
+    human-model/hm.sh --gpu python human-model/tools/body_walk.py LAYERS.npz BONES.npz OUT/00_female_body_walk_dump.npz RUN_DIR [NAME=value ...]
+    python3 human-model/blender_run.py human-model/blender/body_walk_bake.py RUN_DIR/body_walk.npz LAYERS.npz BONES.npz DUMP.npz RUN_DIR/body_walk.blend RUN_DIR/frames
+
+## Experiment 7: the whole woman walks
+
+Epic `body-walk`, the agreed third stage (Rafael, 2026-11-07, "nesse momento acho que é mais importante seguir adiante"). The same tool as the lower body, `tools/body_walk.py` with `ABOVE_HIP=10`, so nothing is cut at the waist:
+- **Cut rings:** the neck, both wrists and both ankles. Each is held by its nearest bone: nodes past the ring's plane, within half again its radius, follow that bone (`body_walk.cut_zones`, `near_cuts`).
+- **Bone checks:** points within 3 cm of a cut aren't checked against the skin.
+- **Tissue values:** the lower body's, to be tuned later.
+- **Not modelled:** contact, breathing, the head, hands and feet.
+
+**Results, run `v1_whole-body`:**
+
+| | Simulated | Current model |
+|---|---:|---:|
+| Bones through the skin | 4, the misplaced ones only: right scapula, left clavicle, both fibulae; up to 29.9 mm (the scapula) | 30 bones, up to 27.0 mm |
+| Points out in the worst frame | 6,449 | 14,300 |
+
+Other figures:
+- 2.4 million tetrahedra on 83 bones.
+- 145 ms per frame, 342 at worst; 181 MiB of VRAM.
+- Volume held within 2% for muscle, fat and skin. The cavity varies from 90% to 105%.
+- At most 2,365 tetrahedra inside out in a frame (0.1%).
+
+**What it shows:** away from the four misplaced bones, no bone comes through the skin anywhere on the walking body, while the current model has 30 doing so. The cranium shows in the section video floating over the neck: it holds the neck's tissue, but the head isn't simulated.
+
+The run's summary first said 19 cuts: a name reused for the fat zones overwrote the rings' count in the summary only. It's corrected by hand in that file and fixed in the tool.
+
+Kept in `G:\mocap-studio-downloads\review\2026-11-07\body_walk\v1_whole-body\`: `body_walk_v1_compare.mp4` (from the side, ours in front, the current model 80 cm behind), `body_walk_v1_inside.mp4` (the back half in section), `body_walk.blend`.
+
+**Running it:**
+
+    human-model/hm.sh --gpu python human-model/tools/body_walk.py LAYERS.npz BONES.npz DUMP.npz RUN_DIR ABOVE_HIP=10 [NAME=value ...]
+    python3 human-model/blender_run.py human-model/blender/body_walk_bake.py RUN_DIR/body_walk.npz LAYERS.npz BONES.npz DUMP.npz RUN_DIR/body_walk.blend RUN_DIR/frames
