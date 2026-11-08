@@ -8,7 +8,7 @@
 
 - **Thigh heads move into the sockets,** because MPFB's hips are wider than a real pelvis allows. **Shoulder joints go up** with the shoulder girdle until the acromion lies just under the skin (19 mm on the neutral woman): MPFB's sit low, and its upper arm was 232 mm from joint to elbow.
 - **`DEF-*` weights are merged into metarig bones,** or some skin vertices stay behind when the body bends.
-- **Added bones:** `hm_jaw`, `hm_hyoid`, `hm_larynx`, `hm_sternum`, and 24 `hm_rib_<n>_<side>`.
+- **Added bones:** `hm_jaw`, `hm_hyoid`, `hm_larynx`, `hm_sternum`, 24 `hm_rib_<n>_<side>`, and `hm_patella.<side>`.
 
 ## Jaw
 
@@ -65,7 +65,7 @@ Measured on the woman (`blender/walk_check.py`): height changes at most 8 mm a f
 ## Known simplifications
 
 - Radius and ulna don't cross in pronation: both are rigid on one forearm bone.
-- The patella rides on the shin, with no track of its own.
+- The patella turns by half the knee's bend, with no real groove in the femur.
 - Hyoid and larynx are simple shapes; the larynx looks like a block.
 - Distal femur, patella, tibia, fibula and larynx are narrowed to fit the skin, so they are thinner than real ones there.
 - Finger bones are low resolution.

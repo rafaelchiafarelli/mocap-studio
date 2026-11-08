@@ -105,7 +105,7 @@ In `initiatives/bugs/epics/human-model/tasks/`:
 
 - The comparison character doesn't use the sliding jaw or the tongue controls.
 - Tongue curves from phonemes haven't been seen on the model.
-- Radius and ulna don't cross; the patella has no track; cartilage doesn't bend.
+- Radius and ulna don't cross; the patella turns by half the knee's bend, with no real groove; cartilage doesn't bend.
 - Elbow and shoulder shapes weren't checked in a render.
 - Built models have plain skin: skin materials, hair and clothes aren't applied.
 - Tissue is inconclusive.

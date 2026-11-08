@@ -76,7 +76,7 @@ The only input you need to write. Full example in [character-controls.md](charac
 | Name | What it is |
 |---|---|
 | `<name>.skin` | The skin |
-| `HM_rig` | The main armature: MPFB's 185 bones, plus `hm_jaw`, `hm_hyoid`, `hm_larynx`, `hm_sternum`, 24 `hm_rib_*` |
+| `HM_rig` | The main armature: MPFB's 185 bones, plus `hm_jaw`, `hm_hyoid`, `hm_larynx`, `hm_sternum`, 24 `hm_rib_*`, two `hm_patella.*` |
 | `HM_controls` | An empty holding the control sliders as custom properties |
 | `HM_bones` | Collection of the 181 bone meshes, each parented to a rig bone |
 | `HM_muscles` | Collection: the `HM_muscles` mesh, and `HM_muscle_rig` |

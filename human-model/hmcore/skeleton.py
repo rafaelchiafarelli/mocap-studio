@@ -383,7 +383,7 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
         v, f = legs[f"Femur{side}"]
         put(f"femur_{side}", fit.segment_fit(v, a_h, a_k, hip, knee), f, f"thigh.{side}", "bmf")
         v, f = legs[f"Patella{side}"]
-        put(f"patella_{side}", fit.segment_fit(v, a_h, a_k, hip, knee), f, f"shin.{side}", "bmf")
+        put(f"patella_{side}", fit.segment_fit(v, a_h, a_k, hip, knee), f, f"hm_patella.{side}", "bmf")
         for bone in ("Tibia", "Fibula"):
             v, f = legs[f"{bone}{side}"]
             put(f"{bone.lower()}_{side}", fit.segment_fit(v, a_k, a_a, knee, ankle), f, f"shin.{side}", "bmf")

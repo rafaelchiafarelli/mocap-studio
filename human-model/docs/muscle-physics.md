@@ -461,6 +461,8 @@ Kept in `G:\mocap-studio-downloads\review\2026-11-07\body_walk\v2_bones-settled\
 
 Those numbers still count joint bending (bug `human-model/14`), so they compare the two runs, not the tissue's jiggle. With the thigh now at its true angle, the patellae touch the skin in 4 frames of each swing, up to 1.8 mm (bug `human-model/19`); no other bone does. Tetrahedra inside out: 2,538 at worst. **Rafael's verdict on the walk (2026-11-08): "Ficou ok, bem melhor agora".** Kept in `body_walk\v3_feet-planted\`: `body_walk_v3_compare.mp4`, `body_walk_v3_inside.mp4`, `body_walk.blend`, and the walk's dump.
 
+**Run `v4_patella-half`** (2026-11-08, bugs `human-model/19`, `20` and `21` fixed; `review\2026-11-08\body_walk_v4_patella-half\`, on `models\hm-build\female_bugs19-20-21_v1\`, `skin_v10_bugs-19-20-21` and `body_v8_bugs-19-20-21`): no bone through the skin in any of the 105 frames, against the patellae's 32 frames, up to 1.8 mm, in `v3`. The patella doesn't enter femur or tibia in any frame. Both the half turn and the narrowed knee changed here, so the run can't say how much each did. Knee and ankle no longer grow under the push (+0.1 and 0.0 cm); the largest push is 11.9 mm, on the upper back and chest, over the clavicles. Tetrahedra inside out: 2,929 at worst, against 2,538. Volumes stay within 0.5% except the cavity's.
+
 **Running it:**
 
     human-model/hm.sh --gpu python human-model/tools/body_walk.py LAYERS.npz BONES.npz DUMP.npz RUN_DIR ABOVE_HIP=10 [NAME=value ...]
