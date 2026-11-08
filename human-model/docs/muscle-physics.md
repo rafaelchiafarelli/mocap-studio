@@ -239,14 +239,14 @@ Epic `body-at-rest`: the zero point ("marco zero") for body shapes. The thigh's 
 
 **How it's built** (task 1: `hmcore/body.py`, `tools/body_layers.py`, on the GPU through `hmcore/meshgpu.py`):
 
-1. **Cut.** Near each joint, skin vertices past the joint's plane are dropped, then the largest piece is kept (`body.py:26`).
-2. **Zones.** Each skin vertex gets a zone from its nearest rig bone (`body.py:57`). On the trunk, the zone also depends on height (against the bottom of the rib cage and the top of the hip bones) and on whether the vertex faces front, back or side. The thicknesses are smoothed over the skin, so they change gradually.
-3. **Fill.** The same 5 mm voxels as the thigh. Inside-or-outside and distances are computed on the GPU, about 4 million points in seconds. Bone meshes are first turned outward (`body.py:147`), because builds made before bug `human-model/11` was fixed have the left leg inside out.
+1. **Cut.** The head goes where the rig moves the skin mostly with the head's bones, a border that runs under the jaw (`body.py:26`); near each wrist and ankle, skin vertices past the joint's plane are dropped; then the largest piece is kept (`body.py:47`).
+2. **Zones.** Each skin vertex gets a zone from its nearest rig bone (`body.py:83`). On the trunk, the zone also depends on height (against the bottom of the rib cage and the top of the hip bones) and on whether the vertex faces front, back or side. The thicknesses are smoothed over the skin, so they change gradually.
+3. **Fill.** The same 5 mm voxels as the thigh. Inside-or-outside and distances are computed on the GPU, about 4 million points in seconds. Bone meshes are first turned outward (`body.py:173`), because builds made before bug `human-model/11` was fixed have the left leg inside out.
 4. **Label.** Bone wins over everything. Within one voxel of the skin is skin. Within the zone's fat thickness is fat.
-   - **Cavity** (`body.py:205`):
+   - **Cavity** (`body.py:230`):
      - in the chest: everything inside the rib cage, beside the spine too, where the lungs reach;
      - lower down: inside the hull of ribs, spine and pelvis, no more than 30 mm behind the spine's front, and deeper than the fat plus a 15 mm abdominal wall.
-   - **Breast** (`body.py:208`): fat down to a 15 mm chest muscle over the ribs.
+   - **Breast** (`body.py:233`): fat down to a 15 mm chest muscle over the ribs.
    - **Muscle:** whatever remains.
 5. **Clean, tetrahedra, tie the skin.** As on the thigh.
 
@@ -284,7 +284,7 @@ Other figures:
 - **The skin band decides the fat share.** It averages 9.2 mm, against about 1.5 mm of real skin. The fat is 19% of the mass if the band is all skin, and 37% if everything in it beyond 1.5 mm is fat. The usual range sits between the two. A thinner skin layer is needed before the fat share means anything.
 - **The cavity**, 7 L, is still on the small side of the 10 to 15 L of organs in a woman's trunk (general knowledge).
 - **The breast zone covers most of the front of the chest,** because its rig bone is the nearest there.
-- **A ragged collar under the chin:** the neck's cut leaves part of the jaw's underside.
+- **A ragged collar under the chin:** the neck's cut leaves part of the jaw's underside. Since fixed by cutting along the rig's head weights (bug `human-model/17`): `body_v7_neck-cut-by-weights\13_pescoco_antes_depois.png`.
 
 **Every run is kept** in `G:\mocap-studio-downloads\review\2026-11-07\`:
 

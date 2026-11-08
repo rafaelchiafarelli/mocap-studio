@@ -102,7 +102,7 @@ def main(build_dir, name, out_dir, overrides):
 
     wp.init()
     t0 = time.time()
-    r = body.build(skin, tris, meta["bones"], bones, fat_mm, structure, VOXEL, meshgpu.Mesh)
+    r = body.build(skin, tris, meta["bones"], bones, fat_mm, structure, VOXEL, meshgpu.Mesh, groups=meta["groups"])
     seconds = time.time() - t0
     m = measure(r, skin, bones, fat_mm, meshgpu.Mesh, meta["bones"])
 

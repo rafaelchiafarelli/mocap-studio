@@ -23,10 +23,36 @@ REGION_BONES = {"neck": ("spine.004", "spine.005"), "upper_arm": ("upper_arm.L",
                 "trunk": ("spine", "spine.001", "spine.002", "spine.003", "pelvis.L", "pelvis.R", "shoulder.L", "shoulder.R")}
 
 
-def cut_skin(skin, tris, rig):
-    """The body's triangles without head, hands and feet: near each joint, vertices past its plane are dropped, then the largest piece is kept."""
+def head_vertices(n, rig, groups):
+    """Vertices the rig moves mostly with the head: their weights on spine.006 and every bone under it outweigh the rest. This border is
+    MPFB's own and runs under the jaw, where a plane at the head's base left the chin's underside behind as a collar (bug human-model/17)."""
+    children = {}
+    for name, b in rig.items():
+        children.setdefault(b["parent"], []).append(name)
+    head, stack = set(), ["spine.006"]
+    while stack:
+        b = stack.pop()
+        head.add(b)
+        stack += children.get(b, [])
+    w_head, w_rest = np.zeros(n), np.zeros(n)
+    for name, pairs in groups.items():
+        if name not in rig and not name.startswith("DEF-"):
+            continue  # helpers, joints and MakeHuman's own groups don't move the skin
+        for i, w in pairs:
+            if i < n:
+                (w_head if name in head else w_rest)[i] += w
+    return w_head > w_rest
+
+
+def cut_skin(skin, tris, rig, groups=None):
+    """The body's triangles without head, hands and feet: near each joint, vertices past its plane are dropped, then the largest piece is kept.
+    With the rig's vertex groups, the head goes along its weights' border instead of a plane."""
     beyond = np.zeros(len(skin), bool)
+    if groups is not None:
+        beyond |= head_vertices(len(skin), rig, groups)
     for joint, along, reach in CUTS:
+        if groups is not None and joint == "spine.006":
+            continue
         p = np.asarray(rig[joint]["head"])
         n = np.asarray(rig[along]["tail"]) - np.asarray(rig[along]["head"])
         n /= np.linalg.norm(n)
@@ -150,10 +176,11 @@ def outward(verts, tris):
     return fit.outward(verts, tris)
 
 
-def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh):
+def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None):
     """Everything for the body. bones: {name: (verts, tris)}. fat_mm: {zone: mm}. structure: declared depths in mm and smoothing.
-    gpu_mesh: meshgpu.Mesh, passed in so this module imports without Warp. Returns a dict of arrays, every intermediate kept."""
-    patch = cut_skin(skin, tris, rig)
+    gpu_mesh: meshgpu.Mesh, passed in so this module imports without Warp. groups: the rig's vertex groups, for the head's cut.
+    Returns a dict of arrays, every intermediate kept."""
+    patch = cut_skin(skin, tris, rig, groups)
     ids = np.unique(patch)
     closed_v, closed_t = layers.capped(skin, patch)
     zone = np.empty(len(skin), object)

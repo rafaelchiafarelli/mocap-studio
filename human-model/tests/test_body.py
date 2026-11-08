@@ -58,3 +58,10 @@ def test_report_masses_come_from_inside_the_skin():
     assert litres["skin"] == pytest.approx(1.2 * body_report.REAL_SKIN_MM)
     assert litres["fat"] == pytest.approx(45.0 - 3.0 - 17.0 - 7.0 - 1.8)
     assert sum(litres.values()) == pytest.approx(45.0)
+
+
+def test_head_vertices_follow_the_weights_border():
+    rig = {"spine.005": {"parent": "spine.004"}, "spine.006": {"parent": "spine.005"}, "jaw": {"parent": "spine.006"}}
+    groups = {"spine.005": [[0, 1.0], [1, 0.6], [2, 0.2]], "spine.006": [[2, 0.3]], "jaw": [[1, 0.3], [2, 0.5]],
+              "joint-head": [[0, 5.0]], "DEF-neck": [[3, 1.0]]}
+    assert body.head_vertices(4, rig, groups).tolist() == [False, False, True, False]
