@@ -2,7 +2,7 @@
 Args: WALK.npz LAYERS.npz BONES.npz WALK_DUMP.npz OUT.blend FRAMES_DIR
 In the file: the simulated skin and, 80 cm behind it, the current model's skin on the same step (collection walk_compare);
 the back half in section with the bones (collection walk_inside). Every frame is a shape key, keyed on at its own frame, as thigh_bake.py does.
-Renders FRAMES_DIR/compare/####.png (from the side, both skins) and FRAMES_DIR/inside/####.png (the section from the front)."""
+Renders FRAMES_DIR/compare/####.png (from the side, both skins) and FRAMES_DIR/inside/####.png (the section from the front). FRAMES_DIR - makes the file only."""
 import os, sys
 import bpy
 import numpy as np
@@ -14,6 +14,8 @@ COLORS = {"bone": (0.9, 0.86, 0.75), "muscle": (0.6, 0.12, 0.1), "fat": (0.95, 0
           "cavity": (0.45, 0.55, 0.8), "current": (0.55, 0.65, 0.85)}
 BESIDE = np.array([0.0, 0.8, 0.0])  # m: the current model's skin, 80 cm behind ours along the walk, so the side view shows both (beside, it hid ours: leg_walk v2)
 N_BODY = 13380  # as in export_blend.py
+FOOT_BONES = ("talus", "calcaneus", "navicular", "cuboid", "cuneiform", "metatarsal", "phalanx")
+FOOT_TOP = 0.25  # m: skin below this that isn't simulated is the feet's
 
 
 def animated(name, frames, faces, collection, material, smooth=False):
@@ -63,11 +65,33 @@ def main(walk_npz, layers_npz, bones_npz, dump_npz, out_blend, frames_dir):
         used, f = np.unique(W[f"cut_{label}"], return_inverse=True)
         animated(f"cutaway_{label}", cut[:, used], f.reshape(-1, 3), inside, hb.material(label, COLORS[label]))
     bone_mat = hb.material("bone", COLORS["bone"])
-    for i, name in enumerate(names):
+    shown = W["shown_bones"] if "shown_bones" in W.files else np.ones(len(names), bool)  # runs before bug human-model/16 have no such list
+    # The feet aren't simulated but stay in the videos: every foot bone follows the rig, the foot's skin too, joined to the simulated skin at the ankle
+    held = lambda M: np.concatenate([M, np.repeat(M[-1:], n - len(M), axis=0)])
+    bones_shown = [(name, T[:, i]) for i, name in enumerate(names) if shown[i]]
+    bones_shown += [(k[:-3], held(D[f"T_{k[:-3]}"])) for k in B.files if k.endswith("__v") and k[:-3] not in names and f"T_{k[:-3]}" in D.files and any(p in k for p in FOOT_BONES)]
+    E = np.load(bones_npz[:-len(".bones.npz")] + ".export.npz")
+    starts, sizes, loops = E["starts"], E["sizes"], E["loops"]
+    body_tris = np.array([(loops[s], loops[s + i], loops[s + i + 1]) for s, c in zip(starts, sizes) for i in range(1, c - 1)])
+    body_tris = body_tris[(body_tris < N_BODY).all(axis=1)]
+    simulated = np.zeros(N_BODY, bool)
+    simulated[skin_ids] = True
+    low = D["skin_rest"][:, 2] < FOOT_TOP
+    foot_tris = body_tris[low[body_tris].all(axis=1) & ~simulated[body_tris].all(axis=1)]
+    used, foot_f = np.unique(foot_tris, return_inverse=True)
+    foot_f = foot_f.reshape(-1, 3)
+    ours_feet = []
+    for f in range(n):
+        p = D["skins"][min(f, n_walk - 1)].astype(float)
+        p[skin_ids] = skins[f]
+        ours_feet.append(p[used])
+    animated("skin_feet", ours_feet, foot_f, compare, hb.material("skin", COLORS["skin"]), smooth=True)
+    animated("skin_current_feet", [D["skins"][min(f, n_walk - 1)][used] + BESIDE for f in range(n)], foot_f, compare, hb.material("current", COLORS["current"]), smooth=True)
+    for name, Tb in bones_shown:
         v = B[f"{name}__v"].astype(float)
         ob = hb.mesh_object(name, v, outward(v, B[f"{name}__f"]), inside, material=bone_mat)
         for f in range(n):
-            ob.matrix_world = Matrix(T[f, i].tolist())
+            ob.matrix_world = Matrix(Tb[f].tolist())
             ob.keyframe_insert("location", frame=f + 1)
             ob.keyframe_insert("rotation_euler", frame=f + 1)
 
@@ -85,6 +109,8 @@ def main(walk_npz, layers_npz, bones_npz, dump_npz, out_blend, frames_dir):
              "inside": (np.array([0.0, -2.0 * far, lift]), np.array([0.0, 0.0, lift]), [inside])}
     cam = hb.camera_look("HM_cam", (0, 0, 0), (0, 1, 0), lens=50)
     bpy.ops.wm.save_as_mainfile(filepath=out_blend)
+    if frames_dir == "-":  # the file only, no frames
+        return
     for view, (eye, look, shown) in views.items():
         for c in (compare, inside):
             for ob in c.objects:

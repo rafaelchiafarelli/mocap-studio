@@ -4,4 +4,4 @@
 - **Where:** `human-model/tools/body_walk.py`: each skin vertex is measured in its nearest bone's frame, and near a joint that isn't the bone it hangs from.
 - **Reproduce:** `body_walk.json` of any run.
 - **Impact:** the number can't be used to tune the tissue's damping; the videos must be judged by eye.
-- **Status:** Open. Likely fix: measure against the skin's motion with the tissue rigid (the same frame without simulation), so only what the tissue adds remains.
+- **Status:** Fixed (2026-11-08) — fixes/0000e8/walk-videos-and-tissue-measure. The measure is now the skin's motion less the current model's, whose skin only follows the bones. Peaks fell from about 65 mm to 30 to 50; the knee still reads 50, which may be how the current model's own knee bends (not checked).
