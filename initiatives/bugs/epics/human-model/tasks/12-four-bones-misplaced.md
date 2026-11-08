@@ -1,8 +1,0 @@
-# Four bones sit too far out to cover: right scapula, left clavicle, both fibulae
-
-- **Symptom:** after the skin is pushed out over the bones (`tools/skin_over_bone.py`), four bones would still need more than the 15 mm most push, so they're left alone and stay through the skin: right scapula (31 mm needed; the left one needed 11.6), left clavicle (15.2; the right one 10.4), fibulae (15.3 each, near the ankle). They're the only bones through the skin in the walking lower and whole body (`body_walk/v1_whole-body`: up to 29.9 mm, the scapula).
-- **Where:** `human-model/hmcore/skeleton.py`, each bone's placement. The left and right sides differ far more than a body does, so the fit, not the skin, is off.
-- **Reproduce:** `bones_misplaced_left_alone` in `<name>.skin_fit.json` (`G:\mocap-studio-downloads\review\2026-11-07\skin_v4_along-skin-normal\`), or `bone_through_skin.ours_bones` in `body_walk.json`.
-- **Impact:** the scapula makes a hump-free but pierced back; the layered body can't cover these four.
-- **Cause:** the rig is exactly symmetric; the CT donor's shoulders weren't level, and each bone was placed whole, so the right scapula sat turned back. The clavicles started from the sternum's highest vertex, 11 mm off the midline and under 1 mm deep. The fibulae are wider than MPFB's slim ankle.
-- **Status:** Fixed (2026-11-07) — fixes/0000d0/four-bones-misplaced. `skeleton.settle_superficial` moves each of the four by the smallest rigid move that leaves 4 mm of tissue (scapula turned 13–22°, clavicle 2.5–11° and 11–14 mm back, fibula 2.7°), and the sternum's top is on the midline. The skin push leaves no bone alone now (`review\2026-11-07\skin_v5_bones-settled\`).
