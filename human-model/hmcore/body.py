@@ -61,9 +61,29 @@ def cut_skin(skin, tris, rig, groups=None):
     return layers.cut_patch(skin, t, None, -np.inf, np.inf)
 
 
-def near_a_cut(points, rig):
-    """Points past or at the head's, a hand's or a foot's cut: a bone there leaves the cut skin by design, it isn't poking through."""
+def cut_planes(skin, patch):
+    """Each cut's plane, from the cut skin's own border: (centre, normal pointing out of the body, radius) per border loop."""
+    middle = skin[np.unique(patch)].mean(axis=0)
+    out = []
+    for loop in layers.boundary_loops(patch):
+        p = skin[loop]
+        c = p.mean(axis=0)
+        n = np.linalg.svd(p - c, full_matrices=False)[2][-1]
+        if (c - middle) @ n < 0:
+            n = -n
+        out.append((c, n, float(np.linalg.norm(p - c, axis=1).max())))
+    return out
+
+
+def near_a_cut(points, rig, planes=None):
+    """Points past or at the head's, a hand's or a foot's cut: a bone there leaves the cut skin by design, it isn't poking through.
+    With planes (cut_planes of the cut skin), each cut is where the skin was really cut; the head's follows the rig's weights since
+    bug human-model/17, so its rig plane let the neck's C4 count as 44 mm out. Without, planes at the joints, as cut_skin's."""
     out = np.zeros(len(points), bool)
+    if planes is not None:
+        for c, n, r in planes:
+            out |= ((points - c) @ n > -0.02) & (np.linalg.norm(points - c, axis=1) < 1.5 * r + 0.05)
+        return out
     for joint, along, reach in CUTS:
         p = np.asarray(rig[joint]["head"])
         n = np.asarray(rig[along]["tail"]) - np.asarray(rig[along]["head"])

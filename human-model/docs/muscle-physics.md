@@ -240,13 +240,13 @@ Epic `body-at-rest`: the zero point ("marco zero") for body shapes. The thigh's 
 **How it's built** (task 1: `hmcore/body.py`, `tools/body_layers.py`, on the GPU through `hmcore/meshgpu.py`):
 
 1. **Cut.** The head goes where the rig moves the skin mostly with the head's bones, a border that runs under the jaw (`body.py:26`); near each wrist and ankle, skin vertices past the joint's plane are dropped; then the largest piece is kept (`body.py:47`).
-2. **Zones.** Each skin vertex gets a zone from its nearest rig bone (`body.py:83`). On the trunk, the zone also depends on height (against the bottom of the rib cage and the top of the hip bones) and on whether the vertex faces front, back or side. The thicknesses are smoothed over the skin, so they change gradually.
-3. **Fill.** The same 5 mm voxels as the thigh. Inside-or-outside and distances are computed on the GPU, about 4 million points in seconds. Bone meshes are first turned outward (`body.py:173`), because builds made before bug `human-model/11` was fixed have the left leg inside out.
+2. **Zones.** Each skin vertex gets a zone from its nearest rig bone (`body.py:103`). On the trunk, the zone also depends on height (against the bottom of the rib cage and the top of the hip bones) and on whether the vertex faces front, back or side. The thicknesses are smoothed over the skin, so they change gradually.
+3. **Fill.** The same 5 mm voxels as the thigh. Inside-or-outside and distances are computed on the GPU, about 4 million points in seconds. Bone meshes are first turned outward (`body.py:193`), because builds made before bug `human-model/11` was fixed have the left leg inside out.
 4. **Label.** Bone wins over everything. Within one voxel of the skin is skin. Within the zone's fat thickness is fat.
-   - **Cavity** (`body.py:230`):
+   - **Cavity** (`body.py:250`):
      - in the chest: everything inside the rib cage, beside the spine too, where the lungs reach;
      - lower down: inside the hull of ribs, spine and pelvis, no more than 30 mm behind the spine's front, and deeper than the fat plus a 15 mm abdominal wall.
-   - **Breast** (`body.py:233`): fat down to a 15 mm chest muscle over the ribs.
+   - **Breast** (`body.py:253`): fat down to a 15 mm chest muscle over the ribs.
    - **Muscle:** whatever remains.
 5. **Clean, tetrahedra, tie the skin.** As on the thigh.
 
@@ -308,7 +308,7 @@ Epic `inside-out-skin`, task 1. The zero point found bones through the skin at r
 
 **How** (`hmcore/skinfit.py`, `tools/skin_over_bone.py`, on the GPU):
 
-1. **Each bone point asks for its least depth of tissue**, from `data/skin_over_bone_female.json`, set by eye: 3 mm over the patella, the shin's front and the larynx; 4 mm over the clavicles, scapulae, spinous processes and ankle; 6 mm over the sacrum and the hip bones' crests; 2 mm elsewhere. Bones past the neck, wrist and ankle cuts are left out (`body.near_a_cut`).
+1. **Each bone point asks for its least depth of tissue**, from `data/skin_over_bone_female.json`, set by eye: 3 mm over the patella, the shin's front and the larynx; 4 mm over the clavicles, scapulae, spinous processes and ankle; 6 mm over the sacrum and the hip bones' crests; 2 mm elsewhere. Bones past the neck, wrist and ankle cuts are left out (`body.near_a_cut`, with each cut's plane taken from the cut skin's border).
 2. **A bone that needs more than 15 mm anywhere is left alone** and reported as misplaced (`skinfit.py:70`): moving the skin that far would grow a hump.
 3. **The skin vertices of the nearest triangle move out along their normals** by what's missing.
 4. **The push is spread** to neighbours, shrinking by a fifth at each step, so it fades over a few centimetres (`skinfit.py:23`). The cuts' rings stay put, so the head, hands and feet still join.

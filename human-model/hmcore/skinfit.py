@@ -35,14 +35,14 @@ def spread(need, tris, n_verts, fixed, iterations, falloff):
     return d
 
 
-def bone_points(bones, rig, closed_mesh, table):
+def bone_points(bones, rig, closed_mesh, table, planes=None):
     """Every bone vertex inside the body's reach, with the depth it asks for: bones mostly beyond the cuts (head, hands, feet) are left out,
     and so are points near a cut, whose bone leaves the skin there by design."""
     pts, depth, owner = [], [], []
     for name, (v, _) in sorted(bones.items()):
         if closed_mesh.inside(v).mean() < 0.5:
             continue
-        keep = ~body.near_a_cut(v, rig)
+        keep = ~body.near_a_cut(v, rig, planes)
         pts.append(v[keep])
         depth.append(np.full(keep.sum(), least_depth(name, table)))
         owner += [name] * int(keep.sum())
@@ -65,7 +65,7 @@ def fit(skin, all_tris, patch, bones, rig, table, max_push, gpu_mesh, rounds=6, 
     fixed = np.setdiff1d(np.arange(len(skin)), ids)
     fixed = np.union1d(fixed, np.concatenate([loop for loop in body.layers.boundary_loops(patch)]))
     closed = gpu_mesh(*body.layers.capped(skin, patch))
-    pts, want, owner = bone_points(bones, rig, closed, table)
+    pts, want, owner = bone_points(bones, rig, closed, table, body.cut_planes(skin, patch))
     depth, _, _ = depth_under_skin(pts, closed, gpu_mesh(skin, patch))
     misplaced = sorted({o for o in np.unique(owner) if (want - depth)[owner == o].max() > max_push})
     pushing = ~np.isin(owner, misplaced)
