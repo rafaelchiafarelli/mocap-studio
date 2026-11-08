@@ -84,3 +84,11 @@ def test_settle_prefers_the_smallest_move():
     bar = np.column_stack([np.linspace(-0.2, 0.2, 20), np.zeros(20), np.zeros(20)])
     move, before, after, amounts = fit.settle(bar, bar[0], depth, 0.05, [("turn", [0, 0, 1], 30.0), ("shift", [1, 0, 0], 0.2)])
     assert before == 0.0 and np.all(amounts == 0)
+
+
+def test_outward_turns_an_inside_out_mesh():
+    v, t = _cube()
+    good = fit.outward(v, t)
+    vol = lambda tri: np.einsum("ij,ij->i", v[tri][:, 0], np.cross(v[tri][:, 1], v[tri][:, 2])).sum()
+    assert vol(good) > 0
+    assert (fit.outward(v, good[:, [0, 2, 1]]) == good).all()
