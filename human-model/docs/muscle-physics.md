@@ -450,6 +450,15 @@ The skin's motion per zone and the volumes are within a millimetre or a fraction
 
 Kept in `G:\mocap-studio-downloads\review\2026-11-07\body_walk\v2_bones-settled\`: `body_walk_v2_compare.mp4`, `body_walk_v2_inside.mp4`, `body_walk.blend`.
 
+**Run `v3_feet-planted`:** the same body on the walk with planted feet (task `body-walk/2`: the pelvis's tilt taken off the hip angle, toes rolling, each stance foot planted; `walk_root\v9_final_walk.blend`). The walk no longer jumps, so the tissue swings less:
+
+| Peak skin motion, mm | belly | breast | chest | flanks | buttocks | hips | thigh front | calf back |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `v2_bones-settled` | 72.6 | 40.6 | 41.4 | 50.1 | 71.3 | 71.0 | 86.4 | 56.7 |
+| `v3_feet-planted` | 54.6 | 22.0 | 22.1 | 23.3 | 52.1 | 50.2 | 75.9 | 42.0 |
+
+Those numbers still count joint bending (bug `human-model/14`), so they compare the two runs, not the tissue's jiggle. With the thigh now at its true angle, the patellae touch the skin in 4 frames of each swing, up to 1.8 mm (bug `human-model/19`); no other bone does. Tetrahedra inside out: 2,538 at worst. Kept in `body_walk\v3_feet-planted\`: `body_walk_v3_compare.mp4`, `body_walk_v3_inside.mp4`, `body_walk.blend`, and the walk's dump.
+
 **Running it:**
 
     human-model/hm.sh --gpu python human-model/tools/body_walk.py LAYERS.npz BONES.npz DUMP.npz RUN_DIR ABOVE_HIP=10 [NAME=value ...]
