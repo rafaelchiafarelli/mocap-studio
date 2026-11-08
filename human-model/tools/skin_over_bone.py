@@ -75,7 +75,7 @@ def main(build_dir, name, tape_json, out_dir, overrides):
     tris = tris[tris.max(axis=1) < N_BODY]
     b = np.load(os.path.join(build_dir, f"{name}.bones.npz"))
     bones = {k[:-3]: (b[k].astype(float), body.outward(b[k].astype(float), b[k[:-3] + "__f"].astype(np.int64))) for k in b.files if k.endswith("__v")}
-    patch = body.cut_skin(skin, tris, meta["bones"])
+    patch = body.cut_skin(skin, tris, meta["bones"], meta["groups"])
 
     wp.init()
     t0 = time.time()
