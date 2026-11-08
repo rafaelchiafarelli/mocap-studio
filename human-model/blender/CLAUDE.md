@@ -35,7 +35,7 @@
 - `tape_check.py`: measures people with the editor's tape, optionally with stills of its lines.
 - `measure_sweep.py`: how far each slider moves each tape measure.
 - `walk_clearance.py`: skin against bones while walking.
-- `walk.py`: keys the walking cycle: the pelvis's tilt off the hip angle, toes rolling at push-off, the root from a soft contact, and each stance foot planted by correcting its leg.
+- `walk.py`: keys the walking cycle: the pelvis's tilt off the hip angle, toes rolling at push-off, the root from a soft contact, and each stance foot planted by correcting its leg; with `stop_steps`, more steps, shorter and slower each, end it standing.
 - `walk_check.py`: a walk file's root steps, the planted foot's slide and its height against the floor.
 - `muscle_sphere.py`: a liquid-filled sphere lifting a box, on our own solver: [docs/muscle-physics.md](../docs/muscle-physics.md).
 - `muscle_sphere_cloth.py`: the same on Blender's Cloth, kept as the record of its limits. `muscle_sphere.py` imports its mesh helpers.
@@ -45,6 +45,7 @@
 - `body_tape.py`: a recipe's pattern measures and each girth's height, from the installed editor's tape.
 - `body_walk_dump.py`: every bone's transform from rest and the skin, every frame of a walk file.
 - `body_walk_bake.py`: a walked body, lower or whole, as shape keys per frame, the current skin 80 cm behind it, its bones and the feet (bones and skin, following the rig) animated, and frames for two videos framed on the region. A frames folder of `-` makes the file only.
+- `body_walk_pair.py`: two walked bodies in one file, without the current model's skin: skin and section of each, a metre apart.
 - `thigh_walk_dump.py`: the left femur's transform and the skin, every frame of a walk file.
 - `thigh_bake.py`: a walked thigh as shape keys per frame, beside the current skin, and its frames for two videos.
 - `thigh_view.py`: the layered thigh as a `.blend`, with a section and two stills.

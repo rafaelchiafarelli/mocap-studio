@@ -133,7 +133,7 @@ Runs Windows Blender in the background with auto-run off. Arguments starting wit
 | `render_views.py` | Yes | `PREFIX VIEWS [skin=0] [muscles=0] [control=value ...]` | Stills. Views: `body`, `side`, `head`, `headside`, comma-separated |
 | `render_seq.py` | Yes | `OUT_DIR walkside\|head START END [skin=0] [res=WxH]` | A frame sequence |
 | `list_controls.py` | Yes | `OUT.json` | Everything the file offers |
-| `walk.py` | Yes | `data/gait_walk.json male\|female OUT.blend [CYCLES]` | Keys measured walking, feet planted |
+| `walk.py` | Yes | `data/gait_walk.json male\|female OUT.blend [CYCLES] [STOP_STEPS]` | Keys measured walking, feet planted |
 | `walk_check.py` | Yes (the walk) | `OUT.json` | The walk's root steps, foot slide and floor contact |
 | `motion_check.py` | Yes | `OUT.json` | Joints at their limits, bone overlap |
 | `volume_check.py` | Yes | `OUT.json` | Muscle volume in test poses |
