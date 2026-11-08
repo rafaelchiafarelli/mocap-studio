@@ -1,4 +1,4 @@
-"""Keys the walking cycle from measured angles. Args: gait.json SEX out.blend [cycles]. Run with --blend. Trunk and arms aren't in the data: declared.
+"""Keys the walking cycle from measured angles. Args: gait.json SEX out.blend [cycles] [stop_steps]. Run with --blend. stop_steps more steps, shorter and slower each, end it standing. Trunk and arms aren't in the data: declared.
 The hip angles have the pelvis's tilt taken off, the toes roll at push-off, the root follows a soft contact between the feet, and each stance foot
 is planted by a small correction of its leg (task muscle-physics/body-walk/2). Prints stride, speed, bounce and how far the legs were corrected."""
 import json, math, os, sys
@@ -13,6 +13,7 @@ a = hb.args()
 gait = json.load(open(a[0]))[a[1]]
 out = a[2]
 cycles = int(a[3]) if len(a) > 3 else 3
+stop_steps = int(a[4]) if len(a) > 4 else 0
 rig = bpy.data.objects["HM_rig"]
 cols = gait["columns"]
 mean = np.array(gait["mean"])
@@ -25,7 +26,9 @@ ARM_SWING_DEG = 18.0  # declared
 leg_hang = {s: P.hang_angle(rig, f"thigh.{s}") for s in "LR"}
 shin_hang = {s: P.hang_angle(rig, f"shin.{s}") for s in "LR"}
 arm_hang = {s: P.hang_angle(rig, f"upper_arm.{s}", 8.0) for s in "LR"}
+amount = 1.0  # how much of the measured motion is in the pose: 1 walking, falling to 0 as the walk slows to standing
 FOREARM_BEND_DEG = 18.0  # declared: a relaxed elbow while walking
+STOP_SLOWER = 1.5  # declared: the stopping steps take this many times as long as walking steps, so the rate slows from the walk's to half of it
 TOE_MAX_DEG = 55.0  # declared: the most the toes bend up at push-off; the measured metatarsophalangeal peak is about 50
 
 
@@ -74,13 +77,13 @@ def sample(name, phase):
 def pose(phase, fix=None):
     """The measured pose at a phase of the right leg's cycle; fix adds (hip, knee, ankle) degrees per side, from planting the feet."""
     right, left = phase, phase + 0.5
-    obliq, rot = sample("RPelvisAngleX", right), sample("RPelvisAngleY", right)
+    obliq, rot = amount * sample("RPelvisAngleX", right), amount * sample("RPelvisAngleY", right)
     P.set_rotation(rig, "spine", P.ry(obliq) @ P.rz(rot))
     if "spine.002" in rig.pose.bones:
         P.set_rotation(rig, "spine.002", (P.ry(obliq) @ P.rz(rot)).inverted() @ P.rz(-rot * 0.8))
     for side, ph, sgn in (("R", right, -1), ("L", left, 1)):
         set_leg(side, ph, (fix or {}).get(side, (0.0, 0.0, 0.0)))
-        swing = ARM_SWING_DEG * math.sin(2 * math.pi * (ph + 0.5 - 0.1))
+        swing = amount * ARM_SWING_DEG * math.sin(2 * math.pi * (ph + 0.5 - 0.1))
         P.set_rotation(rig, f"upper_arm.{side}", P.rx(swing) @ P.ry(sgn * arm_hang[side]))
         P.set_rotation(rig, f"forearm.{side}", forearm_rotation(side))
 
@@ -89,10 +92,10 @@ def set_leg(side, ph, d):
     sgn = -1 if side == "R" else 1
     # the data's hip angle is the thigh against the pelvis, which tilts forward about 10 degrees; the rig's rest pelvis is level,
     # so the tilt is taken off, or the thigh flexes 10 degrees too far and the stance foot never lies flat (bug human-model/5)
-    hip_f = sample(f"{side}HipAngleZ", ph) - sample(f"{side}PelvisAngleZ", ph) + d[0]
-    add = sample(f"{side}HipAngleX", ph)
-    knee = max(sample(f"{side}KneeAngleZ", ph) + d[1], 0.0)  # never past straight
-    ankle = sample(f"{side}AnkleAngleZ", ph) + d[2]
+    hip_f = amount * (sample(f"{side}HipAngleZ", ph) - sample(f"{side}PelvisAngleZ", ph)) + d[0]
+    add = amount * sample(f"{side}HipAngleX", ph)
+    knee = max(amount * sample(f"{side}KneeAngleZ", ph) + d[1], 0.0)  # never past straight
+    ankle = amount * sample(f"{side}AnkleAngleZ", ph) + d[2]
     P.set_rotation(rig, f"thigh.{side}", P.rx(-hip_f) @ P.ry(sgn * (leg_hang[side] + add)))
     # the shin continues from the thigh's hang: its own rest axis is rebuilt straight
     P.set_rotation(rig, f"shin.{side}", P.rx(knee) @ P.ry(sgn * (shin_hang[side] - leg_hang[side])))
@@ -112,7 +115,28 @@ def foot_points():
     return pts
 
 
-total = frames_per_cycle * cycles
+walking = frames_per_cycle * cycles
+stop_cycles = stop_steps / 2  # a cycle is two steps
+n_stop = round(STOP_SLOWER * frames_per_cycle * stop_cycles)
+total = walking + n_stop
+
+
+def phase_at(f):
+    """Phase of the cycle at frame f. While stopping it starts at the walk's own rate and slows down."""
+    if f <= walking:
+        return f / frames_per_cycle
+    u = (f - walking) / n_stop
+    return cycles + stop_cycles * (STOP_SLOWER * u + (1 - STOP_SLOWER) * u * u)
+
+
+def amount_at(f):
+    """The share of the measured motion at frame f, easing from all of it to none as the walk stops."""
+    if f <= walking:
+        return 1.0
+    u = (f - walking) / n_stop
+    return 1.0 - (3 * u * u - 2 * u * u * u)
+
+
 CONTACT_MM = 4.0  # declared: points this close to the lowest share the contact, so the hand-over between feet is spread over frames
 OFFSETS = (0.065, 0.008, 0.0)  # heel, ball, toe: the ankle is well above the ground, so height compares heel (under the ankle) and ball
 
@@ -131,7 +155,8 @@ root = np.zeros((total + 1, 2))
 y = 0.0
 prev = None
 for f in range(total + 1):
-    pose(f / frames_per_cycle)
+    amount = amount_at(f)
+    pose(phase_at(f))
     pts = foot_points()
     h, w = contact(pts)
     ys = np.array([pts[s][i].y for s in "LR" for i in range(3)])
@@ -188,7 +213,8 @@ left_over = {s: np.zeros((total + 1, 2)) for s in "LR"}
 plants = {s: [None, None, None] for s in "LR"}
 last = {s: np.zeros(3) for s in "LR"}
 for f in range(total + 1):
-    phase = f / frames_per_cycle
+    phase = phase_at(f)
+    amount = amount_at(f)
     rig.location = (0, root[f][0], root[f][1])
     pose(phase)
     for side in "LR":

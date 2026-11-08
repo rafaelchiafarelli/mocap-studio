@@ -62,6 +62,8 @@ How the walk is built (task `muscle-physics/body-walk/2`, 2026-11-07):
 
 Measured on the woman (`blender/walk_check.py`): height changes at most 8 mm a frame, a smooth wave lowest in double support; the planted foot slides at most 0.3 mm a frame and sits within 1.8 mm of the floor; stride 1.14 m, 1.04 m/s, against 1.24 m/s in the data (bug `human-model/4`). Before: 24 mm height steps, 12 mm slides, stride 0.90 m. Your verdict (2026-11-08): "Ficou ok, bem melhor agora". Both feet are down together for about one frame per hand-over, against about three in the data: bringing the heel down at heel strike bent the knee 30° off the data, so it wasn't kept.
 
+**Stopping** (`stop_steps`, 2026-11-08): the walk can end with more steps that shrink to standing, taking 1.5 times as long as walking ones. Without it the walk stops dead, and the man's costal cartilage came through the skin in the one frame after.
+
 ## Known simplifications
 
 - Radius and ulna don't cross in pronation: both are rigid on one forearm bone.
