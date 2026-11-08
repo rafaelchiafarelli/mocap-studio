@@ -133,7 +133,8 @@ Runs Windows Blender in the background with auto-run off. Arguments starting wit
 | `render_views.py` | Yes | `PREFIX VIEWS [skin=0] [muscles=0] [control=value ...]` | Stills. Views: `body`, `side`, `head`, `headside`, comma-separated |
 | `render_seq.py` | Yes | `OUT_DIR walkside\|head START END [skin=0] [res=WxH]` | A frame sequence |
 | `list_controls.py` | Yes | `OUT.json` | Everything the file offers |
-| `walk.py` | Yes | `data/gait_walk.json male\|female OUT.blend [CYCLES]` | Keys measured walking |
+| `walk.py` | Yes | `data/gait_walk.json male\|female OUT.blend [CYCLES]` | Keys measured walking, feet planted |
+| `walk_check.py` | Yes (the walk) | `OUT.json` | The walk's root steps, foot slide and floor contact |
 | `motion_check.py` | Yes | `OUT.json` | Joints at their limits, bone overlap |
 | `volume_check.py` | Yes | `OUT.json` | Muscle volume in test poses |
 | `breath_check.py` | Yes | `OUT.json` | Chest expansion |
@@ -212,4 +213,4 @@ This adds only the face fields and their controls to that file. Its bones, muscl
 - **Headless scripts:** after setting a control, call `ctrl.update_tag()` and `scene.frame_set(frame)`, or the drivers don't run.
 - **Vertex numbers:** the first 13,380 are the body on every MPFB character; helpers follow.
 - **`.blend1` files** pile up next to rebuilt models. They're safe to delete.
-- **The walk jumps** (bug `human-model/5`), and its stride is short (bug `human-model/4`).
+- **The walk's stride is still a little short** (bug `human-model/4`): 1.14 m on the woman against the data's 1.24.
