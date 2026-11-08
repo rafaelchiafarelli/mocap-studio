@@ -4,4 +4,4 @@
 - **Where:** the patella turns exactly half the knee's bend in both (31° of 61 to 62°), so `human-model/blender/assemble.py`'s `PATELLA_SHARE` isn't the difference. Not found yet. It isn't the turn's pivot: the rig's knee joint is about as far behind the patella's front on both (4.6 cm on the man, 4.4 on the woman), and moving the pivot 40 mm forward cuts his 4.5 mm to 1.1 but puts hers 6.6 mm through.
 - **Reproduce:** winding number of `patella_L`, moved by `transforms` of `review\2026-11-08\body_walk_male_v1\body_walk.npz`, against that frame's skin.
 - **Impact:** visible in deep knee bends, as bug 19 was on the woman.
-- **Status:** Open.
+- **Status:** Open. Eased, not fixed: 8 mm of tissue asked over his patella (`human-model/data/skin_over_bone_male.json`) brings it to 37 frames of 129 and 2.7 mm, for +0.7 cm at the knee (`review\2026-11-08\body_walk_male_v3_patella-8mm\`). The cause is still unknown.
