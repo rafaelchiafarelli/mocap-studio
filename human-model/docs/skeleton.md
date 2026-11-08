@@ -67,6 +67,7 @@ Measured on the woman (`blender/walk_check.py`): height changes at most 8 mm a f
 - Radius and ulna don't cross in pronation: both are rigid on one forearm bone.
 - The patella rides on the shin, with no track of its own.
 - Hyoid and larynx are simple shapes; the larynx looks like a block.
+- Distal femur, patella, tibia, fibula and larynx are narrowed to fit the skin, so they are thinner than real ones there.
 - Finger bones are low resolution.
 - Facial bones are lumps at CT's 1.5 mm; MPFB's eyes and teeth don't sit exactly in the donor's sockets.
 

@@ -151,6 +151,57 @@ class SkinDepth:
         return np.where(outward, -dist, dist)
 
 
+def largest_scale(short, least=0.4, steps=14):
+    """The largest scale in [least, 1] for which short(scale) is at most zero, by bisection; 1 if it already is, least if none is."""
+    if short(1.0) <= 0:
+        return 1.0
+    lo, hi = least, 1.0
+    if short(lo) > 0:
+        return least
+    for _ in range(steps):
+        mid = (lo + hi) / 2
+        lo, hi = (mid, hi) if short(mid) <= 0 else (lo, mid)
+    return lo
+
+
+def slim_to_skin(meshes, a, b, skin, depth_of, need, start=0.5, bin_size=0.01, reach=0.12, least=0.4):
+    """Narrows bones, height by height along the segment a to b, just where the skin around them leaves less than need metres over them.
+    The bones go together through one map, so what lies apart stays apart. Each height scales across the segment about the middle of the
+    skin's own section, and heights that fit don't change at all. The scale per height is the largest that fits, widened by a window and
+    averaged so it changes smoothly and is never larger than one that fits. Heights before start, a fraction of the segment from a, are
+    left alone: the fast depth's sign fails in the groin's crease, which read as the femur's head needing to shrink to 40%.
+    Returns (the meshes' new vertices, the smallest scale)."""
+    a, b = np.asarray(a, float), np.asarray(b, float)
+    axis = (b - a) / np.linalg.norm(b - a)
+    sizes = [len(m) for m in meshes]
+    v = np.vstack(meshes).astype(float)
+
+    def split(p):
+        p = p - a
+        along = p @ axis
+        return along, p - np.outer(along, axis)
+
+    t, across = split(v)
+    skin_t, skin_across = split(np.asarray(skin, float))
+    heights = np.arange(t.min(), t.max() + bin_size, bin_size)
+    scale, centre = np.ones(len(heights)), np.zeros((len(heights), 3))
+    for i, h in enumerate(heights):
+        around = (np.abs(skin_t - h) < bin_size) & (np.linalg.norm(skin_across, axis=1) < reach)  # this leg's skin only
+        here = np.abs(t - h) <= bin_size / 2
+        if h < start * np.linalg.norm(b - a) or not around.any() or not here.any():
+            continue
+        centre[i] = (skin_across[around].min(axis=0) + skin_across[around].max(axis=0)) / 2
+        scale[i] = largest_scale(lambda s: float((need - depth_of(a + np.outer(t[here], axis) + centre[i] + (across[here] - centre[i]) * s)).max()), least)
+    k = max(1, round(0.02 / bin_size))
+    window = lambda x, f: np.array([f(x[max(0, i - k):i + k + 1], axis=0) for i in range(len(x))])
+    scale = window(window(scale, np.min), np.mean)  # each averaged value is the minimum of a window holding this height, so none grows
+    centre = window(centre, np.mean)
+    s = np.interp(t, heights, scale)[:, None]
+    c = np.column_stack([np.interp(t, heights, centre[:, j]) for j in range(3)])
+    placed = a + np.outer(t, axis) + c + (across - c) * s
+    return np.split(placed, np.cumsum(sizes)[:-1]), float(scale.min())
+
+
 def axis_rotation(axis, angle):
     """Rotation by angle (radians) about a unit axis."""
     x, y, z = np.asarray(axis, float) / np.linalg.norm(axis)

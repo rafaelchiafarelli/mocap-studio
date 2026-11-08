@@ -92,3 +92,19 @@ def test_outward_turns_an_inside_out_mesh():
     vol = lambda tri: np.einsum("ij,ij->i", v[tri][:, 0], np.cross(v[tri][:, 1], v[tri][:, 2])).sum()
     assert vol(good) > 0
     assert (fit.outward(v, good[:, [0, 2, 1]]) == good).all()
+
+
+def test_largest_scale_finds_the_limit_and_keeps_what_fits():
+    assert fit.largest_scale(lambda s: s - 0.7) == pytest.approx(0.7, abs=0.001)
+    assert fit.largest_scale(lambda s: -1.0) == 1.0
+    assert fit.largest_scale(lambda s: 1.0, least=0.4) == 0.4
+
+
+def test_slim_to_skin_narrows_only_where_it_pokes():
+    v, t = _sphere()
+    depth = fit.SkinDepth(v, t, spacing=0.01)
+    z = np.linspace(-0.8, 0.8, 161)
+    bone = np.column_stack([np.full(161, 0.7), np.zeros(161), z])  # a line 0.7 off-centre: near the top and bottom it leaves the sphere
+    (placed,), least = fit.slim_to_skin([bone], [0, 0, -1.0], [0, 0, 1.0], v, depth, 0.05, start=0.0, bin_size=0.05, reach=2.0, least=0.1)
+    assert least < 1 and depth(placed).min() >= 0.05 - 0.015
+    assert placed[80] == pytest.approx(bone[80], abs=1e-6)  # the middle fits, so it stays

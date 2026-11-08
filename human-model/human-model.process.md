@@ -6,7 +6,7 @@ What `build_model.py` does, stage by stage.
 `blender/export_human.py`: MPFB builds the skin and the Rigify metarig from the recipe's macros and targets. Writes the skin's vertices and polygons, the bones' heads and tails, and the vertex groups.
 
 ## 2. bones (Docker)
-`tools/build_bones.py`: `hmcore/bonelib.py` meshes the CT labels of the sex's donor (`bonelib.py:11`), and caches them on G:. `hmcore/skeleton.py` fits each bone to this individual (moving the pelvis forward until the sacrum is covered, and the rig's hip and shoulder joints with pelvis and girdle, `anchors.rig_edits`), then settles the scapulae, clavicles and fibulae under the skin (`skeleton.settle_superficial`); about 8 minutes in all; `tools/spec.py` adds the jaw table and joint limits.
+`tools/build_bones.py`: `hmcore/bonelib.py` meshes the CT labels of the sex's donor (`bonelib.py:11`), and caches them on G:. `hmcore/skeleton.py` fits each bone to this individual (moving the pelvis forward until the sacrum is covered, and the rig's hip and shoulder joints with pelvis and girdle, `anchors.rig_edits`), narrows the bones of the knee, ankle and larynx to the skin around them (`fit.slim_to_skin`), then settles the scapulae, clavicles and fibulae under the skin (`skeleton.settle_superficial`); about 8 minutes in all; `tools/spec.py` adds the jaw table and joint limits.
 
 ## 3. muscles (Docker)
 `tools/build_muscles.py`: `hmcore/muscle.py` resolves `data/muscles.json` on this individual's rig and bones, and adds Rajagopal's leg muscles. Writes `<name>.muscles.json`.
