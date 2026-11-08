@@ -9,6 +9,7 @@ TRUNK_MARGIN = {"lateral": 0.018, "front": 0.012, "spinous": 0.012}
 # Bones that lie just under the skin are moved rigidly until this much tissue covers them: the same least depths as
 # data/skin_over_bone_female.json, so the pushed skin has nothing left to do for them.
 SETTLE_TISSUE = 0.004  # m
+PELVIS_TISSUE = 0.006  # declared: least tissue over the sacrum and the hip bones' crests, as in data/skin_over_bone_female.json, m
 AC_JOINT = 0.003  # declared: the gap between the clavicle's end and the acromion, m
 ACROMION_TISSUE = 0.008  # declared: skin and fat over the acromion's top, m; it lies just under the skin
 MOST_RAISE = 0.06  # the most the shoulder girdle may be raised, m
@@ -192,6 +193,7 @@ def glenoid_fossa(scapula, head, sign, reach=0.045):
 def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
     """Returns {bone name: {"verts", "faces", "parent", "source"}} and the anchor points later steps need (jaw pivot and so on)."""
     skin = ind["skin"]
+    depth = fit.SkinDepth(skin, ind["tris"])
     out, anchors = {}, {}
 
     def put(name, verts, faces, parent, source):
@@ -305,6 +307,20 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
         v, f = lib[label]
         put(name, pelvis_map(v), f, "spine", "ct")
     sockets = {"L": pelvis_map(hips_ct["left"][None])[0], "R": pelvis_map(hips_ct["right"][None])[0]}
+    # Scaled from the hips alone, the pelvis sat 2 cm behind the spine: the sacrum stood 20 to 24 mm behind L5 and came up to 22 mm
+    # through the skin (bug human-model/2). It moves forward, and may tilt about the sockets, until PELVIS_TISSUE covers it; the hip
+    # joints go with it. L5 keeps its distance or 3 mm, whichever is less.
+    from scipy.spatial import cKDTree
+    middle = (sockets["L"] + sockets["R"]) / 2
+    pelvis_names = ("hip_L", "hip_R", "sacrum")
+    move, before, after, amounts = fit.settle(np.vstack([out[n]["verts"] for n in pelvis_names]), middle, depth, PELVIS_TISSUE,
+                                              [("shift", [0, -1, 0], 0.04), ("turn", [1, 0, 0], 10.0)], exact=True,
+                                              avoid=cKDTree(out["vertebra_L5"]["verts"]), sample=900)
+    for n in pelvis_names:
+        out[n]["verts"] = move(out[n]["verts"]).astype(np.float32)
+    sockets = {k: move(v[None])[0] for k, v in sockets.items()}
+    anchors["pelvis_move"] = {"forward_mm": round(float(amounts[0]) * 1000, 1), "tilt_deg": round(float(amounts[1]), 1),
+                              "short_before_mm": round(before * 1000, 1), "short_after_mm": round(after * 1000, 1)}
     anchors["rig_edits"] = {f"thigh.{k}": v.tolist() for k, v in sockets.items()}
 
     # Shoulder girdle and upper arm
@@ -405,7 +421,7 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
                 put(f"{stem}_{side}", fit.segment_fit(placed, near, far, h + shift, t + shift, radial_power=1.0), f, rig_bone, "rajagopal")
             else:
                 put(f"{stem}_{side}", placed, f, f"hand.{side}", "rajagopal")
-    anchors["settled"] = settle_superficial(out, anchors, fit.SkinDepth(skin, ind["tris"]))
+    anchors["settled"] = settle_superficial(out, anchors, depth)
     return out, anchors
 
 

@@ -138,6 +138,11 @@ class SkinDepth:
             nrm.append(np.repeat(normal[m], len(u), axis=0))
         self.points, self.normals = np.vstack(pts), np.vstack(nrm)
         self.tree = cKDTree(self.points)
+        self.verts, self.tris = verts, tris
+
+    def inside(self, points):
+        """The exact test, by winding number: slow, for checking the fast sign once."""
+        return winding_number(points, self.verts, self.tris) > 0.5
 
     def __call__(self, points):
         points = np.asarray(points, float)
@@ -153,16 +158,28 @@ def axis_rotation(axis, angle):
     return np.eye(3) + np.sin(angle) * k + (1 - np.cos(angle)) * k @ k
 
 
-def settle(verts, pivot, depth_of, need, moves, avoid=None, clearance=0.003, keep=(), steps=9, sample=400, seed=0):
+DEEP = 0.03  # m: a bone point this far from any skin, having started inside, is still inside
+
+
+def settle(verts, pivot, depth_of, need, moves, avoid=None, clearance=0.003, keep=(), exact=False, steps=9, sample=400, seed=0):
     """The smallest rigid move of a bone that leaves at least need metres of tissue over all of it, or as near as it gets.
     moves lists what the bone may do, each ("turn", axis, most degrees) about pivot or ("shift", direction, most metres). Every
     combination on a grid of steps values per move is tried, then a finer grid around the best; among moves that leave the same
     shortfall (to half a millimetre) the smallest wins, each move counted as a fraction of its most. avoid is a cKDTree of neighbouring
     bones' points: no point may come closer to them than clearance, or than it already was if that's less. keep lists (point,
-    tolerance) pairs, such as a joint's end: the moved point may stray no further than tolerance from where it was.
+    tolerance) pairs, such as a joint's end: the moved point may stray no further than tolerance from where it was. exact signs the
+    points nearer than DEEP to the skin by the exact test on every try, where creases make the fast one fail (the pelvis): slower.
     Returns (move as a function of points, worst shortfall before, after in metres, the chosen amounts)."""
     v = np.asarray(verts, float)
     v = v[np.random.default_rng(seed).choice(len(v), min(sample, len(v)), replace=False)]
+    # The fast depth's sign is wrong in deep creases (the groin: 1 to 3% of the pelvis's points, up to 90 mm deep, and more of them
+    # as the pelvis moves). So a point that starts inside, by the exact test, and stays more than DEEP from any skin counts as inside:
+    # it can't have left the body without first passing near the skin. Near points where the two tests disagree are left out.
+    deep_inside = np.zeros(len(v), bool)
+    if hasattr(depth_of, "inside"):
+        fast, inside = depth_of(v), depth_of.inside(v)
+        trusted = ((fast > 0) == inside) | (inside & (np.abs(fast) > DEEP))
+        v, deep_inside = v[trusted], inside[trusted]
     floor = None if avoid is None else np.minimum(avoid.query(v)[0], clearance)
     most = np.array([m[2] for m in moves], float)
 
@@ -177,10 +194,15 @@ def settle(verts, pivot, depth_of, need, moves, avoid=None, clearance=0.003, kee
 
     def shortfall(amounts):
         p = apply(amounts, v)
-        short = need - depth_of(p)
+        d = depth_of(p)
+        d = np.where(deep_inside & (np.abs(d) > DEEP), np.abs(d), d)
+        if exact:
+            near = np.abs(d) <= DEEP
+            d[near] = np.where(depth_of.inside(p[near]), np.abs(d[near]), -np.abs(d[near]))
+        short = need - d
         if floor is not None:
             short = np.maximum(short, floor - avoid.query(p)[0])
-        worst = float(short.max())
+        worst = float(short.max(initial=0.0))  # every point may be too deep to matter
         for point, tol in keep:
             worst = max(worst, float(np.linalg.norm(apply(amounts, np.asarray(point, float)[None])[0] - point)) - tol)
         return max(worst, 0.0)
