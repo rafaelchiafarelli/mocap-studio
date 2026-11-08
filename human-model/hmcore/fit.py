@@ -151,6 +151,16 @@ class SkinDepth:
         return np.where(outward, -dist, dist)
 
 
+def solids(meshes, spacing=0.0015):
+    """A SkinDepth over several closed meshes, as (verts, tris) pairs, each turned outward: positive inside any of them, negative outside all."""
+    verts, tris, n = [], [], 0
+    for v, t in meshes:
+        verts.append(np.asarray(v, float))
+        tris.append(outward(verts[-1], np.asarray(t, np.int64)) + n)
+        n += len(v)
+    return SkinDepth(np.vstack(verts), np.vstack(tris), spacing=spacing)
+
+
 def largest_scale(short, least=0.4, steps=14):
     """The largest scale in [least, 1] for which short(scale) is at most zero, by bisection; 1 if it already is, least if none is."""
     if short(1.0) <= 0:
@@ -216,8 +226,9 @@ def settle(verts, pivot, depth_of, need, moves, avoid=None, clearance=0.003, kee
     """The smallest rigid move of a bone that leaves at least need metres of tissue over all of it, or as near as it gets.
     moves lists what the bone may do, each ("turn", axis, most degrees) about pivot or ("shift", direction, most metres). Every
     combination on a grid of steps values per move is tried, then a finer grid around the best; among moves that leave the same
-    shortfall (to half a millimetre) the smallest wins, each move counted as a fraction of its most. avoid is a cKDTree of neighbouring
-    bones' points: no point may come closer to them than clearance, or than it already was if that's less. keep lists (point,
+    shortfall (to half a millimetre) the smallest wins, each move counted as a fraction of its most. avoid is the neighbouring bones as
+    solids(), a hard limit, never traded for tissue: no point may come closer to their surface than clearance, or than it already was if
+    that's less, and a point already inside may go no deeper. keep lists (point,
     tolerance) pairs, such as a joint's end: the moved point may stray no further than tolerance from where it was. exact signs the
     points nearer than DEEP to the skin by the exact test on every try, where creases make the fast one fail (the pelvis): slower.
     Returns (move as a function of points, worst shortfall before, after in metres, the chosen amounts)."""
@@ -231,7 +242,7 @@ def settle(verts, pivot, depth_of, need, moves, avoid=None, clearance=0.003, kee
         fast, inside = depth_of(v), depth_of.inside(v)
         trusted = ((fast > 0) == inside) | (inside & (np.abs(fast) > DEEP))
         v, deep_inside = v[trusted], inside[trusted]
-    floor = None if avoid is None else np.minimum(avoid.query(v)[0], clearance)
+    floor = None if avoid is None else np.minimum(-avoid(v), clearance)
     most = np.array([m[2] for m in moves], float)
 
     def apply(amounts, p):
@@ -250,13 +261,13 @@ def settle(verts, pivot, depth_of, need, moves, avoid=None, clearance=0.003, kee
         if exact:
             near = np.abs(d) <= DEEP
             d[near] = np.where(depth_of.inside(p[near]), np.abs(d[near]), -np.abs(d[near]))
-        short = need - d
-        if floor is not None:
-            short = np.maximum(short, floor - avoid.query(p)[0])
-        worst = float(short.max(initial=0.0))  # every point may be too deep to matter
+        worst = float((need - d).max(initial=0.0))  # every point may be too deep to matter
         for point, tol in keep:
             worst = max(worst, float(np.linalg.norm(apply(amounts, np.asarray(point, float)[None])[0] - point)) - tol)
         return max(worst, 0.0)
+
+    def intrusion(amounts):
+        return 0.0 if floor is None else max(float((floor + avoid(apply(amounts, v))).max(initial=0.0)), 0.0)
 
     def search(centre, half):
         axes = [np.linspace(-h, h, steps) for h in half]
@@ -264,7 +275,7 @@ def settle(verts, pivot, depth_of, need, moves, avoid=None, clearance=0.003, kee
         for a in np.stack(np.meshgrid(*axes, indexing="ij"), -1).reshape(-1, len(moves)) + centre:
             if (np.abs(a) > most + 1e-9).any():
                 continue
-            key = (round(shortfall(a) / 0.0005), float(np.linalg.norm(a / most)))
+            key = (round(intrusion(a) / 0.0005), round(shortfall(a) / 0.0005), float(np.linalg.norm(a / most)))
             if best is None or key < best[0]:
                 best = (key, a)
         return best[1]
