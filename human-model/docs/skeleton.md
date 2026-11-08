@@ -60,7 +60,7 @@ How the walk is built (task `muscle-physics/body-walk/2`, 2026-11-07):
 - **The root follows a soft contact:** the foot points within a few millimetres of the lowest share it, so the hand-over between feet takes several frames.
 - **Each stance foot is planted** by a small correction of its hip, knee and ankle: a point that touches the floor stays there until the foot leaves. On the woman the correction is 3.8° at most, 0.3° on average.
 
-Measured on the woman (`blender/walk_check.py`): height changes at most 8 mm a frame, a smooth wave lowest in double support; the planted foot slides at most 0.3 mm a frame and sits within 1.8 mm of the floor; stride 1.14 m, 1.04 m/s, against 1.24 m/s in the data (bug `human-model/4`). Before: 24 mm height steps, 12 mm slides, stride 0.90 m.
+Measured on the woman (`blender/walk_check.py`): height changes at most 8 mm a frame, a smooth wave lowest in double support; the planted foot slides at most 0.3 mm a frame and sits within 1.8 mm of the floor; stride 1.14 m, 1.04 m/s, against 1.24 m/s in the data (bug `human-model/4`). Before: 24 mm height steps, 12 mm slides, stride 0.90 m. Your verdict (2026-11-08): "Ficou ok, bem melhor agora". Both feet are down together for about one frame per hand-over, against about three in the data: bringing the heel down at heel strike bent the knee 30° off the data, so it wasn't kept.
 
 ## Known simplifications
 
