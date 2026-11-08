@@ -153,7 +153,9 @@ def fit_foot(ind, legs, side, ankle):
     d = allv @ fwd_unit
     s = (near[:, 1].max() - near[:, 1].min() - 2 * 0.008) / (d.max() - d.min())
     back = allv[np.argmin(d)] * s
-    centre_x = (allv[:, 0].min() + allv[:, 0].max()) / 2 * s
+    # The talus sits under the shin, so it goes under the ankle joint. Centred by the whole foot's box, the forefoot's spread left the talus and heel 2 cm medial and through the skin (bug human-model/23).
+    talus = turned[f"Talus{side}"]
+    centre_x = (talus[:, 0].min() + talus[:, 0].max()) / 2 * s
     floor = skin[:, 2].min() + 0.008
     low = allv[:, 2].min() * s
     target_back_y = near[:, 1].max() - 0.008

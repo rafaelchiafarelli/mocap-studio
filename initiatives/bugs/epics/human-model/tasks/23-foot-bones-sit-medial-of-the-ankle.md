@@ -4,4 +4,4 @@
 - **Where:** `human-model/hmcore/skeleton.py`, search `centre_x`: the foot is centred on the ankle joint by the bounding box of the whole foot, not by the talus or the heel.
 - **Reproduce:** signed depth and winding number of `talus_L` in `<name>.bones.npz` against the skin. Measured on 2026-11-08 (`models\hm-build\female\`, `models\hm-build\male_2026-11-08_v2_ribs-narrowed\`).
 - **Impact:** hidden while the feet stay out of the simulated body, except the man's talus. It will matter for a soft foot on the floor (initiative `floor-contact`).
-- **Status:** Open. Likely fix: place the foot with the talus under the ankle joint.
+- **Status:** Fixed (2026-11-08) — fixes/0000e5/foot-medial-of-ankle. The talus goes under the ankle joint: no talus through the skin on either body. Forefoot and heel still come through (calcaneus 14 and 6 mm, fifth metatarsal 2 and 8, woman and man), hidden while the feet stay out of the simulated body.
