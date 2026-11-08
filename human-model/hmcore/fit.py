@@ -211,6 +211,10 @@ def slim_to_skin(meshes, a, b, skin, depth_of, need, start=0.5, bin_size=0.01, r
         if only is not None:
             along = np.abs((across[pts] - centre[i]) @ only)
             pts = pts[along >= along.max() / 2]
+            fits = need - depth_of(a + np.outer(t[pts], axis) + narrowed(across[pts], centre[i], least)) <= 0  # the rest are short some other way, as under a sole
+            if not fits.any():
+                continue
+            pts = pts[fits]
         scale[i] = largest_scale(lambda s: float((need - depth_of(a + np.outer(t[pts], axis) + narrowed(across[pts], centre[i], s))).max()), least)
     k = max(1, round(0.02 / bin_size))
     window = lambda x, f: np.array([f(x[max(0, i - k):i + k + 1], axis=0) for i in range(len(x))])
