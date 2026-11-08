@@ -158,7 +158,7 @@ Task 3 of epic `thigh`. The thigh of experiment 2 goes through the neutral woman
 1. `blender/thigh_walk_dump.py` reads, every frame, the femur's transform from rest, and the current skin.
 2. `tools/thigh_walk.py` simulates on the GPU (`hmcore/xpbd.py`):
    - The bone, and both cut ends from each skin ring outward, are carried by the femur.
-   - Each frame the carried nodes move part of the way at every step, so there is no jolt between frames (`xpbd.py:173`).
+   - Each frame the carried nodes move part of the way at every step, so there is no jolt between frames (`xpbd.py:176`).
    - Damping slows only the tissue's motion relative to the femur (`xpbd.py:76`).
    - It measures and writes the table.
 3. `blender/thigh_bake.py` makes the `.blend` and the frames, and `ffmpeg` makes the videos.
@@ -361,3 +361,105 @@ The voxels had counted 4.7 L too many, because their band reaches past the skin.
 - **Muscle reads high** (40% against 30–36%). Everything that isn't bone, fat or cavity is called muscle, including the tissue between organs, the neck's and the pelvic floor's.
 
 `marco_zero.md` in `body_v5_pushed-skin` has both columns side by side.
+
+## Experiment 6: the woman's lower body walks
+
+Epic `leg-walk`, the agreed second stage. Since `body-walk`, the tool is `tools/body_walk.py` and the bake `blender/body_walk_bake.py`, with every cut ring held by its nearest bone; the run below used the waist and ankle rules they replaced (Rafael, 2026-11-07, "faça a perna e o quadril caminhando"). Bug `human-model/9` is about bones coming through the skin near the hip while walking, so the walk now carries the pelvis and both legs, built from the inside out on the pushed skin (`body_v5_pushed-skin`).
+
+**How** (then `tools/lower_body_walk.py`, now `tools/body_walk.py`, on the GPU):
+
+1. **The region:** the voxels below 2 cm over the hip bones' top, as one connected piece. The hands hang that low in the rest pose but join it nowhere, so they drop out. Whole voxels only, since the solve colours them by sixes.
+2. **Every node has a bone,** the nearest bone vertex among those holding some of the region's bone voxels: 17 bones, from the lumbar vertebrae to the ankles.
+3. **Bone voxels follow their bone,** and the cut ends follow their nearest bone. The motion is read from the woman's walk file by `blender/body_walk_dump.py`, one transform per bone and frame. Damping slows each node only against its own bone (`xpbd.Solver.drive` with `bone` and `all_bone`).
+4. **The body eases from the rest pose into the first step over a second,** holds half a second, walks, then holds a second.
+5. **Tissue values** are in `data/body_tissue.json`: Rafael's `rafa8` for muscle, fat and skin, plus the cavity (the pelvis' organs), set by eye at 3 kPa and 1,000 kg/m³.
+6. **Every frame,** each bone's points are checked against our skin and against the current model's skin, which is MPFB's, not pushed.
+
+**Results, run `v2_region-bones-only`:**
+
+| | Simulated | Current model |
+|---|---:|---:|
+| Bones through the skin | the two fibulae only, at most 40 points, 4.6 mm | femurs, hip bones, patellae, sacrum and fibulae, up to 3,770 points, 12.7 mm |
+| Frames with any | 129 of 129 (the fibulae) | 105 of 105 |
+
+Other figures:
+- 1.4 million tetrahedra, 72 ms per frame (142 at worst), 103 MiB of VRAM.
+- Volume held within 1.5% for muscle, fat and skin.
+- The cavity varies from 86% to 106%. The pelvis' organs are soft and get squeezed as the hip flexes.
+- At most 2,339 tetrahedra turn inside out in a frame (0.17%), at the knees and hips, where the tissue between two bones folds.
+
+**What it shows:**
+
+- **Bug 9 doesn't happen in the layered body.** Only the fibulae touch the skin, and they were already left alone as misplaced bones (experiment 5).
+- **The skin's motion against its nearest bone reads 6 to 87 mm per zone.** Most of it isn't jiggle: near a joint, the nearest bone isn't the one the skin hangs from, so a bending knee or hip counts as motion. Only the flanks (6 mm) and lower back (8 mm) are far from joints. Separating jiggle from joint bending needs a better measure.
+- **No contact between the thighs yet:** where they pass through each other isn't prevented, nor measured.
+
+**Every run is kept** in `G:\\mocap-studio-downloads\\review\\2026-11-07\\leg_walk\\`:
+- `v1_fingers-counted-session-ended-at-frame-30` counted the hands' bones as poking. The session ended at frame 30, so only its log exists.
+- `v2_region-bones-only` has `lower_body_walk.blend` and two videos:
+  - `leg_walk_v2_compare.mp4`: from the side, our skin (pink) in front and the current model's (blue) 80 cm behind it on the same step;
+  - `leg_walk_v2_inside.mp4`: the back half in section, with the bones.
+
+  `leg_walk_v2_compare_current-hides-ours.mp4` is the first render, where the current skin stood beside ours and hid it.
+
+**Rafael's verdict (2026-11-07):** "ainda teremos que mexer nos parâmetros, mas nesse momento acho que é mais importante seguir adiante". The values are to be tuned later; the next stage comes first.
+
+**Running it:**
+
+    python3 human-model/blender_run.py --blend .../female_walk_review.blend human-model/blender/body_walk_dump.py OUT/00_female_body_walk_dump.npz
+    human-model/hm.sh --gpu python human-model/tools/body_walk.py LAYERS.npz BONES.npz OUT/00_female_body_walk_dump.npz RUN_DIR [NAME=value ...]
+    python3 human-model/blender_run.py human-model/blender/body_walk_bake.py RUN_DIR/body_walk.npz LAYERS.npz BONES.npz DUMP.npz RUN_DIR/body_walk.blend RUN_DIR/frames
+
+## Experiment 7: the whole woman walks
+
+Epic `body-walk`, the agreed third stage (Rafael, 2026-11-07, "nesse momento acho que é mais importante seguir adiante"). The same tool as the lower body, `tools/body_walk.py` with `ABOVE_HIP=10`, so nothing is cut at the waist:
+- **Cut rings:** the neck, both wrists and both ankles. Each is held by its nearest bone: nodes past the ring's plane, within half again its radius, follow that bone (`body_walk.cut_zones`, `near_cuts`).
+- **Bone checks:** points within 3 cm of a cut aren't checked against the skin.
+- **Tissue values:** the lower body's, to be tuned later.
+- **Not modelled:** contact, breathing, the head, hands and feet.
+
+**Results, run `v1_whole-body`:**
+
+| | Simulated | Current model |
+|---|---:|---:|
+| Bones through the skin | 4, the misplaced ones only: right scapula, left clavicle, both fibulae; up to 29.9 mm (the scapula) | 30 bones, up to 27.0 mm |
+| Points out in the worst frame | 6,449 | 14,300 |
+
+Other figures:
+- 2.4 million tetrahedra on 83 bones.
+- 145 ms per frame, 342 at worst; 181 MiB of VRAM.
+- Volume held within 2% for muscle, fat and skin. The cavity varies from 90% to 105%.
+- At most 2,365 tetrahedra inside out in a frame (0.1%).
+
+**What it shows:** away from the four misplaced bones, no bone comes through the skin anywhere on the walking body, while the current model has 30 doing so. The cranium shows in the section video floating over the neck: it holds the neck's tissue, but the head isn't simulated.
+
+The run's summary first said 19 cuts: a name reused for the fat zones overwrote the rings' count in the summary only. It's corrected by hand in that file and fixed in the tool.
+
+Kept in `G:\mocap-studio-downloads\review\2026-11-07\body_walk\v1_whole-body\`: `body_walk_v1_compare.mp4` (from the side, ours in front, the current model 80 cm behind), `body_walk_v1_inside.mp4` (the back half in section), `body_walk.blend`.
+
+**Run `v2_bones-settled`:** the same walk on bones settled under the skin (bug `human-model/12`, fixed on `dev` in `fixes/0000d0/four-bones-misplaced`). The chain: bones in `models\hm-build\female_settled\`, the skin pushed over them (`review\2026-11-07\skin_v5_bones-settled\`), the layers rebuilt on it (`body_v6_bones-settled\`), then the walk.
+
+| | `v1_whole-body` | `v2_bones-settled` |
+|---|---:|---:|
+| Frames with a bone through the skin | 129 | **0** |
+| Deepest point out | 29.9 mm (right scapula) | **0** |
+| Tetrahedra inside out, worst frame | 2,365 | 2,464 |
+| ms per frame, median | 145 | 137 |
+
+The skin's motion per zone and the volumes are within a millimetre or a fraction of a percent of v1; only the front of the calf moves more (17.6 mm against 11.5), next to the moved fibula. **Rafael's verdict (2026-11-07): "Parece bom".**
+
+Kept in `G:\mocap-studio-downloads\review\2026-11-07\body_walk\v2_bones-settled\`: `body_walk_v2_compare.mp4`, `body_walk_v2_inside.mp4`, `body_walk.blend`.
+
+**Run `v3_feet-planted`:** the same body on the walk with planted feet (task `body-walk/2`: the pelvis's tilt taken off the hip angle, toes rolling, each stance foot planted; `walk_root\v9_final_walk.blend`). The walk no longer jumps, so the tissue swings less:
+
+| Peak skin motion, mm | belly | breast | chest | flanks | buttocks | hips | thigh front | calf back |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `v2_bones-settled` | 72.6 | 40.6 | 41.4 | 50.1 | 71.3 | 71.0 | 86.4 | 56.7 |
+| `v3_feet-planted` | 54.6 | 22.0 | 22.1 | 23.3 | 52.1 | 50.2 | 75.9 | 42.0 |
+
+Those numbers still count joint bending (bug `human-model/14`), so they compare the two runs, not the tissue's jiggle. With the thigh now at its true angle, the patellae touch the skin in 4 frames of each swing, up to 1.8 mm (bug `human-model/19`); no other bone does. Tetrahedra inside out: 2,538 at worst. **Rafael's verdict on the walk (2026-11-08): "Ficou ok, bem melhor agora".** Kept in `body_walk\v3_feet-planted\`: `body_walk_v3_compare.mp4`, `body_walk_v3_inside.mp4`, `body_walk.blend`, and the walk's dump.
+
+**Running it:**
+
+    human-model/hm.sh --gpu python human-model/tools/body_walk.py LAYERS.npz BONES.npz DUMP.npz RUN_DIR ABOVE_HIP=10 [NAME=value ...]
+    python3 human-model/blender_run.py human-model/blender/body_walk_bake.py RUN_DIR/body_walk.npz LAYERS.npz BONES.npz DUMP.npz RUN_DIR/body_walk.blend RUN_DIR/frames

@@ -52,9 +52,15 @@ Shoulder extension and abduction, hip abduction and adduction, wrist, fingers an
 
 ## Walking
 
-`blender/walk.py` keys the mean cycle from Fukuchi 2018, 24 young adults at one treadmill speed, separately per sex (`data/gait_walk.json`). Measured: pelvis, hip, knee, ankle. **Declared:** arm swing 18°, relaxed elbow 18°, trunk counter-rotation, and the 1.1 s cycle. The body's forward and vertical motion is solved so the stance foot stays planted.
+`blender/walk.py` keys the mean cycle from Fukuchi 2018, 24 young adults at one treadmill speed, separately per sex (`data/gait_walk.json`). Measured: pelvis, hip, knee, ankle. **Declared:** arm swing 18°, relaxed elbow 18°, trunk counter-rotation, the 1.1 s cycle, toe-off at 61% of the cycle, the toes' most bend (55°) and the contact's width (4 mm).
 
-**Your verdict: jumpy.** Measured: at each step the body moves up to 27 mm in height in one frame (typical 8), and up to 72 mm forward (typical 45). Cause not proven; the handover between feet in the root solve is the likely one (bug `human-model/5`). Stride is 1.02 m male and 0.90 m female, so the male walks 0.93 m/s against 1.24 m/s measured (bug `human-model/4`).
+How the walk is built (task `muscle-physics/body-walk/2`, 2026-11-07):
+- **The pelvis's tilt is taken off the hip angle.** The data measures the thigh against a pelvis tilted about 10° forward; the rig's rest pelvis is level. Without it the thigh flexed 10° too far: the stance foot never lay flat, and the body jumped at every hand-over (bug `human-model/5`).
+- **The toes roll at push-off:** they bend up until they lie as they do standing, so the trailing foot stands on the ball, not the toes' tips.
+- **The root follows a soft contact:** the foot points within a few millimetres of the lowest share it, so the hand-over between feet takes several frames.
+- **Each stance foot is planted** by a small correction of its hip, knee and ankle: a point that touches the floor stays there until the foot leaves. On the woman the correction is 3.8° at most, 0.3° on average.
+
+Measured on the woman (`blender/walk_check.py`): height changes at most 8 mm a frame, a smooth wave lowest in double support; the planted foot slides at most 0.3 mm a frame and sits within 1.8 mm of the floor; stride 1.14 m, 1.04 m/s, against 1.24 m/s in the data (bug `human-model/4`). Before: 24 mm height steps, 12 mm slides, stride 0.90 m. Your verdict (2026-11-08): "Ficou ok, bem melhor agora". Both feet are down together for about one frame per hand-over, against about three in the data: bringing the heel down at heel strike bent the knee 30° off the data, so it wasn't kept.
 
 ## Known simplifications
 

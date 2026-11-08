@@ -4,4 +4,5 @@
 - **Where:** `human-model/hmcore/skeleton.py`, pelvis map: its depth isn't checked against the back's skin.
 - **Reproduce:** `<name>.bones.npz.containment.json` of a male build.
 - **Impact:** hidden in renders, because only skin renders with skin on. It would show if the bones were displayed through the skin, and it means the pelvis sits too far back.
+- **Also on the woman (2026-11-07):** 5.1 mm out at rest, and after the skin is pushed over the bones it still reaches the skin (0 mm of tissue) in the cleft between the buttocks (`docs/muscle-physics.md`, experiment 5).
 - **Status:** Open. Likely fix: move the pelvis forward from the back's skin, as the vertebrae do.
