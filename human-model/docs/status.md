@@ -33,7 +33,7 @@ An element's verdict comes only from Rafael. A verdict marks it as enough for no
 
 ## What Rafael said about the body (2026-11-04)
 
-"O movimento é duro demais... vamos ter que pensar em uma forma mais equivalente à pele humana e tecido adiposo." He said it after learning that skin isn't simulated, before watching the walk himself. Measured on `female_walk_review.blend` and `male_walk_review.blend`: the nipple moves 0.0 mm in the rib cage's frame, and bones come through the skin more when walking (bug `human-model/9`). **Next decision with him:** how to add soft tissue. Options come first, and nothing has been built.
+"O movimento é duro demais... vamos ter que pensar em uma forma mais equivalente à pele humana e tecido adiposo." He said it after learning that skin isn't simulated, before watching the walk himself. Measured on `female_walk_review.blend` and `male_walk_review.blend`: the nipple moves 0.0 mm in the rib cage's frame, and bones come through the skin more when walking (bug `human-model/9`, since fixed by the layered body: no bone through the skin in the whole body's walk, though a built `.blend` still deforms its skin by weights alone). **Next decision with him:** how to add soft tissue. Options come first, and nothing has been built.
 
 ## Retiring a layer
 

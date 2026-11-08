@@ -100,7 +100,7 @@ So a very muscular or very heavy character looks right from outside, but with an
 | A smile can tear at the mouth's corners on a changed nose, lips or eyes. Check every new face with the smile test | `human-model/7` |
 | Muscle thickness doesn't follow the muscle slider | `human-model/6` |
 | Joints can bend past their limits | `human-model/3` |
-| Bones come through the skin at the thigh and upper arm when walking | `human-model/9` |
+| Bones come through the skin at the thigh and upper arm when walking. The layered body fixes it (bug `human-model/9`, fixed), but the editor's model still deforms its skin by weights alone | [status.md](status.md) |
 | Movement is stiff: the skin only follows bones, with no fat or breast tissue | [status.md](status.md) |
 | Skin material, hair and clothes aren't applied: the built model has plain skin | [status.md](status.md) |
 
