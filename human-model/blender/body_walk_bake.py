@@ -1,7 +1,7 @@
-"""The walking lower body of tools/lower_body_walk.py as a .blend that plays without simulating, and frames for two videos.
+"""The walking body (lower or whole) of tools/body_walk.py as a .blend that plays without simulating, and frames for two videos.
 Args: WALK.npz LAYERS.npz BONES.npz WALK_DUMP.npz OUT.blend FRAMES_DIR
-In the file: the simulated skin and, 80 cm behind it, the current model's skin on the same step (collection lower_compare);
-the back half in section with the bones (collection lower_inside). Every frame is a shape key, keyed on at its own frame, as thigh_bake.py does.
+In the file: the simulated skin and, 80 cm behind it, the current model's skin on the same step (collection walk_compare);
+the back half in section with the bones (collection walk_inside). Every frame is a shape key, keyed on at its own frame, as thigh_bake.py does.
 Renders FRAMES_DIR/compare/####.png (from the side, both skins) and FRAMES_DIR/inside/####.png (the section from the front)."""
 import os, sys
 import bpy
@@ -46,7 +46,7 @@ def main(walk_npz, layers_npz, bones_npz, dump_npz, out_blend, frames_dir):
     scene = bpy.context.scene
     scene.frame_start, scene.frame_end = 1, n
     scene.render.fps = int(W["fps"])
-    compare, inside = hb.collection("lower_compare"), hb.collection("lower_inside")
+    compare, inside = hb.collection("walk_compare"), hb.collection("walk_inside")
 
     skin_ids, patch = W["skin_ids"], W["patch"]
     local = np.full(N_BODY, -1)
@@ -77,8 +77,12 @@ def main(walk_npz, layers_npz, bones_npz, dump_npz, out_blend, frames_dir):
     centre = B[f"{names[pelvis]}__v"].astype(float).mean(axis=0)
     track = np.array([M[:3, :3] @ centre + M[:3, 3] for M in T[:, pelvis]])
     track[:, 2] = track[:, 2].mean()  # a steady camera height, so the body's own bounce shows
-    views = {"compare": (np.array([3.0, 0.4, -0.35]), np.array([0.0, 0.4, -0.35]), [compare]),
-             "inside": (np.array([0.0, -2.0, -0.35]), np.array([0.0, 0.0, -0.35]), [inside])}
+    # Framed on the region: its middle height against the pelvis, and a distance that fits its height
+    first = skins[0]
+    lift = (first[:, 2].min() + first[:, 2].max()) / 2 - track[0, 2]
+    far = max(np.ptp(first[:, 2]) / 0.9, 1.0)
+    views = {"compare": (np.array([3.0 * far, 0.4, lift]), np.array([0.0, 0.4, lift]), [compare]),
+             "inside": (np.array([0.0, -2.0 * far, lift]), np.array([0.0, 0.0, lift]), [inside])}
     cam = hb.camera_look("HM_cam", (0, 0, 0), (0, 1, 0), lens=50)
     bpy.ops.wm.save_as_mainfile(filepath=out_blend)
     for view, (eye, look, shown) in views.items():
