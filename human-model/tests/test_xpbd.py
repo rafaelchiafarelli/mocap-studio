@@ -144,3 +144,19 @@ def test_two_bones_carry_their_own_tissue():
     moved = x[bottom, 2] - nodes[bottom, 2]
     assert moved[left[bottom]] == pytest.approx(0.02, abs=1e-6)
     assert moved[~left[bottom]] == pytest.approx(0.0, abs=1e-6)
+
+
+def test_lower_body_region_keeps_whole_voxels_and_one_piece():
+    import os, sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
+    import lower_body_walk
+    from hmcore import layers
+    grid = np.zeros((6, 2, 6), bool)
+    grid[0:2, :, :] = True  # a column
+    grid[4:6, :, 0:2] = True  # a small piece apart, low down
+    nodes, tets, _, _ = layers.tetrahedra(grid, np.zeros(3), 0.01)
+    keep, used, t = lower_body_walk.region(nodes, tets, 0.035)
+    assert len(keep) % 6 == 0
+    z = nodes[used][t].mean(axis=1)[:, 2]
+    assert z.max() < 0.04
+    assert nodes[used][:, 0].max() <= 0.02 + 1e-9  # the piece apart is dropped
