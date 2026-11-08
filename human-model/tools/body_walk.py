@@ -20,6 +20,7 @@ RAMP = 1.0  # s from the rest pose into the walk's first pose, so the tissue isn
 SETTLE = 0.5  # s held in the first pose before frame 1
 HOLD = 1.0  # s held in the last pose after the walk
 CUT_PIN = 1.0  # voxels: nodes past each cut ring's plane, less this, move with their nearest bone
+PAST_CUT = 0.35  # m: how far beyond a cut still counts as past it: the wrists' planes look down the body, and without a limit they caught the shins
 CHECK_CLEAR = 0.03  # m: bone points this close to a cut aren't checked against the skin: a bone leaves the cut skin there by design
 SKIN_DENSITY = 1100.0  # kg/m3, the band's
 
@@ -143,11 +144,14 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
     check = list(range(len(names)))
     check_pts = [bones[names[i]][0] for i in check]
     keep_pts = [~near_cuts(p, cut_rings, CHECK_CLEAR) for p in check_pts]
+    # The head's and hands' bones hold the voxels at the cuts but lie past them, so the section video leaves out any bone mostly past those cuts.
+    # The ankles' cuts face down and don't count: the feet stay in the videos, driven by the rig (Rafael, 2026-11-08).
+    upper_cuts = [r for r in cut_rings if r[1][2] > -0.7]
+    shown = np.array([np.any([((p - c) @ n > 0) & (np.linalg.norm(p - c, axis=1) < PAST_CUT) for c, n, _ in upper_cuts], axis=0).mean() <= 0.5 for p in check_pts])
     frames = np.concatenate([walk, np.repeat(walk[-1:], int(round(HOLD * fps)), axis=0)])
     skin_rest = L["skin"].astype(float)
     current_all = D["skins"].astype(float)
     zone = L["zone"][skin_ids]
-    skin_bone = node_bone[tets[skin_tet, 0]]
     label_vol = {k: label == i for i, k in enumerate(body.LABELS) if (label == i).any()}
     rest_vol = {k: s.volume(m) for k, m in label_vol.items()}
     back = nodes[tets].mean(axis=1)[:, 1] > np.median(nodes[:, 1])
@@ -166,7 +170,7 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
         return out
 
     rows, skins, cut_frames, ms = [], [], [], []
-    first_local = None
+    first = None
     for f in range(len(frames)):
         s.set_drive(frames[max(f - 1, 0)], frames[f])
         wp.synchronize()
@@ -178,9 +182,10 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
         ours = np.einsum("ik,ikd->id", bary, x[tets[skin_tet]])
         skin_now = skin_rest.copy()
         skin_now[skin_ids] = ours
-        local = np.einsum("nij,nj->ni", np.linalg.inv(frames[f][skin_bone])[:, :3, :3], ours - frames[f][skin_bone][:, :3, 3])
-        first_local = local if first_local is None else first_local
-        motion = np.linalg.norm(local - first_local, axis=1) * 1000
+        # What the tissue adds: the skin's motion since the first frame, less the current model's, whose skin only follows the bones (bug human-model/14)
+        cur_now = current_all[min(f, n_walk - 1)][skin_ids]
+        first = (ours.copy(), cur_now) if first is None else first
+        motion = np.linalg.norm((ours - first[0]) - (cur_now - first[1]), axis=1) * 1000
         v = x[tets]
         det = np.einsum("ij,ij->i", np.cross(v[:, 1] - v[:, 0], v[:, 2] - v[:, 0]), v[:, 3] - v[:, 0])
         ours_poke = poking(skin_now, f)
@@ -219,7 +224,7 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
                "skin_motion_peak_by_zone_mm": {z: round(max(r["zone_motion"].get(z, 0.0) for r in walking), 1) for z in zones},
                "volume_range": {k: [min(r[f"{k}_volume"] for r in rows), max(r[f"{k}_volume"] for r in rows)] for k in label_vol}}
     np.savez_compressed(f"{out_dir}/body_walk.npz", skins=np.array(skins), skin_ids=skin_ids, patch=patch, cut_nodes=cut_nodes,
-                        cut_frames=np.array(cut_frames), frames_walking=n_walk, fps=fps, bone_names=np.array(names), transforms=frames,
+                        cut_frames=np.array(cut_frames), frames_walking=n_walk, fps=fps, bone_names=np.array(names), shown_bones=shown, transforms=frames,
                         **{f"cut_{k}": np.searchsorted(cut_nodes, f) for k, f in cut_faces.items()})
     keys = [k for k in rows[-1] if k != "zone_motion"] + [k for k in walking[0] if k not in rows[-1]]
     with open(f"{out_dir}/body_walk_frames.csv", "w", newline="") as fh:
