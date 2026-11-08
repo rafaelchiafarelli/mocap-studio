@@ -38,6 +38,7 @@ Rules specific to this repository:
 | [xray-view](xray-view/xray-view.md) | To be planned — see through the model, with each layer's opacity set separately |
 | [floor-contact](floor-contact/floor-contact.md) | Research, to be planned — a floor the character really stands on, in three levels |
 | [body-type-selection](body-type-selection/body-type-selection.md) | To be planned — choose silhouette and biotype by name, with the whole body following |
+| [fast-review](fast-review/fast-review.md) | To be planned, first next — both bodies in one Blender file, no rendering unless asked |
 | [bugs](bugs/bugs.md) | Backlog |
 | [baseline](baseline/baseline.md) | Planned — not active while the MVP (`MVP-plan.md`) is on hold |
 | [versioning](versioning/versioning.md) | To be planned — one versioning system for the whole workflow |
