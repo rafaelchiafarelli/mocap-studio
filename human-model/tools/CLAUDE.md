@@ -27,7 +27,7 @@
 - `body_layers.py`: the whole body in layers at rest (on a pushed skin with `SKIN=`), with every step numbered, bone poking measured apart from the cuts (`hm.sh --gpu`; task `muscle-physics/body-at-rest/1`).
 - `skin_over_bone.py`: the skin pushed out over the bones, with before and after per bone and the girths' change (task `muscle-physics/inside-out-skin/1`). Loads the editor's tape from its file, since its package needs Blender.
 - `body_report.py`: the zero point's sections, masses from the volume inside the skin, and the table in Portuguese for Rafael, optionally beside an earlier run (tasks `muscle-physics/body-at-rest/2`, `inside-out-skin/2`). Plain image; its text uses Blender's Inter font from `G:`.
-- `lower_body_walk.py`: the lower body walking on the GPU, every bone carrying its tissue, bones through the skin against the current model (`hm.sh --gpu`; task `muscle-physics/leg-walk/2`).
+- `body_walk.py`: the body walking on the GPU, every bone carrying its tissue and every cut ring held by its nearest bone, bones through the skin against the current model: the lower body by default, the whole body with `ABOVE_HIP=10` (`hm.sh --gpu`; tasks `muscle-physics/leg-walk/2`, `body-walk/1`).
 - `thigh_walk.py`: the layered thigh through a walk on the GPU, its tissue values from `data/thigh_tissue.json`, with bone-through-skin, motion and volume per frame against the current model (`hm.sh --gpu`; task `muscle-physics/thigh/3`).
 - `thigh_layers.py`: one thigh built from the inside out, with every step kept as a numbered `.ply` (task `muscle-physics/thigh/2`).
 
