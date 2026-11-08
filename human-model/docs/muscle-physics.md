@@ -437,6 +437,19 @@ The run's summary first said 19 cuts: a name reused for the fat zones overwrote 
 
 Kept in `G:\mocap-studio-downloads\review\2026-11-07\body_walk\v1_whole-body\`: `body_walk_v1_compare.mp4` (from the side, ours in front, the current model 80 cm behind), `body_walk_v1_inside.mp4` (the back half in section), `body_walk.blend`.
 
+**Run `v2_bones-settled`:** the same walk on bones settled under the skin (bug `human-model/12`, fixed on `dev` in `fixes/0000d0/four-bones-misplaced`). The chain: bones in `models\hm-build\female_settled\`, the skin pushed over them (`review\2026-11-07\skin_v5_bones-settled\`), the layers rebuilt on it (`body_v6_bones-settled\`), then the walk.
+
+| | `v1_whole-body` | `v2_bones-settled` |
+|---|---:|---:|
+| Frames with a bone through the skin | 129 | **0** |
+| Deepest point out | 29.9 mm (right scapula) | **0** |
+| Tetrahedra inside out, worst frame | 2,365 | 2,464 |
+| ms per frame, median | 145 | 137 |
+
+The skin's motion per zone and the volumes are within a millimetre or a fraction of a percent of v1; only the front of the calf moves more (17.6 mm against 11.5), next to the moved fibula. **Rafael's verdict (2026-11-07): "Parece bom".**
+
+Kept in `G:\mocap-studio-downloads\review\2026-11-07\body_walk\v2_bones-settled\`: `body_walk_v2_compare.mp4`, `body_walk_v2_inside.mp4`, `body_walk.blend`.
+
 **Running it:**
 
     human-model/hm.sh --gpu python human-model/tools/body_walk.py LAYERS.npz BONES.npz DUMP.npz RUN_DIR ABOVE_HIP=10 [NAME=value ...]
