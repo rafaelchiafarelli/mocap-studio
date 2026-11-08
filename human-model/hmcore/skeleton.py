@@ -317,12 +317,11 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
     # Scaled from the hips alone, the pelvis sat 2 cm behind the spine: the sacrum stood 20 to 24 mm behind L5 and came up to 22 mm
     # through the skin (bug human-model/2). It moves forward, and may tilt about the sockets, until PELVIS_TISSUE covers it; the hip
     # joints go with it. L5 keeps its distance or 3 mm, whichever is less.
-    from scipy.spatial import cKDTree
     middle = (sockets["L"] + sockets["R"]) / 2
     pelvis_names = ("hip_L", "hip_R", "sacrum")
     move, before, after, amounts = fit.settle(np.vstack([out[n]["verts"] for n in pelvis_names]), middle, depth, PELVIS_TISSUE,
                                               [("shift", [0, -1, 0], 0.04), ("turn", [1, 0, 0], 10.0)], exact=True,
-                                              avoid=cKDTree(out["vertebra_L5"]["verts"]), sample=900)
+                                              avoid=fit.solids([(out["vertebra_L5"]["verts"], out["vertebra_L5"]["faces"])]), sample=900)
     for n in pelvis_names:
         out[n]["verts"] = move(out[n]["verts"]).astype(np.float32)
     sockets = {k: move(v[None])[0] for k, v in sockets.items()}
@@ -468,24 +467,28 @@ def settle_superficial(out, anchors, depth_of):
     27 mm through the back and the left 15, because the scanned person's shoulders weren't level; the fibulae came 15 mm out behind
     MPFB's slim ankle, and the clavicles' sternal ends lie as far forward as the sternum, which is under 1 mm deep.
     Returns {bone: {"moves": amounts (degrees, or mm for a shift), "short_before_mm", "short_after_mm"}}."""
-    from scipy.spatial import cKDTree
-    ribs = cKDTree(np.vstack([b["verts"] for n, b in out.items() if n.startswith(("rib_", "sternum", "costal"))]))
+    mesh = lambda n: (out[n]["verts"], out[n]["faces"])
+    chest = [mesh(n) for n in out if n.startswith(("rib_", "sternum", "costal"))]
+    ribs = fit.solids(chest)
     report = {}
     for side in ("L", "R"):
         medial, lateral = anchors[f"clavicle_medial_{side}"], anchors[f"clavicle_lateral_{side}"]
         jobs = [
             (f"scapula_{side}", anchors[f"glenoid_{side}"], [("turn", [0, 0, 1], 24.0), ("turn", [1, 0, 0], 24.0), ("turn", [0, 1, 0], 24.0)], ribs),
-            (f"clavicle_{side}", medial, [("turn", lateral - medial, 30.0), ("turn", [0, 0, 1], 10.0), ("shift", [0, 1, 0], 0.016)], ribs),
-            (f"fibula_{side}", anchors[f"fibula_head_{side}"], [("turn", [1, 0, 0], 8.0), ("turn", [0, 1, 0], 8.0)], cKDTree(out[f"tibia_{side}"]["verts"])),
+            (f"clavicle_{side}", medial, [("turn", lateral - medial, 30.0), ("turn", [0, 0, 1], 10.0), ("shift", [0, 1, 0], 0.016)], None),
+            (f"fibula_{side}", anchors[f"fibula_head_{side}"], [("turn", [1, 0, 0], 8.0), ("turn", [0, 1, 0], 8.0)], fit.solids([mesh(f"tibia_{side}")])),
         ]
         for name, pivot, moves, avoid in jobs:
             keep = ()
             if name.startswith("clavicle"):
+                avoid = fit.solids(chest + [mesh(f"scapula_{side}")])  # the scapula as it has just settled
                 lateral = reach_acromion(out, side, medial, lateral)
                 anchors[f"clavicle_lateral_{side}"] = lateral
                 moves = [("turn", lateral - medial, 30.0), ("turn", [0, 0, 1], 10.0), ("shift", [0, 1, 0], 0.016)]
                 keep = ((lateral, 0.004),)  # the joint with the acromion holds
-            move, before, after, amounts = fit.settle(out[name]["verts"], pivot, depth_of, SETTLE_TISSUE, moves, avoid=avoid, keep=keep)
+            # the fibula and the clavicle are jointed to the bones they avoid, so they may touch them, not enter them; with any clearance they can't move
+            clearance = 0.003 if name.startswith("scapula") else 0.0
+            move, before, after, amounts = fit.settle(out[name]["verts"], pivot, depth_of, SETTLE_TISSUE, moves, avoid=avoid, clearance=clearance, keep=keep)
             out[name]["verts"] = move(out[name]["verts"]).astype(np.float32)
             report[name] = {"moves": [round(float(a) * (1000 if m[0] == "shift" else 1), 1) for m, a in zip(moves, amounts)],
                             "short_before_mm": round(before * 1000, 1), "short_after_mm": round(after * 1000, 1)}

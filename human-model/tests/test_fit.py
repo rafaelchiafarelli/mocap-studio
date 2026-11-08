@@ -86,6 +86,28 @@ def test_settle_prefers_the_smallest_move():
     assert before == 0.0 and np.all(amounts == 0)
 
 
+def test_solids_are_positive_inside_any_mesh_whichever_way_it_is_wound():
+    v, t = _sphere()
+    far = v + [5, 0, 0]
+    both = fit.solids([(v, t), (far, t[:, ::-1])], spacing=0.01)
+    d = both([[0, 0, 0.5], [5, 0, 0.5], [2.5, 0, 0]])
+    assert d[0] == pytest.approx(0.5, abs=0.02) and d[1] == pytest.approx(0.5, abs=0.02) and d[2] < -1
+
+
+def test_settle_does_not_move_a_bone_into_its_neighbour():
+    v, t = _sphere()
+    depth = fit.SkinDepth(v, t, spacing=0.01)
+    bar = np.column_stack([np.linspace(0.0, 0.9, 50), np.zeros(50), np.zeros(50)]) + [0, 0, 0.6]
+    wall = (np.array([[-0.6, -0.6, 0.1], [0.6, -0.6, 0.1], [-0.6, 0.6, 0.1], [0.6, 0.6, 0.1],
+                      [-0.6, -0.6, 0.45], [0.6, -0.6, 0.45], [-0.6, 0.6, 0.45], [0.6, 0.6, 0.45]]) + [0.45, 0, 0],
+            np.array([[0, 2, 1], [1, 2, 3], [4, 5, 6], [5, 7, 6], [0, 1, 4], [1, 5, 4], [2, 6, 3], [3, 6, 7], [0, 4, 2], [2, 4, 6], [1, 3, 5], [3, 7, 5]]))
+    inside_wall = fit.solids([wall], spacing=0.01)
+    free = fit.settle(bar, bar[0], depth, 0.05, [("shift", [0, 0, -1], 0.35)])[0](bar)  # free, it comes to rest inside the wall
+    blocked = fit.settle(bar, bar[0], depth, 0.05, [("shift", [0, 0, -1], 0.35)], avoid=inside_wall)[0](bar)
+    assert inside_wall(free).max() > 0
+    assert inside_wall(blocked).max() <= -0.003 + 0.01
+
+
 def test_outward_turns_an_inside_out_mesh():
     v, t = _cube()
     good = fit.outward(v, t)
