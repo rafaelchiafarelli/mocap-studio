@@ -174,13 +174,14 @@ def largest_scale(short, least=0.4, steps=14):
     return lo
 
 
-def slim_to_skin(meshes, a, b, skin, depth_of, need, start=0.5, bin_size=0.01, reach=0.12, least=0.4):
+def slim_to_skin(meshes, a, b, skin, depth_of, need, start=0.5, bin_size=0.01, reach=0.12, least=0.4, only=None):
     """Narrows bones, height by height along the segment a to b, just where the skin around them leaves less than need metres over them.
     The bones go together through one map, so what lies apart stays apart. Each height scales across the segment about the middle of the
     skin's own section, and heights that fit don't change at all. The scale per height is the largest that fits, widened by a window and
     averaged so it changes smoothly and is never larger than one that fits. Heights before start, a fraction of the segment from a, are
     left alone: the fast depth's sign fails in the groin's crease, which read as the femur's head needing to shrink to 40%.
-    Returns (the meshes' new vertices, the smallest scale)."""
+    only, a unit direction across the segment, narrows just along it, judged by each height's outer half along it, the only points such a
+    move helps. Returns (the meshes' new vertices, the smallest scale)."""
     a, b = np.asarray(a, float), np.asarray(b, float)
     axis = (b - a) / np.linalg.norm(b - a)
     sizes = [len(m) for m in meshes]
@@ -190,6 +191,11 @@ def slim_to_skin(meshes, a, b, skin, depth_of, need, start=0.5, bin_size=0.01, r
         p = p - a
         along = p @ axis
         return along, p - np.outer(along, axis)
+
+    def narrowed(p, c, s):
+        if only is None:
+            return c + (p - c) * (s[:, None] if np.ndim(s) else s)
+        return p + np.outer((p - c) @ only * (s - 1), only)
 
     t, across = split(v)
     skin_t, skin_across = split(np.asarray(skin, float))
@@ -201,14 +207,18 @@ def slim_to_skin(meshes, a, b, skin, depth_of, need, start=0.5, bin_size=0.01, r
         if h < start * np.linalg.norm(b - a) or not around.any() or not here.any():
             continue
         centre[i] = (skin_across[around].min(axis=0) + skin_across[around].max(axis=0)) / 2
-        scale[i] = largest_scale(lambda s: float((need - depth_of(a + np.outer(t[here], axis) + centre[i] + (across[here] - centre[i]) * s)).max()), least)
+        pts = np.flatnonzero(here)
+        if only is not None:
+            along = np.abs((across[pts] - centre[i]) @ only)
+            pts = pts[along >= along.max() / 2]
+        scale[i] = largest_scale(lambda s: float((need - depth_of(a + np.outer(t[pts], axis) + narrowed(across[pts], centre[i], s))).max()), least)
     k = max(1, round(0.02 / bin_size))
     window = lambda x, f: np.array([f(x[max(0, i - k):i + k + 1], axis=0) for i in range(len(x))])
     scale = window(window(scale, np.min), np.mean)  # each averaged value is the minimum of a window holding this height, so none grows
     centre = window(centre, np.mean)
-    s = np.interp(t, heights, scale)[:, None]
+    s = np.interp(t, heights, scale)
     c = np.column_stack([np.interp(t, heights, centre[:, j]) for j in range(3)])
-    placed = a + np.outer(t, axis) + c + (across - c) * s
+    placed = a + np.outer(t, axis) + narrowed(across, c, s)
     return np.split(placed, np.cumsum(sizes)[:-1]), float(scale.min())
 
 

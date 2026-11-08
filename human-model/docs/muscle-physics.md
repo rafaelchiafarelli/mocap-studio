@@ -463,6 +463,8 @@ Those numbers still count joint bending (bug `human-model/14`), so they compare 
 
 **Run `v4_patella-half`** (2026-11-08, bugs `human-model/19`, `20` and `21` fixed; `review\2026-11-08\body_walk_v4_patella-half\`, on `models\hm-build\female_bugs19-20-21_v1\`, `skin_v10_bugs-19-20-21` and `body_v8_bugs-19-20-21`): no bone through the skin in any of the 105 frames, against the patellae's 32 frames, up to 1.8 mm, in `v3`. The patella doesn't enter femur or tibia in any frame. Both the half turn and the narrowed knee changed here, so the run can't say how much each did. Knee and ankle no longer grow under the push (+0.1 and 0.0 cm); the largest push is 11.9 mm, on the upper back and chest, over the clavicles. Tetrahedra inside out: 2,929 at worst, against 2,538. Volumes stay within 0.5% except the cavity's.
 
+**The man's first walk** (2026-11-08, `review\2026-11-08\body_walk_male_v1\`, on `models\hm-build\male_2026-11-08_v2_ribs-narrowed\`, `skin_male_v1` and `body_male_v1`, fat by eye in `data/body_fat_male.json`): the ribs are covered and his measures barely change (knee +0.3, calf +0.2 cm; largest push 12 mm). He isn't done: bones come through the skin in all 129 frames, up to 9.3 mm. The talus at every frame (bug `human-model/23`), and the patellae and the tibiae's tops in each swing (bug `human-model/24`).
+
 **Running it:**
 
     human-model/hm.sh --gpu python human-model/tools/body_walk.py LAYERS.npz BONES.npz DUMP.npz RUN_DIR ABOVE_HIP=10 [NAME=value ...]
