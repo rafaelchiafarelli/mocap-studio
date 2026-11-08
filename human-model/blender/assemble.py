@@ -7,6 +7,7 @@ from mathutils import Matrix, Vector
 sys.path.insert(0, os.path.dirname(os.path.abspath(sys.argv[sys.argv.index("--python") + 1])))
 import hmblender as hb
 
+LIMIT_MARGIN_DEG = 10.0  # declared: the limits are the mean of the people measured, and a measured walk comes within 1 degree of them, so they aren't a ceiling
 PATELLA_SHARE = 0.5  # declared: how much of the knee's bend the patella takes
 a = hb.args()
 recipe = json.load(open(a[0], encoding="utf-8"))
@@ -174,6 +175,19 @@ for side in ("L", "R"):
         if pb is None:
             continue
         pb["hm_limit_deg"] = [lo, hi]
+        # The limits are rotations about the rest pose's X, so they go on the bone's local axis nearest to it (bug human-model/3)
+        along = rig.data.bones[pb.name].matrix_local.to_3x3().inverted() @ Vector((1, 0, 0))
+        axis = max(range(3), key=lambda k: abs(along[k]))
+        if abs(along[axis]) < 0.9:  # the arm's bones lie skewed to it, so one local axis can't hold a limit about X: the shoulder and elbow stay unenforced
+            continue
+        lo, hi = lo - LIMIT_MARGIN_DEG, hi + LIMIT_MARGIN_DEG
+        low, high = (lo, hi) if along[axis] > 0 else (-hi, -lo)
+        c = pb.constraints.new("LIMIT_ROTATION")
+        c.owner_space = "LOCAL"
+        letter = "xyz"[axis]
+        setattr(c, f"use_limit_{letter}", True)
+        setattr(c, f"min_{letter}", math.radians(low))
+        setattr(c, f"max_{letter}", math.radians(high))
 
 # ---- muscles and fields
 if len(a) > 3:

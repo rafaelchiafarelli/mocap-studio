@@ -21,7 +21,7 @@
 ## Key facts / gotchas
 
 - Shape sliders are never shown on a built file, since bones, muscles and fields would stay behind: panels poll `human.is_built`, which is `HM_controls` existing.
-- The sliders read and write shape keys named as the target, as `assemble.py:27` loads them, so recipes, MPFB's own panel and this one agree.
+- The sliders read and write shape keys named as the target, as `assemble.py:28` loads them, so recipes, MPFB's own panel and this one agree.
 - MPFB isn't imported at `register`, as it may not be enabled yet: `_target_json` reads its file from the sibling folder, and `human._services` imports at use.
 - Replacing the open file can't happen inside the operator that asks for it, so `_later` runs it from a timer. Headless there are no timers, so it runs at once. `human.create` itself runs anywhere.
 - Refitting eyes and measuring wait until a slider stops: `_changed`, `SETTLE_DELAY_S`.

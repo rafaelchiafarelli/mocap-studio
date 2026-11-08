@@ -48,7 +48,7 @@ Measured means from the [CDC's joint range study](sources-and-validation.md#moti
 
 Shoulder extension and abduction, hip abduction and adduction, wrist, fingers and spine are **declared**.
 
-**Limits aren't enforced** (bug `human-model/3`): they're stored on the bones. `blender/motion_check.py` poses each joint at its limit. On every build, overlaps are only between two bones meeting at that joint, such as femur in hip socket, and never between unrelated bones. How deep those overlaps go isn't measured.
+**Limits are enforced only on the legs** (bug `human-model/3`): hip, knee and ankle by a Limit Rotation at the measured mean plus 10°, since the mean isn't a ceiling. They don't change the measured walk. Shoulder and elbow are only stored on the bones. `blender/motion_check.py` poses each joint at its limit. On every build, overlaps are only between two bones meeting at that joint, such as femur in hip socket, and never between unrelated bones. How deep those overlaps go isn't measured.
 
 ## Walking
 
