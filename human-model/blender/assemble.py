@@ -7,6 +7,7 @@ from mathutils import Matrix, Vector
 sys.path.insert(0, os.path.dirname(os.path.abspath(sys.argv[sys.argv.index("--python") + 1])))
 import hmblender as hb
 
+PATELLA_SHARE = 0.5  # declared: how much of the knee's bend the patella takes
 a = hb.args()
 recipe = json.load(open(a[0], encoding="utf-8"))
 bones_npz = np.load(a[1])
@@ -98,7 +99,16 @@ for i in range(1, 13):
         rb.tail = h + axis * 0.03
         rb.parent = eb["spine.002" if i > 7 else "spine.003"]
         rb.use_deform = False
+for side in "LR":  # the patella's bone: on the thigh, shaped as the shin so their local rotations mean the same
+    shin = eb[f"shin.{side}"]
+    pb = eb.new(f"hm_patella.{side}")
+    pb.head, pb.tail, pb.roll = shin.head.copy(), shin.tail.copy(), shin.roll
+    pb.parent = eb[f"thigh.{side}"]
+    pb.use_deform = False
 bpy.ops.object.mode_set(mode="OBJECT")
+for side in "LR":  # the patella slides in the femur's groove, turning about half as far as the shin (bug human-model/19)
+    c = rig.pose.bones[f"hm_patella.{side}"].constraints.new("COPY_ROTATION")
+    c.target, c.subtarget, c.target_space, c.owner_space, c.influence = rig, f"shin.{side}", "LOCAL", "LOCAL", PATELLA_SHARE
 
 # ---- bone meshes
 col = hb.collection("HM_bones")
