@@ -158,7 +158,7 @@ Task 3 of epic `thigh`. The thigh of experiment 2 goes through the neutral woman
 1. `blender/thigh_walk_dump.py` reads, every frame, the femur's transform from rest, and the current skin.
 2. `tools/thigh_walk.py` simulates on the GPU (`hmcore/xpbd.py`):
    - The bone, and both cut ends from each skin ring outward, are carried by the femur.
-   - Each frame the carried nodes move part of the way at every step, so there is no jolt between frames (`xpbd.py:173`).
+   - Each frame the carried nodes move part of the way at every step, so there is no jolt between frames (`xpbd.py:176`).
    - Damping slows only the tissue's motion relative to the femur (`xpbd.py:76`).
    - It measures and writes the table.
 3. `blender/thigh_bake.py` makes the `.blend` and the frames, and `ffmpeg` makes the videos.
@@ -361,3 +361,51 @@ The voxels had counted 4.7 L too many, because their band reaches past the skin.
 - **Muscle reads high** (40% against 30–36%). Everything that isn't bone, fat or cavity is called muscle, including the tissue between organs, the neck's and the pelvic floor's.
 
 `marco_zero.md` in `body_v5_pushed-skin` has both columns side by side.
+
+## Experiment 6: the woman's lower body walks
+
+Epic `leg-walk`, the agreed second stage (Rafael, 2026-11-07, "faça a perna e o quadril caminhando"). Bug `human-model/9` is about bones coming through the skin near the hip while walking, so the walk now carries the pelvis and both legs, built from the inside out on the pushed skin (`body_v5_pushed-skin`).
+
+**How** (`tools/lower_body_walk.py`, on the GPU):
+
+1. **The region:** the voxels below 2 cm over the hip bones' top, as one connected piece. The hands hang that low in the rest pose but join it nowhere, so they drop out. Whole voxels only, since the solve colours them by sixes.
+2. **Every node has a bone,** the nearest bone vertex among those holding some of the region's bone voxels: 17 bones, from the lumbar vertebrae to the ankles.
+3. **Bone voxels follow their bone,** and the cut ends follow their nearest bone. The motion is read from the woman's walk file by `blender/body_walk_dump.py`, one transform per bone and frame. Damping slows each node only against its own bone (`xpbd.Solver.drive` with `bone` and `all_bone`).
+4. **The body eases from the rest pose into the first step over a second,** holds half a second, walks, then holds a second.
+5. **Tissue values** are in `data/body_tissue.json`: Rafael's `rafa8` for muscle, fat and skin, plus the cavity (the pelvis' organs), set by eye at 3 kPa and 1,000 kg/m³.
+6. **Every frame,** each bone's points are checked against our skin and against the current model's skin, which is MPFB's, not pushed.
+
+**Results, run `v2_region-bones-only`:**
+
+| | Simulated | Current model |
+|---|---:|---:|
+| Bones through the skin | the two fibulae only, at most 40 points, 4.6 mm | femurs, hip bones, patellae, sacrum and fibulae, up to 3,770 points, 12.7 mm |
+| Frames with any | 129 of 129 (the fibulae) | 105 of 105 |
+
+Other figures:
+- 1.4 million tetrahedra, 72 ms per frame (142 at worst), 103 MiB of VRAM.
+- Volume held within 1.5% for muscle, fat and skin.
+- The cavity varies from 86% to 106%. The pelvis' organs are soft and get squeezed as the hip flexes.
+- At most 2,339 tetrahedra turn inside out in a frame (0.17%), at the knees and hips, where the tissue between two bones folds.
+
+**What it shows:**
+
+- **Bug 9 doesn't happen in the layered body.** Only the fibulae touch the skin, and they were already left alone as misplaced bones (experiment 5).
+- **The skin's motion against its nearest bone reads 6 to 87 mm per zone.** Most of it isn't jiggle: near a joint, the nearest bone isn't the one the skin hangs from, so a bending knee or hip counts as motion. Only the flanks (6 mm) and lower back (8 mm) are far from joints. Separating jiggle from joint bending needs a better measure.
+- **No contact between the thighs yet:** where they pass through each other isn't prevented, nor measured.
+
+**Every run is kept** in `G:\\mocap-studio-downloads\\review\\2026-11-07\\leg_walk\\`:
+- `v1_fingers-counted-session-ended-at-frame-30` counted the hands' bones as poking. The session ended at frame 30, so only its log exists.
+- `v2_region-bones-only` has `lower_body_walk.blend` and two videos:
+  - `leg_walk_v2_compare.mp4`: from the side, our skin (pink) in front and the current model's (blue) 80 cm behind it on the same step;
+  - `leg_walk_v2_inside.mp4`: the back half in section, with the bones.
+
+  `leg_walk_v2_compare_current-hides-ours.mp4` is the first render, where the current skin stood beside ours and hid it.
+
+**Rafael's verdict (2026-11-07):** "ainda teremos que mexer nos parâmetros, mas nesse momento acho que é mais importante seguir adiante". The values are to be tuned later; the next stage comes first.
+
+**Running it:**
+
+    python3 human-model/blender_run.py --blend .../female_walk_review.blend human-model/blender/body_walk_dump.py OUT/00_female_body_walk_dump.npz
+    human-model/hm.sh --gpu python human-model/tools/lower_body_walk.py LAYERS.npz BONES.npz OUT/00_female_body_walk_dump.npz RUN_DIR [NAME=value ...]
+    python3 human-model/blender_run.py human-model/blender/lower_body_bake.py RUN_DIR/lower_body_walk.npz LAYERS.npz BONES.npz DUMP.npz RUN_DIR/lower_body_walk.blend RUN_DIR/frames

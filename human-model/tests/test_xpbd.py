@@ -124,3 +124,39 @@ def test_skinfit_covers_a_rod_that_pokes_through_a_tube():
     assert rec["misplaced"] == []
     assert rec["depth_after"].min() > 0.0025
     assert push.max() < 0.015
+
+
+def test_two_bones_carry_their_own_tissue():
+    """Two blocks side by side, each held at its bottom by its own bone; one bone moves up 2 cm, the other stays."""
+    wp.init()
+    nodes, tets, tet_voxel, vox = _cube(4)
+    left = nodes[:, 0] < 0
+    bottom = np.flatnonzero(nodes[:, 2] < nodes[:, 2].min() + 1e-9)
+    bone_of = np.where(left, 0, 1).astype(np.int32)
+    s = xpbd.Solver(nodes, tets, xpbd.voxel_colours(vox, tet_voxel), 1000.0, 20000.0, 0.45, damping=5.0, device="cpu")
+    s.gravity = wp.vec3(0.0, 0.0, 0.0)
+    s.drive(bottom, nodes[bottom], all_rest=nodes, bone=bone_of[bottom], all_bone=bone_of, n_bones=2)
+    up = np.eye(4)
+    up[2, 3] = 0.02
+    s.set_drive(np.stack([np.eye(4), np.eye(4)]), np.stack([up, np.eye(4)]))
+    s.step(1 / 24, 10)
+    x = s.positions()
+    moved = x[bottom, 2] - nodes[bottom, 2]
+    assert moved[left[bottom]] == pytest.approx(0.02, abs=1e-6)
+    assert moved[~left[bottom]] == pytest.approx(0.0, abs=1e-6)
+
+
+def test_lower_body_region_keeps_whole_voxels_and_one_piece():
+    import os, sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
+    import lower_body_walk
+    from hmcore import layers
+    grid = np.zeros((6, 2, 6), bool)
+    grid[0:2, :, :] = True  # a column
+    grid[4:6, :, 0:2] = True  # a small piece apart, low down
+    nodes, tets, _, _ = layers.tetrahedra(grid, np.zeros(3), 0.01)
+    keep, used, t = lower_body_walk.region(nodes, tets, 0.035)
+    assert len(keep) % 6 == 0
+    z = nodes[used][t].mean(axis=1)[:, 2]
+    assert z.max() < 0.04
+    assert nodes[used][:, 0].max() <= 0.02 + 1e-9  # the piece apart is dropped
