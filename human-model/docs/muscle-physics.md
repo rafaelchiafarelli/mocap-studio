@@ -328,7 +328,8 @@ Epic `inside-out-skin`, task 1. The zero point found bones through the skin at r
 | `skin_v2_falloff_misplaced-left-alone` | Fixed both. The sacrum stopped at 0 mm |
 | `skin_v3_push-away-from-bone_sacrum-worse` | Pushing away from the bone instead of along the skin: the sacrum came 7 mm out (`skinfit.py:94`) |
 | `skin_v4_along-skin-normal` | The same as v2: `04_skin_fit.blend` and its front and back stills, before and after, painted by how far the skin moved |
-| `skin_v5_bones-settled` | **The current one,** on bones settled under the skin (bug `human-model/12`, fixed; bones in `models/hm-build/female_settled`): nothing left alone, bust and under the bust no longer change, 570 vertices moved over 1 mm. Only the sacrum still short. `05_ombros_*` and `06_tornozelos_*` are point views of the bones before and after (colours differ between the two) |
+| `skin_v5_bones-settled` | On bones settled under the skin (bug `human-model/12`, fixed; bones in `models/hm-build/female_settled`): nothing left alone, bust and under the bust no longer change, 570 vertices moved over 1 mm. Only the sacrum still short. `05_ombros_*` and `06_tornozelos_*` are point views of the bones before and after (colours differ between the two) |
+| `2026-11-08\skin_v8_pelvis-forward` | **The current one,** after the shoulder girdle was raised and the pelvis moved forward (bugs `human-model/18`, `2`): no bone left alone or short of its tissue, the sacrum included. At most 12.6 mm of push, 374 vertices moved over 1 mm; knee +1.3 cm, ankle +1.0 (bug `human-model/20`) |
 
 **Running it:**
 

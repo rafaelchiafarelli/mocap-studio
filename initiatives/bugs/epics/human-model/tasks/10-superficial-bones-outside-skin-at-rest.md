@@ -5,4 +5,4 @@
 - **Reproduce:** `hm.sh --gpu python human-model/tools/body_layers.py <build dir> female OUT`, then `bones_with_points_outside_skin` in `OUT/female.body_layers.json`. Measured on 2026-11-07 in `G:\mocap-studio-downloads\review\2026-11-07\body_v2_cuts-apart\`. Bones past the neck, wrist and ankle cuts are counted apart.
 - **Impact:** the layered body can't put skin over them; walking only adds to it (bug 9). Includes bug 2's sacrum, here on a woman too.
 - **2026-11-07:** the scapulae, clavicles and fibulae are now placed with 4 mm of tissue, or within 3 mm of it (bug 12, fixed); the others above are still as listed.
-- **Status:** Open. Building the skin from the inside out, with a least tissue depth over each bone, is the planned way round it.
+- **Status:** Fixed (2026-11-08) — fixes/0000d8/superficial-bones-at-rest, by the pushed skin, as Rafael chose. After bugs 2, 12 and 18 the push leaves no bone left alone or short of its declared tissue, at most 12.6 mm of push (`G:\mocap-studio-downloads\review\2026-11-08\skin_v8_pelvis-forward\`). Bones still come through MPFB's skin before the push; what's left of that is bug 20.
