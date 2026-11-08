@@ -32,7 +32,7 @@ Each bone stays rigid and only scales, so its shape is the measured one. It foll
 | Part | Rule |
 |---|---|
 | **Long bones** | Joint-to-joint onto the rig. Length scales fully, thickness to the power 0.7, since limbs don't thicken in proportion |
-| **Pelvis** | Width from the hips' skin, minus a margin. Its sockets become the true hip joints |
+| **Pelvis** | Width from the hips' skin, minus a margin. Then moved forward, and tilted about the sockets if needed, until 6 mm of tissue covers the sacrum and the crests: 20 mm on the neutral woman, 33 mm and 9° on the man; the sacrum then sits 6 mm under L5. Its sockets become the true hip joints |
 | **Spine** | Height spaced between hips and skull. Depth from the back's skin, so each spinous tip sits 12 mm under it |
 | **Rib cage** | One map for ribs, sternum and cartilage. Width from the skin low on the chest, because arms join the trunk higher up. Depth from sternum to spine |
 | **Scapula, humerus** | The humerus's head centre, a sphere fitted to it, sits on the rig's shoulder joint, and the scapula keeps its CT relation to it. Both go up, with the rig's joint, until the acromion lies 8 mm under the shoulder's skin, the same on both sides |
@@ -43,7 +43,7 @@ Each bone stays rigid and only scales, so its shape is the measured one. It foll
 | **Foot** | Flat on the floor. BMF's body lay with its feet pointing down, so the sole and toes are turned flat. Length from the skin |
 | **Fingers** | Each onto its rig bone, centred in the finger's skin |
 
-Skin margins, in metres, are at the top of `hmcore/skeleton.py`: `TISSUE` for the head, `TRUNK_MARGIN`, `PELVIS_MARGIN`, `SETTLE_TISSUE`, `AC_JOINT`, `ACROMION_TISSUE`.
+Skin margins, in metres, are at the top of `hmcore/skeleton.py`: `TISSUE` for the head, `TRUNK_MARGIN`, `PELVIS_MARGIN`, `SETTLE_TISSUE`, `PELVIS_TISSUE`, `AC_JOINT`, `ACROMION_TISSUE`.
 
 ## CT quirks worth knowing
 
@@ -58,7 +58,7 @@ Skin margins, in metres, are at the top of `hmcore/skeleton.py`: `TISSUE` for th
 | Check | Tool | Result on the six test people |
 |---|---|---|
 | All build with no repair | `build_model.py` | Yes |
-| Bones inside the skin | `.containment.json` | Cranium 4–8% of points outside. **Sacrum about 47% in the men** (bug `human-model/2`), 0–10% in the women. Fibula up to 37%. Mean 19–25%, mostly tiny hand and foot bones where the check is noisy |
+| Bones inside the skin | `.containment.json` | Cranium 4–8% of points outside. The sacrum was about 47% out in the men before the pelvis was moved forward (bug `human-model/2`, fixed 2026-11-08); now none. Fibula up to 37%. Mean 19–25%, mostly tiny hand and foot bones where the check is noisy |
 | Unrelated bones colliding | `motion_check.py` | None |
 | Muscle volume | `volume_check.py` | Within 0.1% |
 
