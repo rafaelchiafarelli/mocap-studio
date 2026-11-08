@@ -39,6 +39,17 @@ To research: full-body dynamics that follow captured motion, balance, and where 
 
 A flat floor is the simple case, and far simpler than contact between body parts (bug `human-model/15`). Relief or steps would ask the solver for mesh queries, which `human-model/hmcore/meshgpu.py` already does for other purposes.
 
+## Shoes
+
+The characters will wear many kinds of shoes, and that changes how they walk (Rafael, 2026-11-08). Whatever is built for the floor has to allow for it.
+
+To research:
+
+- What a shoe changes in a walk: heel height, the sole's shape and stiffness, grip on the floor, weight on the foot.
+- What touches the floor at each level: the shoe's sole instead of the foot's, a rigid or bending sole at level 1, and at level 2 the foot squashed inside the shoe rather than against the floor.
+- The actor's own shoes at capture against the character's: how much of the walk can be adapted to a different shoe, and how much has to be captured wearing something like it.
+- Whether walking data exists per kind of shoe, under a license that allows commercial use.
+
 ## Suggested order
 
 Level 1, then 2, with 3 revisited later, as Rafael asked. To be confirmed when this is planned.
