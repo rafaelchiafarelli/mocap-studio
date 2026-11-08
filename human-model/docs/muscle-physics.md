@@ -402,6 +402,8 @@ Other figures:
 
   `leg_walk_v2_compare_current-hides-ours.mp4` is the first render, where the current skin stood beside ours and hid it.
 
+**Rafael's verdict (2026-11-07):** "ainda teremos que mexer nos parâmetros, mas nesse momento acho que é mais importante seguir adiante". The values are to be tuned later; the next stage comes first.
+
 **Running it:**
 
     python3 human-model/blender_run.py --blend .../female_walk_review.blend human-model/blender/body_walk_dump.py OUT/00_female_body_walk_dump.npz
