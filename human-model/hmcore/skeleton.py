@@ -10,6 +10,7 @@ TRUNK_MARGIN = {"lateral": 0.018, "front": 0.012, "spinous": 0.012}
 # data/skin_over_bone_female.json, so the pushed skin has nothing left to do for them.
 SETTLE_TISSUE = 0.004  # m
 KNEE_TISSUE = 0.003  # declared, as for the patella in data/skin_over_bone_female.json, m
+RIB_TISSUE = 0.002  # declared, the default of data/skin_over_bone_female.json, m
 LARYNX_TISSUE = 0.003  # declared, as in data/skin_over_bone_female.json, m
 PELVIS_TISSUE = 0.006  # declared: least tissue over the sacrum and the hip bones' crests, as in data/skin_over_bone_female.json, m
 AC_JOINT = 0.003  # declared: the gap between the clavicle's end and the acromion, m
@@ -300,6 +301,17 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
     put("sternum", trunk_map(sternum_v, "T5"), sternum_f, "hm_sternum", "ct")
     cart_v, cart_f = lib["costal_cartilages"]
     put("costal_cartilages", trunk_map(cart_v, "T5"), cart_f, "hm_sternum", "ct")
+    # The cage's width comes from the skin at T10, but it is widest lower down, where a man's trunk already narrows, and his ribs 9 to 11 came
+    # through his sides (bug human-model/22). Its lower half is narrowed sideways to the skin, only as far as that asks.
+    cage = [n for n in out if n.startswith(("rib_", "sternum", "costal"))]
+    placed, least = fit.slim_to_skin([out[n]["verts"] for n in cage], vertebra_t["T5"], vertebra_t["L1"], skin, depth, RIB_TISSUE, reach=0.4, only=np.array([1.0, 0.0, 0.0]))
+    for n, p in zip(cage, placed):
+        out[n]["verts"] = p.astype(np.float32)
+    anchors["slimmed"]["ribs"] = round(least, 3)
+    for n in cage:
+        if n.startswith("rib_"):
+            mapped = out[n]["verts"]
+            anchors[f"rib_head_{n[4:]}"] = mapped[np.argsort(np.abs(mapped[:, 0]))[:20]].mean(axis=0)
     # The highest point of the manubrium lies off the midline in the CT, so the clavicles' sternal ends came out 22 mm apart in x: on the midline instead
     st = out["sternum"]["verts"]
     anchors["sternum_top"] = np.array([(st[:, 0].min() + st[:, 0].max()) / 2, *st[np.argmax(st[:, 2]), 1:]])

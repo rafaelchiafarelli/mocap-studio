@@ -1,0 +1,10 @@
+{
+ "_about": "The least depth of tissue over each bone, in mm, and the most the skin may be pushed out, for tools/skin_over_bone.py. The woman's values, by eye, from where bones lie close under the skin in a person; not measured. A bone name takes the value of its longest matching prefix, else default. Edit to change; a run can override one as depth.<prefix>=mm or MAX_PUSH_MM=mm.",
+ "least_depth_mm": {
+  "default": 2,
+  "patella": 3, "tibia": 3, "larynx": 3,
+  "clavicle": 4, "scapula": 4, "vertebra": 4, "fibula": 4, "talus": 4, "calcaneus": 4,
+  "sacrum": 6, "hip": 6
+ },
+ "max_push_mm": 15
+}

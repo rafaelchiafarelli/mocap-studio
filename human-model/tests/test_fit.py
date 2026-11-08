@@ -130,3 +130,14 @@ def test_slim_to_skin_narrows_only_where_it_pokes():
     (placed,), least = fit.slim_to_skin([bone], [0, 0, -1.0], [0, 0, 1.0], v, depth, 0.05, start=0.0, bin_size=0.05, reach=2.0, least=0.1)
     assert least < 1 and depth(placed).min() >= 0.05 - 0.015
     assert placed[80] == pytest.approx(bone[80], abs=1e-6)  # the middle fits, so it stays
+
+
+def test_slim_to_skin_along_one_direction_leaves_the_others():
+    v, t = _sphere()
+    depth = fit.SkinDepth(v, t, spacing=0.01)
+    z = np.linspace(-0.1, 0.1, 21)
+    side = np.column_stack([np.full(21, 1.02), np.zeros(21), z])
+    front = np.column_stack([np.zeros(21), np.full(21, 0.97), z])  # too close to the skin, but a sideways move can't help it
+    (a, b), least = fit.slim_to_skin([side, front], [0, 0, -1.0], [0, 0, 1.0], v, depth, 0.05, start=0.0, bin_size=0.05, reach=2.0, only=np.array([1.0, 0, 0]))
+    assert 0.8 < least < 1 and a[:, 0].max() < 0.96
+    assert b == pytest.approx(front, abs=1e-9)
