@@ -6,7 +6,7 @@
 
 `HM_rig` is MPFB's Rigify metarig, 185 bones, which deforms the skin. The generated Rigify control rig isn't used. Three changes on top:
 
-- **Thigh heads move into the sockets,** because MPFB's hips are wider than a real pelvis allows.
+- **Thigh heads move into the sockets,** because MPFB's hips are wider than a real pelvis allows. **Shoulder joints go up** with the shoulder girdle until the acromion lies just under the skin (19 mm on the neutral woman): MPFB's sit low, and its upper arm was 232 mm from joint to elbow.
 - **`DEF-*` weights are merged into metarig bones,** or some skin vertices stay behind when the body bends.
 - **Added bones:** `hm_jaw`, `hm_hyoid`, `hm_larynx`, `hm_sternum`, and 24 `hm_rib_<n>_<side>`.
 
