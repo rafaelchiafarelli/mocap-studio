@@ -12,10 +12,11 @@ STAGES = (
     ("Modelo (Blender)", ("assemble.py", "export_human"), [f"{BUILD}/*.blend"]),
     ("Empurrão da pele", ("skin_over_bone",), [f"{REVIEW}/*.skin_fit.json"]),
     ("Camadas", ("body_layers",), [f"{REVIEW}/*.body_layers.npz"]),
-    ("Caminhada (Blender)", ("blender\\walk.py", "blender/walk.py"), [f"{BUILD}/*_walk_review.blend"]),
+    ("Caminhada (Blender)", ("blender\\walk.py", "blender/walk.py"), [f"{BUILD}/*_walk_review.blend", f"{BUILD}/*_walk_slow_stop.blend"]),
     ("Extrair movimento", ("body_walk_dump",), [f"{REVIEW}/*dump.npz", f"{REVIEW}/*/*dump.npz"]),
     ("Simulação na GPU", ("tools/body_walk.py",), [f"{REVIEW}/body_walk.json", f"{REVIEW}/*/body_walk.json"]),
     ("Vídeos", ("body_walk_bake",), [f"{REVIEW}/body_walk.blend", f"{REVIEW}/*/body_walk.blend"]),
+    ("Arquivo com os dois", ("body_walk_pair",), [f"{REVIEW}/mulher_e_homem.blend"]),
 )
 
 
@@ -37,16 +38,16 @@ def processes():
     for line in run("docker", "ps", "--no-trunc", "--format", "{{.RunningFor}}\t{{.Command}}").splitlines():
         since, command = line.split("\t", 1)
         found.append((command.strip('"'), since.replace(" ago", "")))
-    for line in run("ps", "-eo", "etimes=,args=").splitlines():
+    for line in run("ps", "-eo", "etimes=,args=").splitlines():  # Windows' Blender doesn't show in WSL's process list: what runs it, blender_run.py, does
         seconds, args = line.strip().split(None, 1)
-        if args.split()[0].lower().endswith("blender.exe"):
-            found.append((args, ago(int(seconds))))
+        if args.split()[0].endswith("python3") and "blender_run.py" in args:
+            found.append((args[args.index("blender_run.py"):], ago(int(seconds))))
     return found
 
 
 def script_of(command):
     """The script a command runs: its arguments name other stages' files, so only this says which stage it is."""
-    return next((t for t in command.split() if t.endswith(".py")), command)
+    return next((t for t in command.split() if t.endswith(".py") and not t.endswith("blender_run.py")), command)
 
 
 def newest(patterns, skip=()):
@@ -78,7 +79,7 @@ def screen(hours):
     out += ["", f"GPU: {gpu()}", "", f"ETAPAS (saídas das últimas {hours:g} h)"]
     for name, words, patterns in STAGES:
         active = next((since for command, since in running if any(w in script_of(command) for w in words)), None)
-        file = newest(patterns, skip=("_walk_review",) if name == "Modelo (Blender)" else ())
+        file = newest(patterns, skip=("_walk_", ) if name == "Modelo (Blender)" else ())
         if active:
             state = f"▶ rodando há {active}"
         elif file and now - os.path.getmtime(file) < hours * 3600:
