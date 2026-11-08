@@ -36,6 +36,7 @@ Rules specific to this repository:
 | [muscle-physics](muscle-physics/muscle-physics.md) | Open — what simulated tissue can do: one muscle, then a thigh in layers on the GPU |
 | [tissue-research](tissue-research/tissue-research.md) | To be planned — measured fat, muscle and tissue data to replace declared values |
 | [xray-view](xray-view/xray-view.md) | To be planned — see through the model, with each layer's opacity set separately |
+| [floor-contact](floor-contact/floor-contact.md) | Research, to be planned — a floor the character really stands on, in three levels |
 | [bugs](bugs/bugs.md) | Backlog |
 | [baseline](baseline/baseline.md) | Planned — not active while the MVP (`MVP-plan.md`) is on hold |
 | [versioning](versioning/versioning.md) | To be planned — one versioning system for the whole workflow |
