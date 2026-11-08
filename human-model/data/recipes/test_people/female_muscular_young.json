@@ -3,7 +3,7 @@
  "sex": "female",
  "macros": {
   "gender": 0.0,
-  "age": 0.25,
+  "age": 0.5,
   "muscle": 0.9,
   "weight": 0.55,
   "height": 0.55,

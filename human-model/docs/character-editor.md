@@ -89,7 +89,7 @@ So a very muscular or very heavy character looks right from outside, but with an
 ## Limits that are on purpose
 
 - **Sliders stop at 0.8 when dragged.** Some targets break above it: `nose-point-down` makes a spike, `head-square` a ridge. Double-click and type a value to go up to 1.
-- **Age stops at 0.5, the adult minimum.** Below it MPFB makes a child's body. A recipe under 0.5 is refused, with the reason. That includes four of the six test people: bug `human-model/8`.
+- **Age stops at 0.5, the adult minimum.** Below it MPFB makes a child's body. A recipe under 0.5 is refused, with the reason.
 - **Genital sliders aren't offered,** and a recipe with them is refused, as you decided.
 - **Sex is male or female.** In-between values are untested in the build.
 
