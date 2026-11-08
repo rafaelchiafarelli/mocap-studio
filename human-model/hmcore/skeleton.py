@@ -11,6 +11,7 @@ TRUNK_MARGIN = {"lateral": 0.018, "front": 0.012, "spinous": 0.012}
 SETTLE_TISSUE = 0.004  # m
 KNEE_TISSUE = 0.003  # declared, as for the patella in data/skin_over_bone_female.json, m
 RIB_TISSUE = 0.002  # declared, the default of data/skin_over_bone_female.json, m
+FOOT_TISSUE = 0.002  # declared, the default of data/skin_over_bone_female.json, m
 LARYNX_TISSUE = 0.003  # declared, as in data/skin_over_bone_female.json, m
 PELVIS_TISSUE = 0.006  # declared: least tissue over the sacrum and the hip bones' crests, as in data/skin_over_bone_female.json, m
 AC_JOINT = 0.003  # declared: the gap between the clavicle's end and the acromion, m
@@ -406,6 +407,15 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
             if not name.endswith(side) or not any(k in name for k in FOOT_PARTS):
                 continue
             put(f"{name[:-1].lower()}_{side}", foot_map(name, v), f, f"toe.{side}" if "Phalanx" in name else f"foot.{side}", "bmf")
+        # The foot's width from the skin too: centred on the talus, the heel and forefoot still came through its sides. Sideways only, and to 70% at most, or the foot loses its shape.
+        foot = [n for n in out if n.endswith(f"_{side}") and n[:-2].startswith(("talus", "calcaneus", "navicular", "cuboid")) or n.endswith(f"_{side}") and any(k in n for k in ("cuneiform", "metatarsal"))]
+        toe = head_tail(ind, f"foot.{side}")[1]
+        along = (toe - ankle) / np.linalg.norm(toe - ankle)
+        sideways = np.cross(along, [0.0, 0.0, 1.0])
+        placed, least = fit.slim_to_skin([out[n]["verts"] for n in foot], ankle, toe, skin, depth, FOOT_TISSUE, start=-10.0, least=0.7, only=sideways / np.linalg.norm(sideways))
+        for n, p in zip(foot, placed):
+            out[n]["verts"] = p.astype(np.float32)
+        anchors["slimmed"][f"foot_{side}"] = round(least, 3)
         # MPFB's knee and ankle are thinner than these bones (bug human-model/20): narrowed where the skin leaves them too little tissue.
         for names, top, bottom, need, key in ((("femur", "patella"), hip, knee, KNEE_TISSUE, "knee"), (("tibia", "fibula"), knee, ankle, SETTLE_TISSUE, "ankle")):
             placed, least = fit.slim_to_skin([out[f"{n}_{side}"]["verts"] for n in names], top, bottom, skin, depth, need)
