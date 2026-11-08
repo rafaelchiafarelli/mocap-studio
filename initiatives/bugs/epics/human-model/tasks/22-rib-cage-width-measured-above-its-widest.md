@@ -1,0 +1,7 @@
+# The rib cage's width is measured above its widest point, so the man's lower ribs come through his sides
+
+- **Symptom:** on the neutral man, before any skin push, ribs 10 and 11 come through the sides of the trunk: rib 10 by 10.9 mm left and 7.1 right, rib 11 by 10.1 and 3.6, rib 9 by 0.9 and 3.9. The woman's ribs stay inside (2.0 mm under the skin at the closest, rib 10).
+- **Where:** `human-model/hmcore/skeleton.py:276`: the cage's half width is the skin's half width at T10's height less 18 mm, but the scaled cage is widest lower down. On the man T10 is at 1.265 m, where the skin's half width is 169 mm, and the cage's widest point, 151 mm, is at 1.182 m, where the skin's is about 146 mm and narrowing (139 at 1.156). His trunk tapers 2.3 cm over those 8 cm; hers, 1.4 cm over 5 cm, which the 18 mm absorbs.
+- **Reproduce:** signed depth of `rib_<n>_<side>` in `models\hm-build\male_2026-11-08_current-code\male.bones.npz` against its skin; the exact test (winding number) agrees. Measured on 2026-11-08.
+- **Impact:** the man's waist would be pushed out by about 1 cm each side by the skin push, softening his V shape, or his ribs show. Also seen: the same cage is scaled 1.01 across, 0.52 front to back and 1.00 in height from the CT, against 0.78, 0.70 and 0.93 on the woman, so it may be flattened; not investigated.
+- **Status:** Open. Needs a choice: measure the width at the cage's widest height, or narrow the lower ribs height by height to the skin.
