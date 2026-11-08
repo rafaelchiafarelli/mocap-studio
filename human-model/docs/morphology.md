@@ -35,13 +35,14 @@ Each bone stays rigid and only scales, so its shape is the measured one. It foll
 | **Pelvis** | Width from the hips' skin, minus a margin. Its sockets become the true hip joints |
 | **Spine** | Height spaced between hips and skull. Depth from the back's skin, so each spinous tip sits 12 mm under it |
 | **Rib cage** | One map for ribs, sternum and cartilage. Width from the skin low on the chest, because arms join the trunk higher up. Depth from sternum to spine |
-| **Scapula, clavicle** | Moved to the rig's shoulder joint; clavicle runs from sternum to shoulder |
+| **Scapula, clavicle** | Moved to the rig's shoulder joint; clavicle runs from the sternum's top, on the midline, to the shoulder |
+| **Settled under the skin** | Scapulae, clavicles and fibulae are then moved rigidly, by the smallest move, until 4 mm of tissue covers them: the scapula turns about its glenoid, the clavicle about its sternal end and back, the fibula about its head. Without it the right scapula came 27 mm through the back, because the CT donor's shoulders weren't level (bug `human-model/12`, fixed). The moves are in `anchors.settled` of `<name>.bones.npz.json` |
 | **Skull** | A box inside the head's skin, with the tilt from the scanner's head rest removed. Solved so the jaw socket lands on the rig's hinge. Then shrunk until it stays under the skin, with the face held in place so the eyes keep their sockets |
 | **Jaw** | From condyles to chin, levelled and centred. The donor's asymmetry is lost |
 | **Foot** | Flat on the floor. BMF's body lay with its feet pointing down, so the sole and toes are turned flat. Length from the skin |
 | **Fingers** | Each onto its rig bone, centred in the finger's skin |
 
-Skin margins, in metres, are at the top of `hmcore/skeleton.py`: `TISSUE` for the head, `TRUNK_MARGIN`, `PELVIS_MARGIN`.
+Skin margins, in metres, are at the top of `hmcore/skeleton.py`: `TISSUE` for the head, `TRUNK_MARGIN`, `PELVIS_MARGIN`, `SETTLE_TISSUE`.
 
 ## CT quirks worth knowing
 

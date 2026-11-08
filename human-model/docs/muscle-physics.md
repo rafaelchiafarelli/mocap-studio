@@ -317,7 +317,7 @@ Epic `inside-out-skin`, task 1. The zero point found bones through the skin at r
 **Result on the neutral woman** (`skin_v4_along-skin-normal`):
 
 - **Every bone pushed for now has its tissue,** except the sacrum, which reaches the skin (0 mm) but no further. It sits in the cleft between the buttocks, where no push along the skin covers it. Bug `human-model/2` says the pelvis sits too far back, so this is likely a bone fault too.
-- **Misplaced, left alone:** the right scapula (needs 31 mm), and, just over the limit, the left clavicle and both fibulae (about 15.2 mm each). A limit of 16 mm would include those three.
+- **Misplaced, left alone:** the right scapula (needs 31 mm), and, just over the limit, the left clavicle and both fibulae (about 15.2 mm each). A limit of 16 mm would include those three. Since fixed by settling those bones under the skin (bug `human-model/12`): see `skin_v5_bones-settled` below.
 - **The figure barely changes:** bust +0.4 cm, under the bust +0.6, waist +0.1, hip +0.1, thigh 0, knee +1.2, ankle +1.0. 636 vertices moved more than 1 mm; at most 15.6 mm, on the neck and buttocks.
 
 **Every run is kept** in `G:\mocap-studio-downloads\review\2026-11-07\`:
@@ -327,7 +327,8 @@ Epic `inside-out-skin`, task 1. The zero point found bones through the skin at r
 | `skin_v1_spread-everywhere_hump-on-scapula` | The push spread over the whole skin, so the bust grew 3.2 cm and the ankle 3.8. The right scapula was pushed 15 mm anyway, growing a hump |
 | `skin_v2_falloff_misplaced-left-alone` | Fixed both. The sacrum stopped at 0 mm |
 | `skin_v3_push-away-from-bone_sacrum-worse` | Pushing away from the bone instead of along the skin: the sacrum came 7 mm out (`skinfit.py:94`) |
-| `skin_v4_along-skin-normal` | **The current one,** the same as v2: `04_skin_fit.blend` and its front and back stills, before and after, painted by how far the skin moved |
+| `skin_v4_along-skin-normal` | The same as v2: `04_skin_fit.blend` and its front and back stills, before and after, painted by how far the skin moved |
+| `skin_v5_bones-settled` | **The current one,** on bones settled under the skin (bug `human-model/12`, fixed; bones in `models/hm-build/female_settled`): nothing left alone, bust and under the bust no longer change, 570 vertices moved over 1 mm. Only the sacrum still short. `05_ombros_*` and `06_tornozelos_*` are point views of the bones before and after (colours differ between the two) |
 
 **Running it:**
 

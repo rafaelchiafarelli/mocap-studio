@@ -6,6 +6,9 @@ from hmcore import bonelib, fit, parametric
 TISSUE = {"top": 0.006, "back": 0.007, "side": 0.006, "chin": 0.010, "front": 0.005}  # skin over bone, m
 PELVIS_MARGIN = 0.022
 TRUNK_MARGIN = {"lateral": 0.018, "front": 0.012, "spinous": 0.012}
+# Bones that lie just under the skin are moved rigidly until this much tissue covers them: the same least depths as
+# data/skin_over_bone_female.json, so the pushed skin has nothing left to do for them.
+SETTLE_TISSUE = 0.004  # m
 VERTEBRAE = ["C1", "C2", "C3", "C4", "C5", "C6", "C7"] + [f"T{i}" for i in range(1, 13)] + ["L1", "L2", "L3", "L4", "L5"]
 SIDE = {"L": "left", "R": "right"}
 FINGER_BONES = {"index": "f_index", "middle": "f_middle", "ring": "f_ring", "little": "f_pinky"}
@@ -253,7 +256,9 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
     put("sternum", trunk_map(sternum_v, "T5"), sternum_f, "hm_sternum", "ct")
     cart_v, cart_f = lib["costal_cartilages"]
     put("costal_cartilages", trunk_map(cart_v, "T5"), cart_f, "hm_sternum", "ct")
-    anchors["sternum_top"] = out["sternum"]["verts"][np.argmax(out["sternum"]["verts"][:, 2])]
+    # The highest point of the manubrium lies off the midline in the CT, so the clavicles' sternal ends came out 22 mm apart in x: on the midline instead
+    st = out["sternum"]["verts"]
+    anchors["sternum_top"] = np.array([(st[:, 0].min() + st[:, 0].max()) / 2, *st[np.argmax(st[:, 2]), 1:]])
 
     # Pelvis: its width comes from the hips' skin, so the sockets become the true hip joints and the rig's are moved to them.
     both_hips = np.vstack([lib["hip_left"][0], lib["hip_right"][0]])
@@ -283,6 +288,7 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
         g = trunk_map(glenoid[None], "T3")[0]
         placed = placed + (shoulder - g) + np.array([-sign * 0.012, 0.0, 0.0])
         put(f"scapula_{side}", placed, scap_f, f"shoulder.{side}", "ct")
+        anchors[f"glenoid_{side}"] = shoulder + np.array([-sign * 0.012, 0.0, 0.0])
         ua_h, ua_t = head_tail(ind, f"upper_arm.{side}")
         fa_h, fa_t = head_tail(ind, f"forearm.{side}")
         hinge = np.cross(ua_t - ua_h, fa_t - fa_h)
@@ -299,6 +305,7 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
         target_m = anchors["sternum_top"] + np.array([sign * 0.022, 0.0, 0.0])
         target_l = shoulder + np.array([-sign * 0.018, -0.002, 0.022])
         put(f"clavicle_{side}", fit.similarity(clav_v, c_ends[0], c_ends[1], target_m, target_l), clav_f, f"shoulder.{side}", "ct")
+        anchors[f"clavicle_medial_{side}"], anchors[f"clavicle_lateral_{side}"] = target_m, target_l
 
     # Legs and feet: BMF, joint to joint.
     for side in ("L", "R"):
@@ -318,6 +325,8 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
             if not name.endswith(side) or not any(k in name for k in FOOT_PARTS):
                 continue
             put(f"{name[:-1].lower()}_{side}", foot_map(name, v), f, f"toe.{side}" if "Phalanx" in name else f"foot.{side}", "bmf")
+        fib = out[f"fibula_{side}"]["verts"]
+        anchors[f"fibula_head_{side}"] = fib[fib[:, 2] > np.quantile(fib[:, 2], 0.97)].mean(axis=0)
 
     # Forearm and hand: Rajagopal.
     for side, (arm, elbow, wrist) in (("R", arm_r), ("L", arm_l)):
@@ -351,7 +360,32 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
                 put(f"{stem}_{side}", fit.segment_fit(placed, near, far, h + shift, t + shift, radial_power=1.0), f, rig_bone, "rajagopal")
             else:
                 put(f"{stem}_{side}", placed, f, f"hand.{side}", "rajagopal")
+    anchors["settled"] = settle_superficial(out, anchors, fit.SkinDepth(skin, ind["tris"]))
     return out, anchors
+
+
+def settle_superficial(out, anchors, depth_of):
+    """Moves the scapulae, clavicles and fibulae until SETTLE_TISSUE covers them (bug human-model/12): the scapula turns about the
+    glenoid, the fibula about its head, the clavicle about its sternal end and back. Placed whole from the CT, the right scapula came
+    27 mm through the back and the left 15, because the scanned person's shoulders weren't level; the fibulae came 15 mm out behind
+    MPFB's slim ankle, and the clavicles' sternal ends lie as far forward as the sternum, which is under 1 mm deep.
+    Returns {bone: {"moves": amounts (degrees, or mm for a shift), "short_before_mm", "short_after_mm"}}."""
+    from scipy.spatial import cKDTree
+    ribs = cKDTree(np.vstack([b["verts"] for n, b in out.items() if n.startswith(("rib_", "sternum", "costal"))]))
+    report = {}
+    for side in ("L", "R"):
+        medial, lateral = anchors[f"clavicle_medial_{side}"], anchors[f"clavicle_lateral_{side}"]
+        jobs = [
+            (f"scapula_{side}", anchors[f"glenoid_{side}"], [("turn", [0, 0, 1], 24.0), ("turn", [1, 0, 0], 24.0), ("turn", [0, 1, 0], 24.0)], ribs),
+            (f"clavicle_{side}", medial, [("turn", lateral - medial, 30.0), ("turn", [0, 0, 1], 10.0), ("shift", [0, 1, 0], 0.016)], ribs),
+            (f"fibula_{side}", anchors[f"fibula_head_{side}"], [("turn", [1, 0, 0], 8.0), ("turn", [0, 1, 0], 8.0)], cKDTree(out[f"tibia_{side}"]["verts"])),
+        ]
+        for name, pivot, moves, avoid in jobs:
+            move, before, after, amounts = fit.settle(out[name]["verts"], pivot, depth_of, SETTLE_TISSUE, moves, avoid=avoid)
+            out[name]["verts"] = move(out[name]["verts"]).astype(np.float32)
+            report[name] = {"moves": [round(float(a) * (1000 if m[0] == "shift" else 1), 1) for m, a in zip(moves, amounts)],
+                            "short_before_mm": round(before * 1000, 1), "short_after_mm": round(after * 1000, 1)}
+    return report
 
 
 def containment(bones, ind, sample=1500, seed=0):

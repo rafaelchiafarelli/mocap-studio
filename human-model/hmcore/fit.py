@@ -102,3 +102,89 @@ def ring_centre(skin, head, tail, radius):
     r = np.linalg.norm(p - np.outer(t, axis), axis=1)
     m = (t > 0.15 * length) & (t < 0.85 * length) & (r < radius)
     return skin[m].mean(axis=0) if m.sum() >= 8 else None
+
+
+class SkinDepth:
+    """Signed depth of points under the skin on the CPU, fast enough to try thousands of placements: positive inside, negative outside.
+    The skin is sampled about every spacing metres over its triangles; a point's depth is its distance to the nearest sample, signed by
+    that sample's triangle normal, turned outward from the mesh's signed volume. Off by up to about half the spacing."""
+
+    def __init__(self, verts, tris, spacing=0.0015):
+        from scipy.spatial import cKDTree
+        verts = np.asarray(verts, float)
+        a, b, c = verts[tris[:, 0]], verts[tris[:, 1]], verts[tris[:, 2]]
+        normal = np.cross(b - a, c - a)
+        flat = np.linalg.norm(normal, axis=1) < 1e-12  # no normal to sign by
+        a, b, c, normal = a[~flat], b[~flat], c[~flat], normal[~flat]
+        if np.einsum("ij,ij->i", a, normal).sum() < 0:  # six times the signed volume: negative means the normals face in
+            normal = -normal
+        normal /= np.maximum(np.linalg.norm(normal, axis=1, keepdims=True), 1e-12)
+        edge = np.max([np.linalg.norm(b - a, axis=1), np.linalg.norm(c - b, axis=1), np.linalg.norm(a - c, axis=1)], axis=0)
+        steps = np.maximum(1, np.ceil(edge / spacing)).astype(int)
+        pts, nrm = [], []
+        for n in np.unique(steps):
+            i, j = np.mgrid[0:n + 1, 0:n + 1]
+            keep = i + j <= n
+            u, v = i[keep] / n, j[keep] / n
+            m = steps == n
+            pts.append((a[m, None] * (1 - u - v)[None, :, None] + b[m, None] * u[None, :, None] + c[m, None] * v[None, :, None]).reshape(-1, 3))
+            nrm.append(np.repeat(normal[m], len(u), axis=0))
+        self.points, self.normals = np.vstack(pts), np.vstack(nrm)
+        self.tree = cKDTree(self.points)
+
+    def __call__(self, points):
+        points = np.asarray(points, float)
+        dist, k = self.tree.query(points)
+        outward = np.einsum("ij,ij->i", points - self.points[k], self.normals[k]) > 0
+        return np.where(outward, -dist, dist)
+
+
+def axis_rotation(axis, angle):
+    """Rotation by angle (radians) about a unit axis."""
+    x, y, z = np.asarray(axis, float) / np.linalg.norm(axis)
+    k = np.array([[0, -z, y], [z, 0, -x], [-y, x, 0]])
+    return np.eye(3) + np.sin(angle) * k + (1 - np.cos(angle)) * k @ k
+
+
+def settle(verts, pivot, depth_of, need, moves, avoid=None, clearance=0.003, steps=9, sample=400, seed=0):
+    """The smallest rigid move of a bone that leaves at least need metres of tissue over all of it, or as near as it gets.
+    moves lists what the bone may do, each ("turn", axis, most degrees) about pivot or ("shift", direction, most metres). Every
+    combination on a grid of steps values per move is tried, then a finer grid around the best; among moves that leave the same
+    shortfall (to half a millimetre) the smallest wins, each move counted as a fraction of its most. avoid is a cKDTree of neighbouring
+    bones' points: no point may come closer to them than clearance, or than it already was if that's less.
+    Returns (move as a function of points, worst shortfall before, after in metres, the chosen amounts)."""
+    v = np.asarray(verts, float)
+    v = v[np.random.default_rng(seed).choice(len(v), min(sample, len(v)), replace=False)]
+    floor = None if avoid is None else np.minimum(avoid.query(v)[0], clearance)
+    most = np.array([m[2] for m in moves], float)
+
+    def apply(amounts, p):
+        p = np.asarray(p, float)
+        for (kind, d, _), a in zip(moves, amounts):
+            if kind == "turn":
+                p = (p - pivot) @ axis_rotation(d, np.radians(a)).T + pivot
+            else:
+                p = p + np.asarray(d, float) / np.linalg.norm(d) * a
+        return p
+
+    def shortfall(amounts):
+        p = apply(amounts, v)
+        short = need - depth_of(p)
+        if floor is not None:
+            short = np.maximum(short, floor - avoid.query(p)[0])
+        return max(float(short.max()), 0.0)
+
+    def search(centre, half):
+        axes = [np.linspace(-h, h, steps) for h in half]
+        best = None
+        for a in np.stack(np.meshgrid(*axes, indexing="ij"), -1).reshape(-1, len(moves)) + centre:
+            if (np.abs(a) > most + 1e-9).any():
+                continue
+            key = (round(shortfall(a) / 0.0005), float(np.linalg.norm(a / most)))
+            if best is None or key < best[0]:
+                best = (key, a)
+        return best[1]
+
+    coarse = search(np.zeros(len(moves)), most)
+    fine = search(coarse, most / (steps - 1))
+    return (lambda p: apply(fine, p)), shortfall(np.zeros(len(moves))), shortfall(fine), fine
