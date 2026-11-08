@@ -16,6 +16,14 @@
 - A material can already be made see-through (`human-model/blender/hmblender.py:35`, its `alpha`), and the thigh view uses it for the skin (`human-model/blender/thigh_view.py:21`).
 - The walk's videos show the inside only as a fixed section, the back half with the bones (`walk_inside` in `human-model/blender/body_walk_bake.py`).
 
+## A cutting plane to move
+
+Rafael (2026-11-08) wants to move the cut in Blender, instead of generating the inside view apart. Part of this same tool.
+
+Today the section is fixed when the walk is simulated: the back half of the body, split at the middle of its depth (`human-model/tools/body_walk.py`, search `cut_faces`), and only that half's surfaces are kept. Moving it means simulating again.
+
+What it would take: each layer kept as a whole closed surface, and a plane to drag, also during the walk, that fills the cut with each layer's colour. Blender's view clipping (Alt+B) moves in real time but leaves the pieces hollow, and a boolean per layer may be too heavy on a walk stored frame by frame.
+
 ## What Blender is known to offer (to be checked on our version, 5.2.2)
 
 - The viewport's X-Ray, a single value for the whole view rather than per layer.
