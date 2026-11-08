@@ -35,7 +35,8 @@
 - `tape_check.py`: measures people with the editor's tape, optionally with stills of its lines.
 - `measure_sweep.py`: how far each slider moves each tape measure.
 - `walk_clearance.py`: skin against bones while walking.
-- `walk.py`: keys the walking cycle and solves the root from the stance foot.
+- `walk.py`: keys the walking cycle: the pelvis's tilt off the hip angle, toes rolling at push-off, the root from a soft contact, and each stance foot planted by correcting its leg.
+- `walk_check.py`: a walk file's root steps, the planted foot's slide and its height against the floor.
 - `muscle_sphere.py`: a liquid-filled sphere lifting a box, on our own solver: [docs/muscle-physics.md](../docs/muscle-physics.md).
 - `muscle_sphere_cloth.py`: the same on Blender's Cloth, kept as the record of its limits. `muscle_sphere.py` imports its mesh helpers.
 - `muscle_render.py`: renders either one to PNGs.
@@ -53,6 +54,7 @@
 - MakeHuman's body vertices come first and helpers after, so the first 13,380 indices mean the same on every MPFB character: `export_blend.py:8`.
 
 - A changed control property reaches its drivers only after `update_tag` and a frame change: `breath_check.py:12`.
+- The gait data's hip angle is measured against a pelvis tilted about 10° forward; `walk.py` takes `PelvisAngleZ` off it, since the rig's rest pelvis is level. Without it the walk jumped at every step: `walk.py`, search `PelvisAngleZ`.
 - Joint limits are stored as the `hm_limit_deg` bone property, not as Blender constraints: `assemble.py`, search `hm_limit_deg`.
 - Muscles have their own armature: on the main rig, a bone following a skin vertex would be a dependency cycle: `hmmuscles.py:1`.
 - Nothing depends on the muscle bodies: skin moves through shape keys and bones. See `retire_trial.py`.
