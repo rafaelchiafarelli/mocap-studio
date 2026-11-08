@@ -1,7 +1,7 @@
 """The bone library of one sex, in the model's frame, before fitting to an individual: CT labels for the trunk, skull and upper arm; BMF for the legs and feet; Rajagopal for forearm and hand."""
 import os
 import numpy as np
-from hmcore import ctbones, sources
+from hmcore import ctbones, fit, sources
 
 ROOT = "/mnt/g/mocap-studio-downloads/models"
 TS = f"{ROOT}/totalsegmentator-ct-v2.0.1"
@@ -55,7 +55,8 @@ def bmf_library():
     bones = sources.bmf_bones(BMF)
     out, anchors = {}, {}
     for name, b in bones.items():
-        out[name] = (sources.bmf_to_model(b["verts"]).astype(np.float32), b["faces"].astype(np.int32))
+        v = sources.bmf_to_model(b["verts"])
+        out[name] = (v.astype(np.float32), fit.outward(v, b["faces"]).astype(np.int32))  # BMF's left leg comes wound inward (bug human-model/11)
     for side, long in (("L", "left"), ("R", "right")):
         pelvis = sources.bmf_to_model(bones[f"Pelvis{side}"]["verts"])
         femur = sources.bmf_to_model(bones[f"Femur{side}"]["verts"])

@@ -4,7 +4,7 @@ The head, hands and feet are cut off at the neck, wrists and ankles. Point queri
 import numpy as np
 from scipy import ndimage
 from scipy.spatial import ConvexHull
-from . import layers
+from . import fit, layers
 
 BONE, MUSCLE, FAT, SKIN, CAVITY = 0, 1, 2, 3, 4
 LABELS = ("bone", "muscle", "fat", "skin", "cavity")
@@ -145,11 +145,9 @@ def island_cleanup(grid_labels, label, into, min_voxels):
 
 
 def outward(verts, tris):
-    """The triangles wound so the mesh's volume is positive. The left leg's bones come mirrored and inside out (bug human-model/11),
-    which turns their winding number to -1, so inside-or-outside called them outside: body_v2 had no left femur."""
-    t = verts[tris]
-    volume = np.einsum("ij,ij->i", t[:, 0], np.cross(t[:, 1], t[:, 2])).sum()
-    return tris if volume >= 0 else tris[:, [0, 2, 1]]
+    """fit.outward. Builds made before bug human-model/11 was fixed have the left leg's bones inside out, and a winding number of -1
+    called them outside (body_v2 had no left femur), so every bone is still turned outward before use."""
+    return fit.outward(verts, tris)
 
 
 def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh):

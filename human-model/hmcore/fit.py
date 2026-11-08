@@ -51,6 +51,13 @@ def box_map(verts, box_min, box_max, target_min, target_max):
     return (np.asarray(verts, float) - box_min) * (target_max - target_min) / (box_max - box_min) + target_min
 
 
+def outward(verts, tris):
+    """The triangles wound so the mesh's volume is positive, so its normals face out and its winding number is +1 inside."""
+    t = np.asarray(verts, float)[tris]
+    volume = np.einsum("ij,ij->i", t[:, 0], np.cross(t[:, 1], t[:, 2])).sum()
+    return tris if volume >= 0 else tris[:, [0, 2, 1]]
+
+
 def triangles(starts, sizes, loops):
     """Polygons to triangles, as fans."""
     out = []
