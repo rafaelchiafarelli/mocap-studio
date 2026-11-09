@@ -1,0 +1,656 @@
+<mxfile host="mocap-studio">
+  <diagram id="p0" name="A · Preparar o corpo">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1210" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c1" value="&lt;b style='font-size:18px'&gt;A · Preparar o corpo&lt;/b&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="14" width="1110" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="&lt;font color='#555555'&gt;Etapas 1 a 6. Os números são do homem.&lt;/font&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="46" width="1110" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="110" as="sourcePoint" />
+            <mxPoint x="290" y="774" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c4" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="110" as="sourcePoint" />
+            <mxPoint x="630" y="774" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c5" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="970" y="110" as="sourcePoint" />
+            <mxPoint x="970" y="774" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c6" value="&lt;b&gt;Arquivos (disco G:)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="180" y="72" width="220" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c7" value="&lt;b&gt;Simulador (processador)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="520" y="72" width="220" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c8" value="&lt;b&gt;GPU&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="860" y="72" width="220" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c9" value="pede as camadas, os ossos, a caminhada e os valores de tecido" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="118" width="316" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c10" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#6c8ebf;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="161" as="sourcePoint" />
+            <mxPoint x="290" y="161" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c11" value="&lt;b&gt;1&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="144" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c12" value="devolve a malha (pontos, tetraedros e o tecido de cada um), a forma dos ossos e a pose de cada osso em cada quadro" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="180" width="316" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="c13" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#6c8ebf;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="239" as="sourcePoint" />
+            <mxPoint x="630" y="239" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c14" value="Separa os tetraedros abaixo de uma altura-limite e fica com o maior pedaço conectado. Hoje o limite é 10 m acima do quadril: entra o corpo inteiro." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="480" y="258" width="300" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="c15" value="&lt;b&gt;2&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="282.0" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c16" value="Para cada ponto, acha o osso mais próximo e anota: é a sua referência. Ponto preso: qual osso seguir. Ponto de tecido: de qual osso medir o amortecimento." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="480" y="352" width="300" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="c17" value="&lt;b&gt;3&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="376.0" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c18" value="Separa a pele e acha as 5 bordas em que ela foi cortada: pescoço, 2 pulsos e 2 tornozelos." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="480" y="446" width="300" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="c19" value="&lt;b&gt;4&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="454.0" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c20" value="Define os pontos presos: os que são osso e os que ficam além das bordas de corte. São 65 mil dos 558 mil." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="480" y="508" width="300" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="c21" value="&lt;b&gt;5&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="524.0" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c22" value="Dá a cada tetraedro a rigidez e a densidade do seu tecido e divide todos em 48 grupos. Dentro de um grupo nenhum tetraedro compartilha ponto, então a GPU trata o grupo inteiro de uma vez." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="480" y="586" width="300" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="c23" value="&lt;b&gt;6&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="618.0" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c24" value="envia pontos, tetraedros, massas e rigidez; os pontos presos recebem massa infinita: só o osso os move" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="642" y="696" width="316" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="c25" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#6c8ebf;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="755" as="sourcePoint" />
+            <mxPoint x="970" y="755" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c26" value="Produz o resultado" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="86" y="788" width="170" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="c27" value="Só mede: não muda o movimento" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="266" y="788" width="230" height="26" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="p1" name="B · Chegar à primeira pose">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1210" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c1" value="&lt;b style='font-size:18px'&gt;B · Chegar à primeira pose&lt;/b&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="14" width="1110" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="&lt;font color='#555555'&gt;Etapas 7 a 9. Serve para o tecido não levar um tranco no início da caminhada.&lt;/font&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="46" width="1110" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="110" as="sourcePoint" />
+            <mxPoint x="290" y="686" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c4" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="110" as="sourcePoint" />
+            <mxPoint x="630" y="686" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c5" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="970" y="110" as="sourcePoint" />
+            <mxPoint x="970" y="686" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c6" value="&lt;b&gt;Medições (memória)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="180" y="72" width="220" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c7" value="&lt;b&gt;Simulador (processador)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="520" y="72" width="220" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c8" value="&lt;b&gt;GPU&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="860" y="72" width="220" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c9" value="&lt;b&gt;↻ 12 quadros · 0,5 s&lt;/b&gt;" style="rounded=1;arcSize=1;whiteSpace=wrap;html=1;fontSize=11;align=left;verticalAlign=top;spacingLeft=6;fillColor=none;strokeColor=#888888;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="86" y="294" width="1084" height="128" as="geometry" />
+        </mxCell>
+        <mxCell id="c10" value="&lt;b&gt;8&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="294" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c11" value="&lt;b&gt;↻ 24 quadros · 1 s&lt;/b&gt;" style="rounded=1;arcSize=1;whiteSpace=wrap;html=1;fontSize=11;align=left;verticalAlign=top;spacingLeft=6;fillColor=none;strokeColor=#888888;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="86" y="118" width="1084" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="c12" value="&lt;b&gt;7&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="118" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c13" value="pose de cada osso, um pouco mais perto da primeira pose da caminhada" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="642" y="152" width="316" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c14" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#6c8ebf;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="195" as="sourcePoint" />
+            <mxPoint x="970" y="195" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c15" value="Calcula o tecido: 160 passos (página C · etapa 11)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="820" y="214" width="300" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="c16" value="a primeira pose da caminhada, parada" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="642" y="328" width="316" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="c17" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#6c8ebf;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="355" as="sourcePoint" />
+            <mxPoint x="970" y="355" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c18" value="Calcula o tecido: 160 passos" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="820" y="374" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c19" value="Escolhe, em cada osso, os pontos a testar, sem os que estão perto dos cortes." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="480" y="438" width="300" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="c20" value="&lt;b&gt;9&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="446.0" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c21" value="devolve a posição dos pontos já assentados" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="642" y="500" width="316" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="c22" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="970" y="527" as="sourcePoint" />
+            <mxPoint x="630" y="527" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c23" value="guarda o volume de cada tecido nesta pose: é a referência das medições" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="546" width="316" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c24" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="589" as="sourcePoint" />
+            <mxPoint x="290" y="589" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c25" value="Separa a metade de trás do corpo e as superfícies dela, por tecido: é o corte que aparece no Blender." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="480" y="608" width="300" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="c26" value="Produz o resultado" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="86" y="700" width="170" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="c27" value="Só mede: não muda o movimento" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="266" y="700" width="230" height="26" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="p2" name="C · Caminhar, quadro a quadro">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1210" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c1" value="&lt;b style='font-size:18px'&gt;C · Caminhar, quadro a quadro&lt;/b&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="14" width="1110" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="&lt;font color='#555555'&gt;Etapas 10 a 16.&lt;/font&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="46" width="1110" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="110" as="sourcePoint" />
+            <mxPoint x="290" y="892" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c4" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="110" as="sourcePoint" />
+            <mxPoint x="630" y="892" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c5" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="970" y="110" as="sourcePoint" />
+            <mxPoint x="970" y="892" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c6" value="&lt;b&gt;Simulador (processador)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="180" y="72" width="220" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c7" value="&lt;b&gt;GPU&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="520" y="72" width="220" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c8" value="&lt;b&gt;Resultado (memória)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="860" y="72" width="220" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c9" value="&lt;b&gt;↻ 168 quadros · 144 andando + 24 parado no fim&lt;/b&gt;" style="rounded=1;arcSize=1;whiteSpace=wrap;html=1;fontSize=11;align=left;verticalAlign=top;spacingLeft=6;fillColor=none;strokeColor=#888888;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="86" y="118" width="1084" height="728" as="geometry" />
+        </mxCell>
+        <mxCell id="c10" value="&lt;b&gt;↻ só nos 144 quadros andando&lt;/b&gt;" style="rounded=1;arcSize=1;whiteSpace=wrap;html=1;fontSize=11;align=left;verticalAlign=top;spacingLeft=6;fillColor=none;strokeColor=#888888;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="684" width="1056" height="98" as="geometry" />
+        </mxCell>
+        <mxCell id="c11" value="&lt;b&gt;15&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="684" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c12" value="&lt;b&gt;↻ a cada 10 quadros e no último (ajustável)&lt;/b&gt;" style="rounded=1;arcSize=1;whiteSpace=wrap;html=1;fontSize=11;align=left;verticalAlign=top;spacingLeft=6;fillColor=none;strokeColor=#888888;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="446" width="1056" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="c13" value="pose de cada osso no início e no fim deste quadro" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="152" width="316" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="c14" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#6c8ebf;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="179" as="sourcePoint" />
+            <mxPoint x="630" y="179" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c15" value="&lt;b&gt;10&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="162" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c16" value="Calcula o tecido: 160 passos (página C · etapa 11)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="480" y="198" width="300" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="c17" value="&lt;b&gt;11&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="206.0" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c18" value="devolve a posição de todos os pontos" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="260" width="316" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="c19" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#6c8ebf;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="287" as="sourcePoint" />
+            <mxPoint x="290" y="287" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c20" value="Recoloca a pele: cada ponto de pele está amarrado a um tetraedro e acompanha os 4 pontos dele." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="140" y="306" width="300" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="c21" value="&lt;b&gt;12&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="322.0" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c22" value="Mede o movimento da pele em relação ao modelo atual e conta os tetraedros invertidos." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="140" y="384" width="300" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="c23" value="&lt;b&gt;13&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="392.0" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c24" value="devolve as posições de novo, uma vez para cada tecido" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="480" width="316" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c25" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="523" as="sourcePoint" />
+            <mxPoint x="290" y="523" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c26" value="Soma o volume de cada tecido em todos os tetraedros." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="140" y="542" width="300" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="c27" value="procura osso atravessando a pele deste quadro (página C · etapa 14)" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="622" width="316" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c28" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="665" as="sourcePoint" />
+            <mxPoint x="630" y="665" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c29" value="&lt;b&gt;14&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="648" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c30" value="faz a mesma procura na pele do modelo atual, só para comparar" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="718" width="316" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c31" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="761" as="sourcePoint" />
+            <mxPoint x="630" y="761" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c32" value="guarda a pele e os pontos da metade em corte" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="798" width="656" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="c33" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#6c8ebf;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="825" as="sourcePoint" />
+            <mxPoint x="970" y="825" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c34" value="&lt;b&gt;16&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="808" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c35" value="&lt;i&gt;Na prática os volumes são medidos logo depois da etapa 14; a ordem não altera nada.&lt;/i&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="86" y="862" width="1064" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="c36" value="Produz o resultado" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="86" y="906" width="170" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="c37" value="Só mede: não muda o movimento" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="266" y="906" width="230" height="26" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="p3" name="C · etapa 11 · o cálculo do tecido">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1550" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c1" value="&lt;b style='font-size:18px'&gt;C · etapa 11 · o cálculo do tecido&lt;/b&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="14" width="1450" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="&lt;font color='#555555'&gt;Tudo aqui acontece dentro da GPU. Cada passo vale 0,26 ms de tempo simulado (1/24 s ÷ 160).&lt;/font&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="46" width="1450" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="110" as="sourcePoint" />
+            <mxPoint x="290" y="700" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c4" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="110" as="sourcePoint" />
+            <mxPoint x="630" y="700" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c5" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="970" y="110" as="sourcePoint" />
+            <mxPoint x="970" y="700" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c6" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1310" y="110" as="sourcePoint" />
+            <mxPoint x="1310" y="700" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c7" value="&lt;b&gt;Ossos&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="180" y="72" width="220" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c8" value="&lt;b&gt;Pontos presos&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="520" y="72" width="220" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c9" value="&lt;b&gt;Pontos de tecido&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="860" y="72" width="220" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c10" value="&lt;b&gt;Tetraedros (48 grupos)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="72" width="220" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c11" value="&lt;b&gt;↻ 160 passos por quadro&lt;/b&gt;" style="rounded=1;arcSize=1;whiteSpace=wrap;html=1;fontSize=11;align=left;verticalAlign=top;spacingLeft=6;fillColor=none;strokeColor=#888888;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="86" y="118" width="1424" height="506" as="geometry" />
+        </mxCell>
+        <mxCell id="c12" value="&lt;b&gt;11&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="118" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c13" value="&lt;b&gt;↻ 48 grupos, um de cada vez&lt;/b&gt;" style="rounded=1;arcSize=1;whiteSpace=wrap;html=1;fontSize=11;align=left;verticalAlign=top;spacingLeft=6;fillColor=none;strokeColor=#888888;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="276" width="1396" height="222" as="geometry" />
+        </mxCell>
+        <mxCell id="c14" value="põe cada ponto preso onde o osso está neste instante do quadro" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="152" width="316" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c15" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#6c8ebf;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="195" as="sourcePoint" />
+            <mxPoint x="630" y="195" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c16" value="Soma a gravidade à velocidade, anda, e guarda onde estava." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="820" y="214" width="300" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="c17" value="corrige seus pontos para recuperar a forma, conforme a rigidez do tecido" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="982" y="310" width="316" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c18" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#6c8ebf;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1310" y="353" as="sourcePoint" />
+            <mxPoint x="970" y="353" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c19" value="corrige de novo para recuperar o volume" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="982" y="372" width="316" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="c20" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#6c8ebf;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1310" y="399" as="sourcePoint" />
+            <mxPoint x="970" y="399" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c21" value="Não saem do lugar: a correção só desloca os pontos livres. É assim que o osso empurra o tecido." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="480" y="418" width="300" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="c22" value="informa quanto o osso de referência de cada ponto andou" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="514" width="656" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="c23" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#6c8ebf;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="541" as="sourcePoint" />
+            <mxPoint x="970" y="541" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c24" value="Calcula a nova velocidade e amortece só a diferença para o movimento do osso." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="820" y="560" width="300" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="c25" value="&lt;i&gt;Nenhum passo verifica colisão: o que mantém o osso sob a pele é só a malha de tecido entre eles.&lt;/i&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="86" y="640" width="1404" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="c26" value="&lt;i&gt;Existe um passo de chão, mas nesta simulação ele não atua: os pés não são simulados.&lt;/i&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="86" y="670" width="1404" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="c27" value="Produz o resultado" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="86" y="714" width="170" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="c28" value="Só mede: não muda o movimento" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="266" y="714" width="230" height="26" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="p4" name="C · etapa 14 · osso atravessando a pele">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="870" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c1" value="&lt;b style='font-size:18px'&gt;C · etapa 14 · osso atravessando a pele&lt;/b&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="14" width="770" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="&lt;font color='#555555'&gt;Só mede: nada daqui volta para o cálculo do movimento.&lt;/font&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="46" width="770" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="110" as="sourcePoint" />
+            <mxPoint x="290" y="622" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c4" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="110" as="sourcePoint" />
+            <mxPoint x="630" y="622" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c5" value="&lt;b&gt;Simulador (processador)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="180" y="72" width="220" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c6" value="&lt;b&gt;GPU&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="520" y="72" width="220" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c7" value="&lt;b&gt;↻ cada um dos 82 ossos&lt;/b&gt;" style="rounded=1;arcSize=1;whiteSpace=wrap;html=1;fontSize=11;align=left;verticalAlign=top;spacingLeft=6;fillColor=none;strokeColor=#888888;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="86" y="226" width="744" height="350" as="geometry" />
+        </mxCell>
+        <mxCell id="c8" value="&lt;b&gt;↻ só se algum ponto ficou fora&lt;/b&gt;" style="rounded=1;arcSize=1;whiteSpace=wrap;html=1;fontSize=11;align=left;verticalAlign=top;spacingLeft=6;fillColor=none;strokeColor=#888888;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="414" width="716" height="144" as="geometry" />
+        </mxCell>
+        <mxCell id="c9" value="envia a pele deste quadro, fechada com tampas nos cortes, e monta a primeira busca" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="118" width="316" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c10" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="161" as="sourcePoint" />
+            <mxPoint x="630" y="161" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c11" value="&lt;b&gt;14&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="144" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c12" value="envia a pele aberta e monta a segunda busca" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="180" width="316" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="c13" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="207" as="sourcePoint" />
+            <mxPoint x="630" y="207" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c14" value="Leva os pontos do osso para a pose deste quadro." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="140" y="260" width="300" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="c15" value="estes pontos estão dentro da pele?" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="322" width="316" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="c16" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="349" as="sourcePoint" />
+            <mxPoint x="630" y="349" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c17" value="dentro ou fora, ponto a ponto" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="368" width="316" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="c18" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="395" as="sourcePoint" />
+            <mxPoint x="290" y="395" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c19" value="a que distância estão da superfície?" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="448" width="316" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="c20" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="475" as="sourcePoint" />
+            <mxPoint x="630" y="475" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c21" value="distância: vira pontos e profundidade no relatório" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="494" width="316" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c22" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="537" as="sourcePoint" />
+            <mxPoint x="290" y="537" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c23" value="&lt;i&gt;A etapa 15 repete tudo isto na pele do modelo atual, nos 144 quadros andando.&lt;/i&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="86" y="592" width="724" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="c24" value="Produz o resultado" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="86" y="636" width="170" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="c25" value="Só mede: não muda o movimento" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="266" y="636" width="230" height="26" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="p5" name="D · Entregar">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="870" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="c1" value="&lt;b style='font-size:18px'&gt;D · Entregar&lt;/b&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="14" width="770" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="&lt;font color='#555555'&gt;Etapas 17 e 18. O arquivo do Blender é feito depois, fora da simulação.&lt;/font&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="46" width="770" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="110" as="sourcePoint" />
+            <mxPoint x="290" y="318" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c4" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="630" y="110" as="sourcePoint" />
+            <mxPoint x="630" y="318" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c5" value="&lt;b&gt;Simulador (processador)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="180" y="72" width="220" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c6" value="&lt;b&gt;Arquivos (disco G:)&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="520" y="72" width="220" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c7" value="Junta as medições de todos os quadros em um resumo da rodada." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="140" y="118" width="300" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="c8" value="&lt;b&gt;17&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="126.0" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c9" value="grava o movimento, quadro a quadro, comprimido: 270 MB no homem" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="180" width="316" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="c10" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#6c8ebf;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="223" as="sourcePoint" />
+            <mxPoint x="630" y="223" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c11" value="&lt;b&gt;18&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="40" y="206" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c12" value="grava a tabela por quadro e o resumo" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="302" y="242" width="316" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="c13" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="269" as="sourcePoint" />
+            <mxPoint x="630" y="269" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c14" value="&lt;i&gt;A compressão usa um único núcleo do processador.&lt;/i&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="86" y="288" width="724" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="c15" value="Produz o resultado" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="86" y="332" width="170" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="c16" value="Só mede: não muda o movimento" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="266" y="332" width="230" height="26" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

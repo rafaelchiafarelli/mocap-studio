@@ -1,5 +1,5 @@
 {
- "_about": "Tissue values for the body's walking simulations (tools/lower_body_walk.py). Muscle, fat and skin are Rafael's rafa8 values from the thigh; the cavity (organs) is declared by eye. Edit to change; a run can override one as NAME=value. Units: Pa, kg/m3, 1/s, steps per frame.",
+ "_about": "Tissue values for the body's walking simulations (tools/body_walk.py). Muscle, fat and skin are Rafael's rafa8 values from the thigh; the cavity (organs) is declared by eye. Edit to change; a run can override one as NAME=value. Units: Pa, kg/m3, 1/s, steps per frame.",
  "_source": "rafa8 (2026-11-07) for SUBSTEPS to POISSON; CAVITY_* declared 2026-11-07",
  "SUBSTEPS": 160,
  "DAMPING": 20.0,

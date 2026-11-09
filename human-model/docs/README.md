@@ -14,6 +14,7 @@ A full-body male and female model built in layers from bones to skin, with no sc
 | Understand the bones, jaw, ribs and walking | [skeleton.md](skeleton.md) |
 | Understand the muscles | [muscles.md](muscles.md) |
 | See what a simulated muscle can do, and a thigh built from the inside out (experiments) | [muscle-physics.md](muscle-physics.md) |
+| See the walking simulation's stages, drawn (open in draw.io, in Portuguese) | [diagrams/](diagrams/) |
 | Understand how the skin moves | [skin.md](skin.md) |
 | Connect recordings to the model | [drive.md](drive.md) |
 | See what works, what doesn't, what's next | [status.md](status.md) |
