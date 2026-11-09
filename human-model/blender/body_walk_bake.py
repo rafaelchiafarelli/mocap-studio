@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(sys.argv[sys.argv.index("--py
 import hmblender as hb
 
 COLORS = {"bone": (0.9, 0.86, 0.75), "muscle": (0.6, 0.12, 0.1), "fat": (0.95, 0.8, 0.35), "skin": (0.85, 0.65, 0.55),
-          "cavity": (0.45, 0.55, 0.8), "current": (0.55, 0.65, 0.85)}
+          "cavity": (0.45, 0.55, 0.8), "fat_deep": (0.85, 0.65, 0.25), "current": (0.55, 0.65, 0.85)}
 BESIDE = np.array([0.0, 0.8, 0.0])  # m: the current model's skin, 80 cm behind ours along the walk, so the side view shows both (beside, it hid ours: leg_walk v2)
 N_BODY = 13380  # as in export_blend.py
 FOOT_BONES = ("talus", "calcaneus", "navicular", "cuboid", "cuneiform", "metatarsal", "phalanx")
@@ -75,7 +75,7 @@ def main(walk_npz, layers_npz, bones_npz, dump_npz, out_blend, frames_dir, nickn
     animated("skin_current_model", current, faces, compare, hb.material("current", COLORS["current"]), smooth=True)
 
     cut = W["cut_frames"]
-    for label in ("muscle", "fat", "skin", "cavity"):
+    for label in ("muscle", "fat", "fat_deep", "skin", "cavity"):
         if f"cut_{label}" not in W.files:
             continue
         used, f = np.unique(W[f"cut_{label}"], return_inverse=True)

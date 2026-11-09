@@ -6,8 +6,8 @@ from scipy import ndimage
 from scipy.spatial import ConvexHull
 from . import fit, layers
 
-BONE, MUSCLE, FAT, SKIN, CAVITY = 0, 1, 2, 3, 4
-LABELS = ("bone", "muscle", "fat", "skin", "cavity")
+BONE, MUSCLE, FAT, SKIN, CAVITY, FAT_DEEP = 0, 1, 2, 3, 4, 5
+LABELS = ("bone", "muscle", "fat", "skin", "cavity", "fat_deep")
 GLUTEUS_ZONES = ("buttocks_upper_center", "buttocks_upper_side", "buttocks_lower_center", "buttocks_lower_side")
 BREAST_ZONES = ("breast_L", "breast_R")
 ZONES = ("neck", "chest", *BREAST_ZONES, "upper_back", "belly", "flanks", "lower_back", "hips", *GLUTEUS_ZONES,
@@ -214,15 +214,30 @@ def tet_zones(zone_of_included, included, shape, vox, tet_voxel):
     return grid_zone.reshape(shape)[tuple(vox.T)][tet_voxel]
 
 
+def label_voxels(d_skin, t_fat, t_superficial, d_bone, inside, in_bone, in_chest, in_trunk, front_of_spine, chest_bone, breast, h, s, skin_band_voxels):
+    """A tissue label per voxel from what build measured. t_superficial is where the fat's outer layer ends; where the fat is under two cubes thick it stays one layer, so a thin layer isn't split into bands narrower than the mesh can show."""
+    lab = np.full(len(d_skin), MUSCLE, np.int8)
+    deep = d_skin > t_fat + s["abdominal_wall_mm"]
+    lab[in_trunk & front_of_spine & deep & (d_bone > s["cavity_bone_gap_mm"])] = CAVITY
+    # The lungs reach back beside the spine, so the chest's cavity isn't held in front of it as the belly's is (body_v2 was)
+    lab[in_chest & (d_bone > s["cavity_bone_gap_mm"])] = CAVITY
+    lab[breast & ~in_chest & (~chest_bone | (d_bone > s["pectoral_mm"]))] = FAT
+    lab[(d_skin < t_fat) & (lab != CAVITY)] = FAT
+    lab[(lab == FAT) & (d_skin >= t_superficial) & (t_fat >= 2 * h)] = FAT_DEEP
+    lab[(d_skin < skin_band_voxels * h) | ~inside] = SKIN
+    lab[in_bone] = BONE
+    return lab
+
+
 def outward(verts, tris):
     """fit.outward. Builds made before bug human-model/11 was fixed have the left leg's bones inside out, and a winding number of -1
     called them outside (body_v2 had no left femur), so every bone is still turned outward before use."""
     return fit.outward(verts, tris)
 
 
-def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None):
+def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None, deep_share=None):
     """Everything for the body. bones: {name: (verts, tris)}. fat_mm: {zone: mm}. structure: declared depths in mm and smoothing.
-    gpu_mesh: meshgpu.Mesh, passed in so this module imports without Warp. groups: the rig's vertex groups, for the head's cut.
+    gpu_mesh: meshgpu.Mesh, passed in so this module imports without Warp. groups: the rig's vertex groups, for the head's cut. deep_share: {zone: part of the fat that is its deep layer}.
     Returns a dict of arrays, every intermediate kept."""
     patch = cut_skin(skin, tris, rig, groups)
     ids = np.unique(patch)
@@ -232,6 +247,9 @@ def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None):
     thick = np.zeros(len(skin))
     thick[ids] = [fat_mm[z] / 1000 for z in zone[ids]]
     thick = smooth_on_surface(thick, patch, len(skin), int(structure["smoothing_iterations"]))
+    share = np.zeros(len(skin))
+    share[ids] = [(deep_share or {}).get(z, 0.0) for z in zone[ids]]
+    share = smooth_on_surface(share, patch, len(skin), int(structure["smoothing_iterations"]))
 
     pv = skin[ids]
     origin, shape, centres = layers.grid(pv.min(axis=0), pv.max(axis=0), h)
@@ -244,6 +262,7 @@ def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None):
     f, u, v = patch[face[included]], uv[included, 0], uv[included, 1]
     w = np.column_stack([u, v, 1 - u - v])
     t_fat = np.einsum("ij,ij->i", w, thick[f])
+    t_superficial = t_fat * (1 - np.einsum("ij,ij->i", w, share[f]))
     z_of = zone[f[np.arange(len(f)), w.argmax(axis=1)]]
 
     names = sorted(bones)
@@ -269,20 +288,13 @@ def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None):
     chest_bone = np.isin(near_bone, CHEST_BONES)
 
     s = {k: v / 1000 for k, v in structure.items() if k.endswith("_mm")}
-    lab = np.full(len(c), MUSCLE, np.int8)
-    deep = d_skin > t_fat + s["abdominal_wall_mm"]
-    lab[in_trunk & front_of_spine & deep & (d_bone > s["cavity_bone_gap_mm"])] = CAVITY
-    # The lungs reach back beside the spine, so the chest's cavity isn't held in front of it as the belly's is (body_v2 was)
-    lab[in_chest & (d_bone > s["cavity_bone_gap_mm"])] = CAVITY
-    lab[np.isin(z_of, BREAST_ZONES) & ~in_chest & (~chest_bone | (d_bone > s["pectoral_mm"]))] = FAT
-    lab[(d_skin < t_fat) & (lab != CAVITY)] = FAT
-    lab[(d_skin < structure["skin_band_voxels"] * h) | ~inside[included]] = SKIN
-    lab[in_bone] = BONE
+    lab = label_voxels(d_skin, t_fat, t_superficial, d_bone, inside[included], in_bone, in_chest, in_trunk, front_of_spine, chest_bone, np.isin(z_of, BREAST_ZONES), h, s, structure["skin_band_voxels"])
     raw = np.full(int(np.prod(shape)), -1, np.int8)
     raw[included] = lab
 
     clean = raw.copy().reshape(shape)
     moved = {"muscle_to_fat": island_cleanup(clean, MUSCLE, FAT, int(structure["min_island_voxels"])),
+             "deep_fat_to_fat": island_cleanup(clean, FAT_DEEP, FAT, int(structure["min_island_voxels"])),
              "cavity_to_muscle": island_cleanup(clean, CAVITY, MUSCLE, int(structure["min_island_voxels"]))}
     nodes, tets, tet_voxel, vox = layers.tetrahedra(clean >= 0, origin, h)
     tet_label = clean[tuple(vox.T)][tet_voxel]
