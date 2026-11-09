@@ -27,3 +27,5 @@ None.
 ## Pre-work
 
 None.
+
+**Status:** Done (2026-11-08), contract delivered and unit-tested; the real run of the woman was left out by Rafael's instruction for this session (no bodies computed).
