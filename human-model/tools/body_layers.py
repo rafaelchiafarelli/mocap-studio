@@ -90,7 +90,9 @@ def main(build_dir, name, out_dir, overrides):
             skin_file = val
             continue
         if k == "FAT_TABLE":  # each zone's fat, from tools/outward_skin.py, in place of the table's
-            fat_mm.update(json.load(open(val))["fat_mm"])
+            table = json.load(open(val))
+            fat_mm.update(table["fat_mm"])
+            structure.update(table.get("structure") or {})
             continue
         group, _, key = k.partition(".")
         table = {"fat": fat_mm, "structure": structure}.get(group)
