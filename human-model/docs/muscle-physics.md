@@ -245,7 +245,7 @@ Epic `body-at-rest`: the zero point ("marco zero") for body shapes. The thigh's 
 
 1. **Cut.** The head goes where the rig moves the skin mostly with the head's bones, a border that runs under the jaw (`body.py:28`); near each wrist and ankle, skin vertices past the joint's plane are dropped; then the largest piece is kept (`body.py:49`).
 2. **Zones.** Each skin vertex gets a zone from its nearest rig bone (`body.py:105`). On the trunk, the zone also depends on height (against the bottom of the rib cage and the top of the hip bones) and on whether the vertex faces front, back or side. The thicknesses are smoothed over the skin, so they change gradually.
-3. **Fill.** The same 5 mm voxels as the thigh. Inside-or-outside and distances are computed on the GPU, about 4 million points in seconds. Bone meshes are first turned outward (`body.py:234`), because builds made before bug `human-model/11` was fixed have the left leg inside out.
+3. **Fill.** The same 5 mm voxels as the thigh. Inside-or-outside and distances are computed on the GPU, about 4 million points in seconds. Bone meshes are first turned outward (`body.py:236`), because builds made before bug `human-model/11` was fixed have the left leg inside out.
 4. **Label.** Bone wins over everything. Within one voxel of the skin is skin. Within the zone's fat thickness is fat.
    - **Cavity** (`body.py:221`):
      - in the chest: everything inside the rib cage, beside the spine too, where the lungs reach;
@@ -506,7 +506,7 @@ With 5 mm, volumes every 10 frames and the bone test on (`c5_padrao_novo_5mm_vol
 
 ## The new path (body-type-selection), and the fit fixes it should make unnecessary
 
-`tools/outward_skin.py` makes the skin the result of bones, muscle and fat. With bones from the sheet (`hmcore/bone_targets.py`, `skeleton.build(targets=...)`), these fixes should stop being needed; none is removed yet (Rafael: today's path stays until the new one beats it):
+`tools/outward_skin.py` keeps the first shape's skin and moves it out only where bones, the real muscles or the breast need it. With bones from the sheet (`hmcore/bone_targets.py`, `skeleton.build(targets=...)`), these fixes should stop being needed; none is removed yet (Rafael: today's path stays until the new one beats it):
 
 - `tools/skin_over_bone.py`, the skin pushed over the bones.
 - In `hmcore/skeleton.py`: `settle_superficial`, the slim-to-skin steps for femur, tibia, fibula, larynx, ribs and foot, and the pelvis's `settle`.

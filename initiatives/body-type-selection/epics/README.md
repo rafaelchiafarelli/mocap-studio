@@ -11,3 +11,7 @@ The order that matters, and what can run ahead:
 7. `acceptance`: the eight bodies per sex against today's path. The last.
 
 **Gate:** Rafael's verdict on epic `acceptance`. Today's path stays until then.
+
+**Added after Rafael saw the first eight bodies (2026-11-09):**
+
+8. `muscle-bodies`: the volume built from real muscles attached to the bones, replacing the shell of epic `volumes-outward` (his choice B). The eight bodies per sex run directly, by his decision.

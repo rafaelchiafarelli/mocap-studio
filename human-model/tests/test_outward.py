@@ -9,87 +9,6 @@ def grid(n=60, h=0.01):
     return xyz, h
 
 
-def test_the_core_is_the_bones_and_the_trunks_hull():
-    centres = np.array([[0, 0, 0.5], [0.9, 0.9, 0.9], [0, 0, 5.0]], float)
-    pts = np.array([[x, y, z] for x in (-1, 1) for y in (-1, 1) for z in (-1, 1)], float)
-    in_bone = np.array([False, False, True])
-    assert outward.core_mask(centres, pts, in_bone).tolist() == [True, True, True]
-    assert outward.core_mask(centres * 2, pts, np.zeros(3, bool)).tolist() == [True, False, False]
-
-
-def test_muscle_grows_from_the_bone_by_its_thickness():
-    xyz, h = grid()
-    core = np.linalg.norm(xyz[..., :2], axis=-1) < 0.02  # a rod
-    keep = np.ones(core.shape, bool)
-    m = outward.muscle_layer(core, np.full(core.shape, 0.05), 1.0, keep, h)
-    r = np.linalg.norm(xyz[..., :2], axis=-1)
-    assert m[(r > 0.03) & (r < 0.06)].all() and not m[r > 0.09].any() and not m[core].any()
-
-
-def test_the_biotype_scales_the_muscle():
-    xyz, h = grid()
-    core = np.linalg.norm(xyz[..., :2], axis=-1) < 0.02
-    keep = np.ones(core.shape, bool)
-    a = outward.muscle_layer(core, np.full(core.shape, 0.05), 1.0, keep, h)
-    b = outward.muscle_layer(core, np.full(core.shape, 0.05), 0.5, keep, h)
-    assert b.sum() < 0.6 * a.sum()
-
-
-def test_muscle_stays_in_keep():
-    xyz, h = grid()
-    core = np.linalg.norm(xyz[..., :2], axis=-1) < 0.02
-    keep = xyz[..., 2] < 0
-    assert not outward.muscle_layer(core, np.full(core.shape, 0.05), 1.0, keep, h)[~keep].any()
-
-
-def test_the_muscle_table_writes_old_zones_as_their_new_parts():
-    import os, sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
-    import muscle_table
-    from hmcore import body
-    t = muscle_table.per_zone(np.array([0.05, 0.06, 0.02, 0.02]), np.array(["buttocks", "buttocks", "breast", "neck"]))
-    assert {t[z] for z in body.GLUTEUS_ZONES} == {55.0} and {t[z] for z in body.BREAST_ZONES} == {20.0} and t["neck"] == 20.0
-
-
-def _rod_body():
-    xyz, h = grid(100, 0.003)
-    r = np.linalg.norm(xyz[..., :2], axis=-1)
-    in_bone = r < 0.02
-    core = in_bone
-    keep = np.ones(in_bone.shape, bool)
-    muscle = (r >= 0.02) & (r < 0.06)
-    return xyz, h, r, in_bone, core, muscle, keep
-
-
-@pytest.mark.parametrize("target", [10.0, 25.0, 40.0])
-def test_the_fat_reaches_the_percentage_within_tolerance(target):
-    xyz, h, r, in_bone, core, muscle, keep = _rod_body()
-    z = xyz[..., 2]
-    thickness = 0.015 + 0.02 * (z - z.min()) / (z.max() - z.min())  # a thickness that varies, as a body's does, so the percentage isn't stuck on whole rings of cells
-    out = outward.fat_to_percent(in_bone, core, muscle, keep, thickness, target, h, 0.0)
-    assert out["reached"] and abs(out["percent"] - target) <= 0.5
-    assert not (out["fat"] & (core | muscle)).any()
-
-
-def test_the_fat_is_outside_the_muscle():
-    xyz, h, r, in_bone, core, muscle, keep = _rod_body()
-    out = outward.fat_to_percent(in_bone, core, muscle, keep, np.full(in_bone.shape, 0.02), 25.0, h, 0.0)
-    assert r[out["fat"]].min() >= 0.059
-
-
-def test_a_percentage_out_of_reach_says_so():
-    xyz, h, r, in_bone, core, muscle, keep = _rod_body()
-    out = outward.fat_to_percent(in_bone, core, muscle, keep, np.full(in_bone.shape, 0.02), 99.0, h, 0.0, hi=1.0)
-    assert not out["reached"]
-
-
-def test_masses_count_the_real_skin():
-    xyz, h, r, in_bone, core, muscle, keep = _rod_body()
-    m = outward.masses_kg(in_bone, core, muscle, np.zeros_like(in_bone), keep, h, 1.0)
-    assert m["skin"] == pytest.approx(1.0 * 0.0015 * 1100)
-    assert outward.fat_percent(m) == 0.0
-
-
 def _sphere(n=24, m=12, radius=1.0):
     th = np.linspace(0.2, np.pi - 0.2, m)
     ph = np.linspace(0, 2 * np.pi, n, endpoint=False)
@@ -158,3 +77,54 @@ def test_a_step_at_the_rings_is_measured():
     before = np.array([[0, 0, 0], [1, 0, 0], [2, 0, 0]], float)
     after = before + np.array([[0, 0, 0.002], [0, 0, 0.0], [0, 0, 0.5]])
     assert outward.ring_steps(before, after, [np.array([0, 1])]) == [2.0]
+
+
+def test_the_core_keeps_the_lumbar_curve_out():
+    chest = np.array([[x, y, z] for x in (-1, 1) for y in (-1, 1) for z in (2, 3)], float)
+    trunk = np.array([[x, y, z] for x in (-1, 1) for y in (-1, 1) for z in (0, 3)], float)
+    c = np.array([[0, 0, 1.0], [0, 0, 2.5], [0, 0, 9.0]])
+    front = np.array([True, True, True])
+    behind = np.array([False, True, True])
+    assert outward.core_mask(c, chest, trunk, front, np.zeros(3, bool)).tolist() == [True, True, False]
+    assert outward.core_mask(c, chest, trunk, behind, np.zeros(3, bool)).tolist() == [False, True, False]
+
+
+def test_grow_keeps_to_keep():
+    xyz, h = grid()
+    core = np.linalg.norm(xyz, axis=-1) < 0.05
+    keep = xyz[..., 2] < 0
+    g = outward.grow(core, 0.02, keep, h)
+    assert not g[~keep].any() and g[(np.linalg.norm(xyz, axis=-1) < 0.065) & keep].all()
+
+
+def test_masses_count_the_real_skin():
+    xyz, h = grid()
+    in_bone = np.linalg.norm(xyz[..., :2], axis=-1) < 0.02
+    keep = np.ones(in_bone.shape, bool)
+    m = outward.masses_kg(in_bone, in_bone, np.zeros_like(in_bone), np.zeros_like(in_bone), keep, h, 1.0)
+    assert m["skin"] == pytest.approx(1.0 * 0.0015 * 1100) and outward.fat_percent(m) == 0.0
+
+
+def test_the_skin_goes_out_only_where_something_needs_it():
+    h = 0.01
+    a = (np.arange(60) + 0.5) * h - 0.3
+    xyz = np.stack(np.meshgrid(a, a, a, indexing="ij"), axis=-1)
+    inner = np.linalg.norm(xyz, axis=-1) < 0.12
+    sdf = outward.signed_distance(inner, h)
+    origin = np.full(3, -0.3)
+    points = np.array([[0.08, 0, 0], [0.2, 0, 0]])
+    need = outward.push_needed(points, sdf, origin, h)
+    assert need[0] == pytest.approx(0.04, abs=1.5 * h) and need[1] == 0.0
+
+
+def test_a_bone_between_the_vertices_is_seen():
+    h = 0.005
+    a = (np.arange(60) + 0.5) * h - 0.15
+    xyz = np.stack(np.meshgrid(a, a, a, indexing="ij"), axis=-1)
+    origin = np.full(3, -0.15)
+    ridge = (np.abs(xyz[..., 0]) < 0.01) & (np.abs(xyz[..., 1]) < 0.1) & (xyz[..., 2] < 0.02) & (xyz[..., 2] > -0.05)  # under the plate's middle
+    sdf = outward.signed_distance(ridge, h)
+    points = np.array([[-0.05, -0.05, 0], [0.05, -0.05, 0], [0.05, 0.05, 0], [-0.05, 0.05, 0]], float)
+    tris = np.array([[0, 1, 2], [0, 2, 3]])
+    assert (outward.push_needed(points, sdf, origin, h) == 0).all()
+    assert outward.push_needed_on_surface(points, tris, sdf, origin, h).min() > 0.005

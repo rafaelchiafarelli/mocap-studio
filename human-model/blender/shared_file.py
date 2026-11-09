@@ -18,10 +18,22 @@ def save():
     bpy.ops.wm.save_as_mainfile(filepath=shared)
 
 
+def look_at_the_runs():
+    """Every saved view turns around the first strip: a view left at the origin zoomed into empty space (bug human-model/31)."""
+    middle = STRIP * (max(r["strip"] for r in runs.values()) / 2 if runs else 0)
+    for screen in bpy.data.screens:
+        for area in screen.areas:
+            if area.type == "VIEW_3D":
+                r = area.spaces.active.region_3d
+                r.view_location = (middle, -2.5, 0.9)
+                r.view_distance = max(8.0, STRIP * len(runs) * 0.9)
+
+
 def add(pair):
     if nickname in runs:
         raise SystemExit(f"{nickname} is already in the shared file")
-    strip = 1 + max((r["strip"] for r in runs.values()), default=-1)
+    taken = {r["strip"] for r in runs.values()}
+    strip = next(i for i in range(len(taken) + 1) if i not in taken)  # the first free one, so removing a run doesn't push the next ones away
     with bpy.data.libraries.load(pair, link=True) as (source, target):
         target.collections = [c for c in source.collections if c.endswith((" pele", " corte"))]
     holder = bpy.data.collections.new(f"run_{nickname}")
@@ -30,9 +42,11 @@ def add(pair):
         e = bpy.data.objects.new(f"{nickname}: {col.name}", None)
         e.instance_type, e.instance_collection = "COLLECTION", col
         e.location = (strip * STRIP, 0.0, 0.0)
+        e.hide_viewport = col.name.endswith(" corte")  # the sections hold most of the triangles: off until asked for
         holder.objects.link(e)
-    scene.frame_end = max(scene.frame_end, max(int(a.frame_range[1]) for a in bpy.data.actions)) if bpy.data.actions else scene.frame_end
     runs[nickname] = {"strip": strip, "file": pair}
+    scene.frame_start, scene.frame_end = 1, max(int(a.frame_range[1]) for a in bpy.data.actions)
+    look_at_the_runs()
     save()
 
 
@@ -47,6 +61,9 @@ def remove():
     for library in libraries:
         bpy.data.libraries.remove(library)
     del runs[nickname]
+    if runs:
+        scene.frame_start, scene.frame_end = 1, max(int(a.frame_range[1]) for a in bpy.data.actions)
+    look_at_the_runs()
     save()
 
 

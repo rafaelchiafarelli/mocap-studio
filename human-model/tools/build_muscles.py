@@ -14,6 +14,7 @@ def main(npz, js, bones_npz, out, sex):
     bones = {n: {"verts": b[f"{n}__v"], "parent": m["parent"]} for n, m in meta["bones"].items()}
     table = json.load(open(os.path.join(HERE, "..", "data", "muscles.json")))
     edits = meta["anchors"]["rig_edits"]
+    muscle.follow_rig_edits(ind["rig"], edits)
     ms = muscle.build_table(ind, bones, table)
     ms += muscle.rajagopal_muscles(ind, bones, f"{bonelib.RAJ}/Rajagopal2016.osim", {"L": edits["thigh.L"], "R": edits["thigh.R"]})
     json.dump(ms, open(out, "w"), indent=0)
