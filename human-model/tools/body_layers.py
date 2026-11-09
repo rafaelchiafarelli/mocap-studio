@@ -1,5 +1,5 @@
 """The whole woman in layers, at rest (task muscle-physics/body-at-rest/1).
-    hm.sh --gpu python human-model/tools/body_layers.py BUILD_DIR NAME OUT_DIR [fat.<zone>=mm ...] [structure.<name>=value ...] [VOXEL=m] [SKIN=skin_fit.npz] [FAT_TABLE=fat_table.json]
+    hm.sh --gpu python human-model/tools/body_layers.py BUILD_DIR NAME OUT_DIR [fat.<zone>=mm ...] [structure.<name>=value ...] [VOXEL=m] [SKIN=skin_fit.npz] [FAT_TABLE=fat_table.json] [TISSUE=tissue.npz]
 SKIN takes the skin from tools/skin_over_bone.py in place of the build's.
 Reads <NAME>.export.npz, .export.json and .bones.npz from BUILD_DIR, the fat per zone from data/body_fat_<sex>.json and the cube's size from data/simulation.json (VOXEL=m overrides it for this run).
 Writes to OUT_DIR, every step numbered: 01_skin_cut.ply, 02_skin_capped.ply, 03_zones.ply, 04_fat_thickness.ply (coloured),
@@ -74,7 +74,7 @@ def measure(r, skin, bones, fat_mm, gpu_mesh, rig):
 def main(build_dir, name, out_dir, overrides):
     global VOXEL
     VOXEL = json.load(open(os.path.join(DATA, "simulation.json")))["VOXEL_M"]
-    skin_file = None
+    skin_file, tissue = None, None
     os.makedirs(out_dir, exist_ok=True)
     meta = json.load(open(os.path.join(build_dir, f"{name}.export.json")))
     sex = "female" if meta["macros"]["gender"] < 0.5 else "male"
@@ -88,6 +88,11 @@ def main(build_dir, name, out_dir, overrides):
             continue
         if k == "SKIN":
             skin_file = val
+            continue
+        if k == "TISSUE":  # the real muscles and breast, from tools/outward_skin.py
+            t = np.load(val)
+            tissue = {"origin": t["origin"], "shape": tuple(t["shape"]), "h": float(t["h"]), "muscle": np.unpackbits(t["muscle"]).astype(bool)[:int(np.prod(t["shape"]))].reshape(tuple(t["shape"])),
+                      "breast": np.unpackbits(t["breast"]).astype(bool)[:int(np.prod(t["shape"]))].reshape(tuple(t["shape"]))}
             continue
         if k == "FAT_TABLE":  # each zone's fat, from tools/outward_skin.py, in place of the table's
             table = json.load(open(val))
@@ -108,7 +113,7 @@ def main(build_dir, name, out_dir, overrides):
 
     wp.init()
     t0 = time.time()
-    r = body.build(skin, tris, meta["bones"], bones, fat_mm, structure, VOXEL, meshgpu.Mesh, groups=meta["groups"], deep_share=cfg.get("fat_deep_share"), gland=sex == "female")
+    r = body.build(skin, tris, meta["bones"], bones, fat_mm, structure, VOXEL, meshgpu.Mesh, groups=meta["groups"], deep_share=cfg.get("fat_deep_share"), gland=sex == "female", tissue=tissue)
     seconds = time.time() - t0
     m = measure(r, skin, bones, fat_mm, meshgpu.Mesh, meta["bones"])
 

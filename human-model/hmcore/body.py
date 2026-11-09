@@ -214,7 +214,7 @@ def tet_zones(zone_of_included, included, shape, vox, tet_voxel):
     return grid_zone.reshape(shape)[tuple(vox.T)][tet_voxel]
 
 
-def label_voxels(d_skin, t_fat, t_superficial, d_bone, inside, in_bone, in_chest, in_trunk, front_of_spine, chest_bone, breast, h, s, skin_band_voxels, gland=False):
+def label_voxels(d_skin, t_fat, t_superficial, d_bone, inside, in_bone, in_chest, in_trunk, front_of_spine, chest_bone, breast, h, s, skin_band_voxels, gland=False, muscle_mask=None):
     """A tissue label per voxel from what build measured. t_superficial is where the fat's outer layer ends; where the fat is under two cubes thick it stays one layer, so a thin layer isn't split into bands narrower than the mesh can show."""
     lab = np.full(len(d_skin), MUSCLE, np.int8)
     deep = d_skin > t_fat + s["abdominal_wall_mm"]
@@ -223,6 +223,8 @@ def label_voxels(d_skin, t_fat, t_superficial, d_bone, inside, in_bone, in_chest
     lab[in_chest & (d_bone > s["cavity_bone_gap_mm"])] = CAVITY
     lab[breast & ~in_chest & (~chest_bone | (d_bone > s["pectoral_mm"]))] = FAT
     lab[(d_skin < t_fat) & ~np.isin(lab, (CAVITY, VISCERA))] = FAT
+    if muscle_mask is not None:  # the muscles are real solids: whatever isn't one of them, cavity or bone is fat
+        lab[(lab == MUSCLE) & ~muscle_mask] = FAT
     lab[(lab == FAT) & (d_skin >= t_superficial) & (t_fat >= 2 * h)] = FAT_DEEP
     if gland:  # the woman only: the breast's fat deeper than gland_skin_mm under the skin becomes gland
         lab[breast & np.isin(lab, (FAT, FAT_DEEP)) & (d_skin >= s["gland_skin_mm"])] = GLAND
@@ -237,9 +239,9 @@ def outward(verts, tris):
     return fit.outward(verts, tris)
 
 
-def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None, deep_share=None, gland=False):
+def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None, deep_share=None, gland=False, tissue=None):
     """Everything for the body. bones: {name: (verts, tris)}. fat_mm: {zone: mm}. structure: declared depths in mm and smoothing.
-    gpu_mesh: meshgpu.Mesh, passed in so this module imports without Warp. groups: the rig's vertex groups, for the head's cut. deep_share: {zone: part of the fat that is its deep layer}. gland: label the mammary gland (the woman only).
+    gpu_mesh: meshgpu.Mesh, passed in so this module imports without Warp. groups: the rig's vertex groups, for the head's cut. deep_share: {zone: part of the fat that is its deep layer}. gland: label the mammary gland (the woman only). tissue: {origin, shape, h, muscle, breast}, grids from tools/outward_skin.py with the real muscles.
     Returns a dict of arrays, every intermediate kept."""
     patch = cut_skin(skin, tris, rig, groups)
     ids = np.unique(patch)
@@ -290,7 +292,17 @@ def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None, d
     chest_bone = np.isin(near_bone, CHEST_BONES)
 
     s = {k: v / 1000 for k, v in structure.items() if k.endswith("_mm")}
-    lab = label_voxels(d_skin, t_fat, t_superficial, d_bone, inside[included], in_bone, in_chest, in_trunk, front_of_spine, chest_bone, np.isin(z_of, BREAST_ZONES), h, s, structure["skin_band_voxels"], gland=gland)
+    breast, muscle_mask = np.isin(z_of, BREAST_ZONES), None
+    if tissue is not None:
+        cells = np.floor((c - tissue["origin"]) / tissue["h"]).astype(int)
+        valid = ((cells >= 0) & (cells < tissue["shape"])).all(axis=1)
+        def at(grid):
+            out = np.zeros(len(c), bool)
+            out[valid] = grid[tuple(cells[valid].T)]
+            return out
+        muscle_mask = at(tissue["muscle"])
+        breast = at(tissue["breast"]) & ~muscle_mask
+    lab = label_voxels(d_skin, t_fat, t_superficial, d_bone, inside[included], in_bone, in_chest, in_trunk, front_of_spine, chest_bone, breast, h, s, structure["skin_band_voxels"], gland=gland, muscle_mask=muscle_mask)
     raw = np.full(int(np.prod(shape)), -1, np.int8)
     raw[included] = lab
 

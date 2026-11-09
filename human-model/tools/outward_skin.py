@@ -1,20 +1,20 @@
-"""The skin as the result of the layers, on the same 13,380 points and the same rig (epic volumes-outward): bones, then muscle by zone, then fat up to the sheet's percentage, and the skin moved onto what results.
+"""The body's inside and its skin, on the same 13,380 points and the same rig (epics volumes-outward and muscle-bodies): bones, the trunk's cavity and the muscles attached to the bones, and the first shape's skin moved out only where they need it. What lies between them and the skin is fat, and the percentage is reported, not forced (Rafael, 2026-11-09).
     hm.sh --gpu python human-model/tools/outward_skin.py BUILD_DIR NAME SHEET.json OUT_DIR [VOXEL=m]
-SHEET.json is {"resolved": hmcore.character.resolve's result, "character": the character file}. Reads the build's skin, bones and rig; the muscle and fat tables from data/.
-Writes OUT_DIR/<NAME>.skin_fit.npz (the new body, for tools/body_layers.py, as skin_over_bone.py's), <NAME>.fat_table.json (each zone's fat after reaching the percentage, for body_layers.py's FAT_TABLE=), <NAME>.regions.json (per-region tissue values, for body_walk.py's REGIONS=) and <NAME>.skin_fit.json (the report)."""
+SHEET.json is {"resolved": hmcore.character.resolve's result, "character": the character file}. Reads the build's skin, bones, rig and muscles.
+Writes OUT_DIR/<NAME>.skin_fit.npz (the new body, for tools/body_layers.py), <NAME>.fat_table.json (its FAT_TABLE=), <NAME>.tissue.npz (its TISSUE=: the muscles and breast as grids), <NAME>.regions.json (body_walk.py's REGIONS=) and <NAME>.skin_fit.json (the report)."""
 import json, os, sys
 import numpy as np
 from scipy import ndimage
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import warp as wp
-from hmcore import body, character as ch, fit, layers, meshgpu, outward, shapes
+from hmcore import body, fit, layers, meshgpu, muscle_bodies, outward, shapes
 
 N_BODY = 13380  # as in blender/export_blend.py
 HERE = os.path.dirname(os.path.abspath(__file__))
+DATA = os.path.join(HERE, "..", "data")
 MARGIN = 0.08  # m around the first shape: how far the new surface may reach
-MOST_MOVE = 0.08  # m, the most a skin point moves
 RING_REACH = 0.05  # m over which the move fades out to the cut rings
-SKIN_OVER_LAYERS = 0.005  # m, declared: the skin lies this far outside the layers' surface. Without it, 6,636 bone points of the neutral woman came through at rest; with it, 16
+SKIN_OVER_LAYERS = 0.005  # m, declared: the least tissue kept over bones and muscles. Without it, bone points of the neutral woman came through the skin at rest
 
 
 def past_cuts(point, planes, reach=0.35):
@@ -22,15 +22,8 @@ def past_cuts(point, planes, reach=0.35):
     return any((point - c) @ n > 0 and np.linalg.norm(point - c) < reach for c, n, _ in planes)
 
 
-def thickness_per_vertex(table, zone, patch, n_verts, iterations):
-    values = np.zeros(n_verts)
-    ids = np.unique(patch)
-    values[ids] = [table[z] / 1000 for z in zone[ids]]
-    return body.smooth_on_surface(values, patch, n_verts, iterations)
-
-
 def main(build_dir, name, sheet_json, out_dir, overrides):
-    voxel = json.load(open(os.path.join(HERE, "..", "data", "simulation.json")))["VOXEL_M"]
+    voxel = json.load(open(os.path.join(DATA, "simulation.json")))["VOXEL_M"]
     for o in overrides:
         k, v = o.split("=")
         if k != "VOXEL":
@@ -39,21 +32,19 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
     os.makedirs(out_dir, exist_ok=True)
     sheet = json.load(open(sheet_json, encoding="utf-8"))
     fields, character = sheet["resolved"]["fields"], sheet["character"]
-    meta = json.load(open(os.path.join(build_dir, f"{name}.export.json")))
     sex = character["sex"]
-    cfg = json.load(open(os.path.join(HERE, "..", "data", f"body_fat_{sex}.json")))
+    cfg = json.load(open(os.path.join(DATA, f"body_fat_{sex}.json")))
     base_fat_mm = dict(cfg["fat_mm"])
     fat_mm = dict(base_fat_mm)
     typed_fat = {zone: values["fat_mm"] for zone, values in (character.get("regions") or {}).items() if "fat_mm" in values}
-    muscle_mm = json.load(open(os.path.join(HERE, "..", "data", f"muscle_mm_{sex}.json")))["muscle_mm"]
-    data = os.path.join(HERE, "..", "data")
+    gluteus_factor = {}
     if character.get("gluteus"):
-        fat_mm, muscle_mm = shapes.gluteus(fat_mm, muscle_mm, character["gluteus"]["shape"], json.load(open(os.path.join(data, "gluteus_shapes.json"))))
-    regions_out, structure_out = {}, {}
-    if sex == "female":
-        base = ch.base_measures("female")
-        cup_ratio = (fields["bust"]["value"] - fields["underbust"]["value"]) / (base["bust"] - base["underbust"])
-        fat_mm, regions_out, structure_out = shapes.breast(fat_mm, character.get("breast") or {}, json.load(open(os.path.join(data, "breast_shapes.json"))), cup_ratio)
+        table = json.load(open(os.path.join(DATA, "gluteus_shapes.json")))
+        fat_mm = shapes.gluteus(fat_mm, character["gluteus"]["shape"], table)
+        gluteus_factor = {"gl": table[character["gluteus"]["shape"]]["muscle"]}
+    regions_out = {}
+
+    meta = json.load(open(os.path.join(build_dir, f"{name}.export.json")))
     e = np.load(os.path.join(build_dir, f"{name}.export.npz"))
     skin = e["verts"].astype(float)[:N_BODY]
     tris = fit.triangles(e["starts"], e["sizes"], e["loops"])
@@ -65,7 +56,6 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
     zone = np.empty(len(skin), object)
     zone[ids] = body.divide_zones(skin[ids], body.zones(skin, ids, meta["bones"], bones))
     iters = int(cfg["structure"]["smoothing_iterations"])
-    muscle_v = thickness_per_vertex(muscle_mm, zone, patch, len(skin), iters)
     planes = body.cut_planes(skin, patch)
     region = [n for n, (v, _) in bones.items() if not past_cuts(v.mean(axis=0), planes)]
 
@@ -73,57 +63,62 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
     origin, shape, centres = layers.grid(skin[ids].min(axis=0) - MARGIN, skin[ids].max(axis=0) + MARGIN, voxel)
     keep = (~body.near_a_cut(centres, meta["bones"], planes)).reshape(shape)
     bv, bt, n = [], [], 0
-    for name_b in region:
-        v, t = bones[name_b]
+    for b_name in region:
+        v, t = bones[b_name]
         bv.append(v); bt.append(t + n); n += len(v)
     in_bone = meshgpu.Mesh(np.concatenate(bv), np.concatenate(bt)).inside(centres).reshape(shape)
-    hull_points = np.concatenate([bones[x][0] for x in body.TRUNK_BONES])
-    core = outward.core_mask(centres, hull_points, in_bone.ravel()).reshape(shape)
-    muscle_cell = outward.per_cell(skin[ids], muscle_v[ids], centres).reshape(shape)
-    muscle = outward.muscle_layer(core, muscle_cell, fields["muscle"]["value"], keep, voxel)
-    # Where the volume sits comes from the first shape: the fat at each point is what lies between the muscle and that shape, so a silhouette survives. The shapes and typed zones change it from there, and the percentage scales all of it.
+    chest = np.concatenate([bones[x][0] for x in body.CHEST_BONES + body.SPINE_BONES[:12]])
+    trunk = np.concatenate([bones[x][0] for x in body.TRUNK_BONES])
+    behind = cfg["structure"]["cavity_behind_spine_front_mm"] / 1000
+    front = centres[:, 1] < body.spine_front(bones, centres[:, 2]) + behind
+    core = outward.core_mask(centres, chest, trunk, front, in_bone.ravel()).reshape(shape) & (keep | in_bone)
+    muscles = muscle_bodies.select(json.load(open(os.path.join(build_dir, f"{name}.muscles.json"))))
+    muscle = muscle_bodies.solids(muscles, origin, shape, voxel, fields["muscle"]["value"], gluteus_factor) & keep & ~core
+    breast = np.zeros(shape, bool)
+    inner = core | muscle | breast
+
+    # The skin stays on the first shape and goes out only where what's inside needs it; the shapes and typed zones change the fat's depth from there
+    inner_sdf = outward.signed_distance(inner | outward.grow(inner, SKIN_OVER_LAYERS, keep, voxel), voxel)
+    depth_field = ndimage.distance_transform_edt(~inner) * voxel
     depth = np.zeros(len(skin))
-    depth[ids] = np.maximum(outward.sample(ndimage.distance_transform_edt(~(core | muscle)) * voxel, skin[ids], origin, voxel), 0.0)
-    ratio = np.ones(len(skin))
-    ratio[ids] = [fat_mm[z] / max(base_fat_mm[z], 1e-6) for z in zone[ids]]
-    fat_v = depth * ratio
-    for z, mm in typed_fat.items():
-        fat_v[zone == z] = mm / 1000
-    fat_v = body.smooth_on_surface(fat_v, patch, len(skin), iters)
-    pv = skin[patch]
-    area = float(np.linalg.norm(np.cross(pv[:, 1] - pv[:, 0], pv[:, 2] - pv[:, 0]), axis=1).sum() / 2)
-    target = fields["body_fat_percent"]["value"]
-    fat_cell = outward.per_cell(skin[ids], fat_v[ids], centres).reshape(shape)
-    result = outward.fat_to_percent(in_bone, core, muscle, keep, fat_cell, target, voxel, area)
-    solid = core | muscle | result["fat"]
-    sdf = outward.signed_distance(solid, voxel) - SKIN_OVER_LAYERS
+    depth[ids] = np.maximum(outward.sample(depth_field, skin[ids], origin, voxel), 0.0)
+    extra = np.zeros(len(skin))
+    extra[ids] = [depth[v] * (fat_mm[zone[v]] / max(base_fat_mm[zone[v]], 1e-6) - 1) + (typed_fat[zone[v]] / 1000 - depth[v] if zone[v] in typed_fat else 0.0) for v in ids]
+    move = np.zeros(len(skin))
+    move[ids] = outward.push_needed(skin[ids], inner_sdf, origin, voxel) + extra[ids]
+    move = body.smooth_on_surface(move, patch, len(skin), iters)
     normals = outward.vertex_normals(skin, patch)
-    moved = outward.project(skin[ids], normals[ids], sdf, origin, voxel, MOST_MOVE)
-    new = skin.copy()
-    disp = np.zeros(skin.shape)
-    disp[ids] = moved - skin[ids]
-    disp = np.column_stack([body.smooth_on_surface(disp[:, k], patch, len(skin), iters) for k in range(3)])
     rings = layers.boundary_loops(patch)
     fade = outward.ring_fade(skin[ids], [skin[r] for r in rings], RING_REACH)
-    new[ids] = skin[ids] + disp[ids] * fade[:, None]
-    # Smoothing pulls the skin back in over each bump, so it goes onto the surface once more, unsmoothed
-    again = outward.project(new[ids], outward.vertex_normals(new, patch)[ids], sdf, origin, voxel, MOST_MOVE)
-    new[ids] = new[ids] + (again - new[ids]) * fade[:, None]
+    new = skin.copy()
+    new[ids] = skin[ids] + normals[ids] * (move[ids] * fade)[:, None]
+    # Smoothing takes the skin back in over each bump, so whatever is still short goes out once more
+    still = outward.push_needed(new[ids], inner_sdf, origin, voxel)
+    new[ids] += outward.vertex_normals(new, patch)[ids] * (still * fade)[:, None]
+
     full = e["verts"].astype(np.float32).copy()
     full[:N_BODY] = new
     push = np.linalg.norm(new - skin, axis=1)
     np.savez_compressed(os.path.join(out_dir, f"{name}.skin_fit.npz"), verts=full, push=push.astype(np.float32), patch=patch.astype(np.int32))
+    np.savez_compressed(os.path.join(out_dir, f"{name}.tissue.npz"), origin=origin, shape=np.array(shape), h=voxel, muscle=np.packbits(muscle.ravel()), breast=np.packbits(breast.ravel()))
+    final = np.maximum(outward.sample(depth_field, new[ids], origin, voxel), 0.0)
+    final_zone = zone[ids]
     with open(os.path.join(out_dir, f"{name}.fat_table.json"), "w") as f:
-        json.dump({"fat_mm": {z: round(float(np.median(fat_v[zone == z])) * 1000 * result["scale"], 2) if (zone == z).any() else 0.0 for z in fat_mm}, "scale": round(result["scale"], 3), "structure": structure_out, "regions": regions_out}, f, indent=1)
+        json.dump({"fat_mm": {z: round(float(np.median(final[final_zone == z])) * 1000, 2) if (final_zone == z).any() else 0.0 for z in fat_mm}, "structure": {}}, f, indent=1)
     keys = {"young_pa": "young", "poisson": "poisson", "density": "density", "damping": "damping"}
-    for zone, values in (character.get("regions") or {}).items():
+    for z, values in (character.get("regions") or {}).items():
         typed = {keys[k]: v for k, v in values.items() if k in keys}
         if typed:
-            regions_out.setdefault("fat", {}).setdefault(zone, {}).update(typed)
+            regions_out.setdefault("fat", {}).setdefault(z, {}).update(typed)
     with open(os.path.join(out_dir, f"{name}.regions.json"), "w") as f:
         json.dump(regions_out, f, indent=1)
-    report = {"name": name, "voxel_m": voxel, "target_percent": target, "percent": round(result["percent"], 2), "reached_within_0_5": bool(result["reached"]), "fat_scale": round(result["scale"], 3),
-              "muscle_scale": fields["muscle"]["value"], "skin_points_moved": int(len(ids)), "largest_move_mm": round(float(push.max()) * 1000, 1), "mean_move_mm": round(float(push[ids].mean()) * 1000, 1),
+    pv = new[patch]
+    area = float(np.linalg.norm(np.cross(pv[:, 1] - pv[:, 0], pv[:, 2] - pv[:, 0]), axis=1).sum() / 2)
+    closed = meshgpu.Mesh(*layers.capped(new, patch)).inside(centres).reshape(shape)
+    masses = outward.masses_kg(in_bone, core, muscle, closed & ~inner, closed, voxel, area)
+    percent, target = outward.fat_percent(masses), fields["body_fat_percent"]["value"]
+    report = {"name": name, "voxel_m": voxel, "target_percent": target, "percent": round(percent, 2), "reached_within_0_5": bool(abs(percent - target) <= 0.5), "masses_kg": {k: round(v, 2) for k, v in masses.items()},
+              "muscle_scale": fields["muscle"]["value"], "muscles": len(muscles), "skin_points_moved": int(len(ids)), "largest_move_mm": round(float(push.max()) * 1000, 1), "mean_move_mm": round(float(push[ids].mean()) * 1000, 1),
               "ring_steps_mm": outward.ring_steps(skin, new, rings), "triangles_turned_over": outward.folded(skin, new, patch), "triangles": int(len(patch)), "regions_bones": len(region)}
     with open(os.path.join(out_dir, f"{name}.skin_fit.json"), "w") as f:
         json.dump(report, f, indent=1)

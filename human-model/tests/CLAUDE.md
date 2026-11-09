@@ -20,7 +20,8 @@
 - `test_layers.py`: `hmcore/layers.py`.
 - `test_measures.py`: `hmcore/measures.py`, `ctbones.py` and `tsdata.py`.
 - `test_muscle.py`: `hmcore/muscle.py`.
-- `test_outward.py`: `hmcore/outward.py` and the pure part of `tools/muscle_table.py`.
+- `test_muscle_bodies.py`: `hmcore/muscle_bodies.py`.
+- `test_outward.py`: `hmcore/outward.py`.
 - `test_regions.py`: `hmcore/regions.py`.
 - `test_shapes.py`: `hmcore/shapes.py`.
 - `test_skinfit.py`: `hmcore/skinfit.py`.
