@@ -101,6 +101,10 @@ def problems(c, ratios=None):
         out += [f"{k} applies to the female body only" for k in ("breast", "underbust_cm", "bust_cm", "cup") if c.get(k) is not None]
     for k in ("underbust_cm", "bust_cm"):
         _ranged(c, k, 50, 170, out)
+    if c.get("cup") is not None and c.get("bust_cm") is not None:
+        out.append("give the cup or the bust, not both: each sets the other")
+    if c.get("cup") is not None and c["cup"] not in _json(os.path.join(DATA, "cup_table.json"))["letters"]:
+        out.append("cup isn't a letter of data/cup_table.json")
     for zone, values in (c.get("regions") or {}).items():
         if zone not in ZONE_NAMES:
             out.append(f"regions.{zone} isn't a zone")
@@ -152,7 +156,7 @@ def _ratio_towards(ratio, limits):
     return ratio
 
 
-def resolve(c, base_cm=None, biotypes=None, ratios=None, data=DATA):
+def resolve(c, base_cm=None, biotypes=None, ratios=None, data=DATA, cups=None):
     """The full sheet: every field with its value and where it came from: current, biotype, body_fat, height, silhouette or typed.
     Each step only fills in the next one's starting values, and what is typed always wins."""
     sex = c["sex"]
@@ -203,4 +207,29 @@ def resolve(c, base_cm=None, biotypes=None, ratios=None, data=DATA):
     for name, value in (c.get("distances") or {}).items():
         if DISTANCES[name] is not None:
             change(DISTANCES[name], value, "typed")
+    if sex == "female":
+        _apply_cup(c, sheet, change, _json(os.path.join(data, "cup_table.json")) if cups is None else cups)
     return {"sex": sex, "fields": sheet}
+
+
+def cup_letter(difference, cups):
+    """The letter for this bust minus underbust, at step_cm per letter; first and last letter past either end."""
+    i = round((difference - cups["first_difference_cm"]) / cups["step_cm"])
+    return cups["letters"][max(0, min(len(cups["letters"]) - 1, i))]
+
+
+def bust_for_cup(underbust, letter, cups):
+    return underbust + cups["first_difference_cm"] + cups["letters"].index(letter) * cups["step_cm"]
+
+
+def _apply_cup(c, sheet, change, cups):
+    """Setting the cup holds the thorax and raises the bust; setting the bust recalculates the cup; a changed underbust with the cup set moves the bust."""
+    if c.get("underbust_cm") is not None:
+        change("underbust", c["underbust_cm"], "typed")
+    if c.get("bust_cm") is not None:
+        change("bust", c["bust_cm"], "typed")
+    if c.get("cup") is not None:
+        change("bust", bust_for_cup(sheet["underbust"]["value"], c["cup"], cups), "typed")
+        sheet["cup"] = {"value": c["cup"], "source": "typed"}
+    else:
+        sheet["cup"] = {"value": cup_letter(sheet["bust"]["value"] - sheet["underbust"]["value"], cups), "source": sheet["bust"]["source"]}
