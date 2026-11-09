@@ -20,3 +20,5 @@ Task 2.
 ## Pre-work
 
 None.
+
+**Status:** Done (2026-11-08), unit-tested; not run on real bodies in this session, by Rafael's instruction.
