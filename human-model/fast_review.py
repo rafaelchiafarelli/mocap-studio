@@ -43,7 +43,7 @@ def known_values(sex, data=DATA):
     """What each stage can be told, from the same files the stages read their defaults from."""
     body_fat = _json(os.path.join(data, f"body_fat_{sex}.json"))
     depth = _json(os.path.join(data, f"skin_over_bone_{sex}.json"))
-    tissue = [k for k in _json(os.path.join(data, "body_tissue.json")) if not k.startswith("_")]
+    tissue = [k for k, v in _json(os.path.join(data, "body_tissue.json")).items() if not k.startswith("_") and not isinstance(v, dict)]
     return {"layers": {"VOXEL", *(f"fat.{z}" for z in body_fat["fat_mm"]), *(f"structure.{k}" for k in body_fat["structure"])},
             "skin": {"MAX_PUSH_MM", *(f"depth.{k}" for k in depth["least_depth_mm"])},
             "simulate": {*tissue, *SIMULATE_SETTINGS}}
