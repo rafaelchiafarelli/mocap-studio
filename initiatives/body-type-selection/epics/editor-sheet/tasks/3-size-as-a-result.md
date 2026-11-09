@@ -20,3 +20,5 @@ Task 2.
 ## Pre-work
 
 Turn the PDF's table into a data file on `G:`, with Rafael checking the numbers. It isn't in the repository.
+
+**Status:** Not done (2026-11-08): its pre-work needs Rafael: the PDF's table as a data file on `G:`, with Rafael checking the numbers. Nothing in the repository reads that PDF.
