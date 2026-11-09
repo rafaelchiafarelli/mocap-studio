@@ -59,3 +59,68 @@ def test_load_raises_with_every_problem(tmp_path):
     p.write_text(json.dumps({"sex": "female", "silhouette": "x", "height_cm": 300}))
     with pytest.raises(ValueError, match="silhouette.*height"):
         ch.load(str(p))
+
+
+BASE = {"height": 160.0, "bust": 84.0, "underbust": 68.0, "waist": 65.0, "hip": 90.0, "neck": 31.0, "upper_arm": 25.0, "wrist": 12.0, "thigh": 53.0, "knee": 34.0, "calf": 34.0, "ankle": 18.0,
+        "shoulder_width": 36.0, "shoulder": 13.0, "bust_span": 20.0, "armhole_depth": 14.0, "back_length": 31.0, "bust_height": 25.0, "hip_height": 20.0, "rise": 29.0, "inseam": 74.0, "knee_height": 45.0, "arm_length": 46.0}
+BIOTYPES = {"current_body_fat_percent": {"female": 28.0, "male": 17.0}, "fat_changes_girths": {"waist": 0.6, "hip": 0.4},
+            "ectomorph": {"bone_thickness": 0.9, "limb_length": 1.03, "shoulders": 0.96, "waist": 0.96, "hips": 0.96, "muscle": 0.75, "body_fat_delta": -6.0},
+            "mesomorph": {"bone_thickness": 1.0, "limb_length": 1.0, "shoulders": 1.04, "waist": 0.96, "hips": 1.0, "muscle": 1.25, "body_fat_delta": 0.0},
+            "endomorph": {"bone_thickness": 1.1, "limb_length": 1.0, "shoulders": 1.0, "waist": 1.1, "hips": 1.08, "muscle": 1.1, "body_fat_delta": 8.0}}
+RATIOS = ch.silhouette_ratios()
+
+
+def sheet(c):
+    return ch.resolve(c, BASE, BIOTYPES, RATIOS)["fields"]
+
+
+def test_neutral_keeps_the_current_values():
+    s = sheet({"sex": "female"})
+    assert s["waist"] == {"value": 65.0, "source": "current"} and s["body_fat_percent"]["value"] == 28.0 and s["muscle"]["value"] == 1.0
+
+
+def test_the_biotype_changes_only_its_own_fields():
+    s = sheet({"sex": "female", "biotype": {"type": "ectomorph"}})
+    assert s["bone_thickness"] == {"value": 0.9, "source": "biotype"}
+    assert s["shoulder_width"]["value"] == pytest.approx(36 * 0.96) and s["inseam"]["value"] == pytest.approx(74 * 1.03) and s["body_fat_percent"]["value"] == 22.0
+    assert s["bust"]["source"] == "current"
+
+
+def test_a_mix_is_the_weighted_mean():
+    m = ch.biotype_mix({"type": "mesomorph", "others": {"ectomorph": 0.2, "endomorph": 0.1}}, BIOTYPES)
+    assert m["muscle"] == pytest.approx(0.7 * 1.25 + 0.2 * 0.75 + 0.1 * 1.1)
+
+
+def test_body_fat_moves_waist_and_hip():
+    s = sheet({"sex": "female", "body_fat_percent": 38})
+    assert s["waist"]["value"] == pytest.approx(65 * 1.06) and s["waist"]["source"] == "body_fat" and s["hip"]["value"] == pytest.approx(90 * 1.04)
+    assert s["body_fat_percent"] == {"value": 38.0, "source": "typed"}
+
+
+def test_height_widens_slower_than_it_lengthens():
+    s = sheet({"sex": "female", "height_cm": 176})
+    k = 176 / 160
+    assert s["inseam"]["value"] == pytest.approx(74 * k) and s["inseam"]["source"] == "height"
+    assert s["hip"]["value"] == pytest.approx(90 * k ** 0.7) and s["height"] == {"value": 176.0, "source": "typed"}
+
+
+def test_the_silhouette_wins_over_the_biotype_on_proportions():
+    s = sheet({"sex": "female", "silhouette": "retangulo", "biotype": {"type": "ectomorph"}, "body_fat_percent": 28})
+    assert s["waist"]["source"] == "silhouette" and s["waist"]["value"] / s["hip"]["value"] >= 0.88
+
+
+def test_a_silhouette_already_met_changes_nothing():
+    s = sheet({"sex": "female", "silhouette": "oval", "distances": {"cintura": 95, "quadril": 100}})
+    assert s["waist"]["source"] == "typed"
+
+
+def test_what_is_typed_always_wins():
+    s = sheet({"sex": "female", "silhouette": "ampulheta", "biotype": {"type": "endomorph"}, "distances": {"cintura": 70, "cava": 40}})
+    assert s["waist"] == {"value": 70.0, "source": "typed"}
+    assert "armhole" not in s  # cava isn't a measure the tape has
+
+
+def test_shoulder_hip_ratio_reaches_the_range():
+    s = sheet({"sex": "male", "silhouette": "trapezio"})
+    p = RATIOS["ansur_proxies"]["male"]
+    assert s["shoulder_width"]["value"] * p["bideltoid_over_biacromial"] / (s["hip"]["value"] * p["hip_breadth_over_hip_girth"]) >= 1.53

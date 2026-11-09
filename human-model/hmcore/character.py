@@ -116,3 +116,91 @@ def load(path, ratios=None):
     if found:
         raise ValueError(f"{path}: " + "; ".join(found))
     return c
+
+
+# How each tape measure grows with height: girths and widths by width_growth_per_height, lengths in step
+WIDENING = ("bust", "underbust", "waist", "hip", "neck", "upper_arm", "wrist", "thigh", "knee", "calf", "ankle", "shoulder_width", "shoulder", "bust_span")
+LIMB_LENGTHS = ("inseam", "arm_length", "knee_height")
+SILHOUETTE_INSIDE = 0.005  # how far inside a range a ratio is moved, so it isn't on the edge
+
+
+def base_measures(sex, data=DATA):
+    """The neutral body's tape measures, cm, as measured in data/measure_sweep.json."""
+    return dict(_json(os.path.join(data, "measure_sweep.json"))[sex]["base_cm"])
+
+
+def biotype_mix(b, table):
+    """The weighted mean of each biotype value, for a chosen type and its two other parts."""
+    weights = {**{k: 0.0 for k in BIOTYPES}, **b.get("others", {})}
+    weights[b["type"]] = 1.0 - sum(b.get("others", {}).values())
+    return {key: sum(w * table[t][key] for t, w in weights.items()) for key in table[BIOTYPES[0]]}
+
+
+def _field(value, source):
+    return {"value": round(float(value), 4), "source": source}
+
+
+def _ratio_towards(ratio, limits):
+    """The nearest ratio inside [lo, hi], or the ratio itself if it's already there; either end can be open."""
+    if limits is None:
+        return ratio
+    lo, hi = limits
+    if lo is not None and ratio < lo:
+        return lo + SILHOUETTE_INSIDE
+    if hi is not None and ratio > hi:
+        return hi - SILHOUETTE_INSIDE
+    return ratio
+
+
+def resolve(c, base_cm=None, biotypes=None, ratios=None, data=DATA):
+    """The full sheet: every field with its value and where it came from: current, biotype, body_fat, height, silhouette or typed.
+    Each step only fills in the next one's starting values, and what is typed always wins."""
+    sex = c["sex"]
+    base_cm = base_measures(sex, data) if base_cm is None else base_cm
+    biotypes = _json(os.path.join(data, "biotypes.json")) if biotypes is None else biotypes
+    ratios = silhouette_ratios(data) if ratios is None else ratios
+    sheet = {k: _field(v, "current") for k, v in base_cm.items()}
+    sheet["body_fat_percent"] = _field(biotypes["current_body_fat_percent"][sex], "current")
+    for k in ("bone_thickness", "limb_length", "muscle"):
+        sheet[k] = _field(1.0, "current")
+
+    def change(key, value, source):
+        if abs(value - sheet[key]["value"]) > 1e-6:
+            sheet[key] = _field(value, source)
+
+    if c.get("biotype"):
+        m = biotype_mix(c["biotype"], biotypes)
+        for k in ("bone_thickness", "limb_length", "muscle"):
+            change(k, m[k], "biotype")
+        change("shoulder_width", sheet["shoulder_width"]["value"] * m["shoulders"], "biotype")
+        change("waist", sheet["waist"]["value"] * m["waist"], "biotype")
+        change("hip", sheet["hip"]["value"] * m["hips"], "biotype")
+        for k in LIMB_LENGTHS:
+            change(k, sheet[k]["value"] * m["limb_length"], "biotype")
+        change("body_fat_percent", sheet["body_fat_percent"]["value"] + m["body_fat_delta"], "biotype")
+    if c.get("body_fat_percent") is not None:
+        change("body_fat_percent", c["body_fat_percent"], "typed")
+    extra = (sheet["body_fat_percent"]["value"] - biotypes["current_body_fat_percent"][sex]) / 100
+    for key, share in biotypes["fat_changes_girths"].items():
+        change(key, sheet[key]["value"] * (1 + share * extra), "body_fat")
+    if c.get("height_cm") is not None and c["height_cm"] != base_cm["height"]:
+        k = c["height_cm"] / base_cm["height"]
+        widening = k ** ratios["width_growth_per_height"]
+        for key in base_cm:
+            if key != "height":
+                change(key, sheet[key]["value"] * (widening if key in WIDENING else k), "height")
+    if c.get("height_cm") is not None:
+        change("height", c["height_cm"], "typed")
+    if c.get("silhouette"):
+        limits = ratios[sex][c["silhouette"]]
+        proxies = ratios["ansur_proxies"][sex]
+        hip = sheet["hip"]["value"]
+        change("waist", _ratio_towards(sheet["waist"]["value"] / hip, limits.get("waist_hip")) * hip, "silhouette")
+        if "bust_hip" in limits:
+            change("bust", _ratio_towards(sheet["bust"]["value"] / hip, limits.get("bust_hip")) * hip, "silhouette")
+        breadth_to_hip = proxies["bideltoid_over_biacromial"] / proxies["hip_breadth_over_hip_girth"] / hip
+        change("shoulder_width", _ratio_towards(sheet["shoulder_width"]["value"] * breadth_to_hip, limits.get("shoulder_hip")) / breadth_to_hip, "silhouette")
+    for name, value in (c.get("distances") or {}).items():
+        if DISTANCES[name] is not None:
+            change(DISTANCES[name], value, "typed")
+    return {"sex": sex, "fields": sheet}

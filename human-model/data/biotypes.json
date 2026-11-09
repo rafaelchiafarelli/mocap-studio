@@ -1,0 +1,8 @@
+{
+ "_about": "What each pure biotype changes from the model's current values, as multipliers (or a percentage-point change for body fat): by eye (Rafael, 2026-11-08), to be edited. A mixed biotype is the weighted mean of its parts' values. current_body_fat_percent is the neutral bodies' fat share of the simulated body, by mass, from body_female_v10_foot-width and body_male_v4_foot-width. fat_changes_girths: how much of a body-fat change (as a share) reaches each girth.",
+ "current_body_fat_percent": {"female": 28.0, "male": 17.0},
+ "fat_changes_girths": {"waist": 0.6, "hip": 0.4},
+ "ectomorph": {"bone_thickness": 0.90, "limb_length": 1.03, "shoulders": 0.96, "waist": 0.96, "hips": 0.96, "muscle": 0.75, "body_fat_delta": -6.0},
+ "mesomorph": {"bone_thickness": 1.00, "limb_length": 1.00, "shoulders": 1.04, "waist": 0.96, "hips": 1.00, "muscle": 1.25, "body_fat_delta": 0.0},
+ "endomorph": {"bone_thickness": 1.10, "limb_length": 1.00, "shoulders": 1.00, "waist": 1.10, "hips": 1.08, "muscle": 1.10, "body_fat_delta": 8.0}
+}
