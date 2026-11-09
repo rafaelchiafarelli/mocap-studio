@@ -1,9 +1,10 @@
 """What the human model's long runs are doing now, from WSL, refreshing until Ctrl+C: python3 human-model/tools/hm_status.py [--once] [--every SECONDS] [--hours N]
 Reads only what is already there: Docker's containers, Blender's process, nvidia-smi and the output files on G:. A stage counts as done if its output was written in the last N hours."""
-import argparse, datetime, glob, os, shutil, subprocess, time
+import argparse, datetime, glob, json, os, shutil, subprocess, time
 
 ROOT = "/mnt/g/mocap-studio-downloads"
 BUILD, REVIEW = f"{ROOT}/models/hm-build/*", f"{ROOT}/review/*/*"
+FAST_REVIEW = f"{ROOT}/review/*/fast_review/*/*/run.json"
 # stage, words of its command line, where its output lands
 STAGES = (
     ("Ossos", ("build_bones", "spec.py"), [f"{BUILD}/*.bones.npz"]),
@@ -69,6 +70,24 @@ def last_line(path):
     return lines[-1] if lines else "(vazio)"
 
 
+def fast_review_lines(pattern, now, hours):
+    """One line per run of fast_review.py whose run.json changed in the last hours: nickname, body, its stage and how far it got."""
+    lines = []
+    for path in sorted(glob.glob(pattern), key=os.path.getmtime):
+        if now - os.path.getmtime(path) >= hours * 3600:
+            continue
+        try:
+            with open(path, encoding="utf-8") as f:
+                r = json.load(f)
+        except (OSError, ValueError):
+            continue
+        done = sum(s.get("status") == "done" for s in r.get("stages", {}).values())
+        current = next((k for k, s in r.get("stages", {}).items() if s.get("status") in ("running", "failed")), "")
+        word = {"running": "▶", "done": "✓", "failed": "✗"}.get(r.get("status"), "?")
+        lines.append(f"  {word} {r.get('nickname', '?')}/{r.get('sex', '?')}: {done}/{len(r.get('stages', {}))} etapas" + (f", {current}" if current else ""))
+    return lines
+
+
 def screen(hours):
     now, width = time.time(), shutil.get_terminal_size((100, 24)).columns
     cut = lambda s: s if len(s) <= width else s[:width - 1] + "…"
@@ -87,6 +106,9 @@ def screen(hours):
         else:
             state = "·"
         out.append(cut(f"  {name:<22}{state}"))
+    reviews = fast_review_lines(FAST_REVIEW, now, hours)
+    if reviews:
+        out += ["", "FAST REVIEW", *[cut(x) for x in reviews]]
     log = newest([f"{BUILD}/*log*.txt", f"{REVIEW}/*log*.txt", f"{REVIEW}/*/*log*.txt"])
     if log and now - os.path.getmtime(log) < hours * 3600:
         out += ["", cut(f"ÚLTIMO LOG: {os.path.basename(os.path.dirname(log))}/{os.path.basename(log)}, há {ago(now - os.path.getmtime(log))}"), cut(f"  {last_line(log)}")]

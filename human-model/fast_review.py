@@ -1,0 +1,188 @@
+"""One command from a recipe to a walked body in a Blender file, with no rendering, from WSL:
+    python3 human-model/fast_review.py NICKNAME --body female|male [NAME=value ...]
+Stages, in order: build, tape, skin, layers, walk, dump, simulate, file. A NAME=value goes to the stage that knows it (VOXEL, fat.<zone> and
+structure.<name> to layers; depth.<prefix> and MAX_PUSH_MM to skin; the tissue values, VOLUME_EVERY and BONE_TEST to simulate); one that no
+stage knows stops the run before it starts. Results go to review/<today>/fast_review/<nickname>/<sex>/, with run.json and a log per stage.
+A nickname already used that day is refused, so nothing is overwritten."""
+import argparse, datetime, json, os, re, subprocess, sys, time
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+REVIEW = "/mnt/g/mocap-studio-downloads/review"
+DATA = os.path.join(HERE, "data")
+STAGES = ("build", "tape", "skin", "layers", "walk", "dump", "simulate", "file")
+SIMULATE_SETTINGS = ("VOLUME_EVERY", "BONE_TEST")
+WALK_CYCLES, WALK_STOP_STEPS = "4", "2"  # the 2 are the steps of the slow stop, as in docs/muscle-physics.md
+
+
+class Refused(Exception):
+    """The run can't start: the message says why."""
+
+
+class StageFailed(Exception):
+    def __init__(self, stage, log):
+        super().__init__(f"stage {stage} failed; its log is {log}")
+        self.stage, self.log = stage, log
+
+
+def _json(path):
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def known_values(sex, data=DATA):
+    """What each stage can be told, from the same files the stages read their defaults from."""
+    body_fat = _json(os.path.join(data, f"body_fat_{sex}.json"))
+    depth = _json(os.path.join(data, f"skin_over_bone_{sex}.json"))
+    tissue = [k for k in _json(os.path.join(data, "body_tissue.json")) if not k.startswith("_")]
+    return {"layers": {"VOXEL", *(f"fat.{z}" for z in body_fat["fat_mm"]), *(f"structure.{k}" for k in body_fat["structure"])},
+            "skin": {"MAX_PUSH_MM", *(f"depth.{k}" for k in depth["least_depth_mm"])},
+            "simulate": {*tissue, *SIMULATE_SETTINGS}}
+
+
+def route(overrides, known):
+    """{stage: [NAME=value, ...]} for the NAME=value strings given. Raises Refused for anything malformed or that no stage knows."""
+    out = {}
+    for item in overrides:
+        name, eq, value = item.partition("=")
+        if not eq:
+            raise Refused(f"{item}: expected NAME=value")
+        try:
+            float(value)
+        except ValueError:
+            raise Refused(f"{item}: the value must be a number") from None
+        stage = next((s for s, names in known.items() if name in names), None)
+        if stage is None:
+            raise Refused(f"{name}: no stage knows this value")
+        out.setdefault(stage, []).append(item)
+    return out
+
+
+def check_nickname(nickname):
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", nickname):
+        raise Refused(f"{nickname}: a nickname may use only letters, numbers, - and _")
+
+
+def run_folder(root, day, nickname):
+    return os.path.join(root, day, "fast_review", nickname)
+
+
+def refuse_used(root, day, nickname):
+    if os.path.exists(run_folder(root, day, nickname)):
+        raise Refused(f"the nickname {nickname} was already used on {day}: every attempt is kept, so choose another")
+
+
+def outputs(stage, folder, name):
+    """What a stage leaves behind, by name."""
+    return {"build": {"blend": f"{folder}/build/{name}.blend", "bones": f"{folder}/build/{name}.bones.npz", "build_dir": f"{folder}/build"},
+            "tape": {"tape": f"{folder}/tape.json"},
+            "skin": {"skin_fit": f"{folder}/skin/{name}.skin_fit.npz"},
+            "layers": {"layers": f"{folder}/layers/{name}.body_layers.npz"},
+            "walk": {"walk": f"{folder}/walk/{name}_walk.blend"},
+            "dump": {"dump": f"{folder}/dump.npz"},
+            "simulate": {"walked": f"{folder}/simulate/body_walk.npz"},
+            "file": {"body_blend": f"{folder}/body_walk.blend"}}[stage]
+
+
+def commands(stage, folder, name, sex, recipe, made, routed, here=HERE):
+    """The commands of one stage. made: the outputs of the stages before it, as outputs() names them."""
+    blender = [sys.executable, f"{here}/blender_run.py"]
+    gpu = [f"{here}/hm.sh", "--gpu", "python"]
+    tools = "human-model/tools"
+    extra = list(routed.get(stage, ()))
+    if stage == "build":
+        return [[sys.executable, f"{here}/build_model.py", recipe, f"{folder}/build"]]
+    if stage == "tape":
+        return [[*blender, f"{here}/blender/body_tape.py", recipe, f"{folder}/tape.json"]]
+    if stage == "skin":
+        return [[*gpu, f"{tools}/skin_over_bone.py", made["build_dir"], name, made["tape"], f"{folder}/skin", *extra]]
+    if stage == "layers":
+        return [[*gpu, f"{tools}/body_layers.py", made["build_dir"], name, f"{folder}/layers", f"SKIN={made['skin_fit']}", *extra]]
+    if stage == "walk":
+        return [[*blender, "--blend", made["blend"], f"{here}/blender/walk.py", f"{here}/data/gait_walk.json", sex, f"{folder}/walk/{name}_walk.blend", WALK_CYCLES, WALK_STOP_STEPS]]
+    if stage == "dump":
+        return [[*blender, "--blend", made["walk"], f"{here}/blender/body_walk_dump.py", f"{folder}/dump.npz"]]
+    if stage == "simulate":
+        return [[*gpu, f"{tools}/body_walk.py", made["layers"], made["bones"], made["dump"], f"{folder}/simulate", "ABOVE_HIP=10", *extra]]
+    if stage == "file":
+        return [[*blender, f"{here}/blender/body_walk_bake.py", made["walked"], made["layers"], made["bones"], made["dump"], f"{folder}/body_walk.blend", "-"]]
+    raise ValueError(stage)
+
+
+def commit(here=HERE):
+    try:
+        return subprocess.run(["git", "-C", here, "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    except OSError:  # no git here: the tests' image has none
+        return ""
+
+
+def save_record(folder, record):
+    os.makedirs(folder, exist_ok=True)
+    tmp = f"{folder}/run.json.tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(record, fh, indent=1, ensure_ascii=False)
+    os.replace(tmp, f"{folder}/run.json")
+
+
+def run_stage(argv, log, cwd=HERE):
+    """Runs one command, its output going to the stage's log. Returns its exit code."""
+    with open(log, "a", encoding="utf-8") as fh:
+        fh.write("$ " + " ".join(argv) + "\n")
+        fh.flush()
+        return subprocess.call(argv, stdout=fh, stderr=subprocess.STDOUT, cwd=cwd)
+
+
+def run_body(nickname, sex, recipe, overrides, folder, execute=run_stage):
+    """Runs every stage of one body in order. Writes run.json after each. Raises StageFailed at the first that fails."""
+    name = _json(recipe)["name"]
+    routed = route(overrides, known_values(sex))
+    os.makedirs(f"{folder}/logs", exist_ok=True)
+    for sub in ("walk", "skin", "layers", "simulate", "build"):
+        os.makedirs(f"{folder}/{sub}", exist_ok=True)
+    record = {"nickname": nickname, "sex": sex, "commit": commit(), "recipe": recipe, "overrides": list(overrides), "routed": routed,
+              "status": "running", "stages": {}}
+    save_record(folder, record)
+    made = {}
+    for stage in STAGES:
+        log = f"{folder}/logs/{stage}.log"
+        entry = {"status": "running", "log": log, "output": outputs(stage, folder, name)}
+        record["stages"][stage] = entry
+        save_record(folder, record)
+        t0 = time.time()
+        for argv in commands(stage, folder, name, sex, recipe, made, routed):
+            code = execute(argv, log)
+            if code != 0:
+                entry.update(status="failed", seconds=round(time.time() - t0, 1), exit_code=code)
+                record.update(status="failed", failed_stage=stage)
+                save_record(folder, record)
+                raise StageFailed(stage, log)
+        entry.update(status="done", seconds=round(time.time() - t0, 1))
+        made.update(entry["output"])
+        save_record(folder, record)
+    record["status"] = "done"
+    save_record(folder, record)
+    return record
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description="From a recipe to a walked body in a Blender file, no rendering")
+    ap.add_argument("nickname")
+    ap.add_argument("--body", choices=("female", "male"), required=True)
+    ap.add_argument("overrides", nargs="*", metavar="NAME=value")
+    a = ap.parse_args(argv)
+    day = datetime.date.today().isoformat()
+    try:
+        check_nickname(a.nickname)
+        route(a.overrides, known_values(a.body))
+        refuse_used(REVIEW, day, a.nickname)
+    except Refused as e:
+        sys.exit(str(e))
+    folder = os.path.join(run_folder(REVIEW, day, a.nickname), a.body)
+    try:
+        run_body(a.nickname, a.body, os.path.join(DATA, "recipes", f"{a.body}.json"), a.overrides, folder)
+    except StageFailed as e:
+        sys.exit(str(e))
+    print("done:", folder)
+
+
+if __name__ == "__main__":
+    main()

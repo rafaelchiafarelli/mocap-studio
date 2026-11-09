@@ -12,6 +12,7 @@
 - `test_body.py`: `hmcore/body.py` and the pure parts of `tools/body_report.py`.
 - `test_drive.py`: `hmcore/activation.py`, `retarget.py`, `tongue.py`, `morph.py` and `retire.py`.
 - `test_editor.py`: the editor's catalog, recipe and tape.
+- `test_fast_review.py`: the pure parts of `fast_review.py` and `tools/hm_status.py`'s list of runs.
 - `test_fit.py`: `hmcore/fit.py`.
 - `test_jaw_joints.py`: `hmcore/jaw.py` and `joints.py`.
 - `test_layers.py`: `hmcore/layers.py`.
