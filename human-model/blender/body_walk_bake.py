@@ -28,13 +28,15 @@ def animated(name, frames, faces, collection, material, smooth=False):
     for i, co in enumerate(frames):
         k = ob.shape_key_add(name=f"f{i + 1:04d}")
         k.data.foreach_set("co", np.asarray(co, np.float32).ravel())
-        for f, v in ((i, 0.0), (i + 1, 1.0), (i + 2, 0.0)):
+        # the last frame's key stays on, or past the end only the Basis (the first frame) is left and the body jumps back (bug human-model/30)
+        for f, v in ((i, 0.0), (i + 1, 1.0), *([] if i == len(frames) - 1 else [(i + 2, 0.0)])):
             k.value = v
             k.keyframe_insert("value", frame=f)
     if smooth:
         for p in ob.data.polygons:
             p.use_smooth = True
-        ob.modifiers.new("smooth", "SUBSURF").levels = 2
+        mod = ob.modifiers.new("smooth", "SUBSURF")
+        mod.levels, mod.render_levels = 1, 2  # one level on screen: with two, a file of many runs couldn't be moved around (bug human-model/31)
     return ob
 
 

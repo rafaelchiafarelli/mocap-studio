@@ -206,7 +206,7 @@ def test_the_shared_file_has_one_writer(tmp_path):
     assert (tmp_path / "fast_review_todas.lock").exists()
 
 
-CHARACTER_MADE = {"sheet": "/f/sheet.json", "recipe": "/f/n.recipe.json", "shape": "/f/shape.json", "targets": "/f/targets.json", "build_dir": "/f/build", "skin_fit": "/f/skin/n.skin_fit.npz", "fat_table": "/f/skin/n.fat_table.json", "regions": "/f/skin/n.regions.json", "layers": "/f/layers/n.body_layers.npz", "bones": "/f/build/n.bones.npz", "dump": "/f/dump.npz"}
+CHARACTER_MADE = {"sheet": "/f/sheet.json", "recipe": "/f/n.recipe.json", "shape": "/f/shape.json", "targets": "/f/targets.json", "build_dir": "/f/build", "skin_fit": "/f/skin/n.skin_fit.npz", "fat_table": "/f/skin/n.fat_table.json", "regions": "/f/skin/n.regions.json", "tissue": "/f/skin/n.tissue.npz", "layers": "/f/layers/n.body_layers.npz", "bones": "/f/build/n.bones.npz", "dump": "/f/dump.npz"}
 
 
 def test_the_character_path_has_its_own_stages():
@@ -214,7 +214,7 @@ def test_the_character_path_has_its_own_stages():
     build = fr.commands("build", "/f", "n", "female", "/r", CHARACTER_MADE, {}, here="/h")[0]
     assert "/f/n.recipe.json" in build and build[-2:] == ["--targets", "/f/targets.json"]
     layers = fr.commands("layers", "/f", "n", "female", "/r", CHARACTER_MADE, {"layers": ["VOXEL=0.01"]}, here="/h")[0]
-    assert "FAT_TABLE=/f/skin/n.fat_table.json" in layers and "VOXEL=0.01" in layers
+    assert "FAT_TABLE=/f/skin/n.fat_table.json" in layers and "TISSUE=/f/skin/n.tissue.npz" in layers and "VOXEL=0.01" in layers
     simulate = fr.commands("simulate", "/f", "n", "female", "/r", {**CHARACTER_MADE, "walked": "x"}, {}, here="/h")[0]
     assert "REGIONS=/f/skin/n.regions.json" in simulate
     outward = fr.commands("outward", "/f", "n", "female", "/r", CHARACTER_MADE, {"layers": ["VOXEL=0.01", "fat.belly=3"]}, here="/h")[0]

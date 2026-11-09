@@ -4,4 +4,5 @@
 **Where:** `human-model/tools/outward_skin.py`, search `SKIN_OVER_LAYERS`; the scapula placed from the targets, without `settle_superficial`, in `human-model/hmcore/skeleton.py`.
 **How to reproduce:** `<run>/<sex>/layers/*.body_layers.json`, `bones_with_points_outside_skin`, of `t2_neutro` (2026-11-09).
 **Impact:** the acceptance gate of `body-type-selection` asks for no bone through the skin at rest.
+On `t5_*` (2026-11-09), by muscle bodies: neutral woman 2,222 bone points out, up to 14.6 mm (scapulae); neutral man 351, up to 7.6 mm. Others from 21 to 2,633.
 **Status:** Open

@@ -103,6 +103,16 @@ class Resolver:
         return i, self.ind["skin"][i]
 
 
+def follow_rig_edits(rig, edits):
+    """The joints as the bones moved them, so a muscle's ends land on its bones: each edited bone's head, and its parent's tail where they meet."""
+    for name, head in edits.items():
+        if rig[name]["head"] != head:
+            parent = rig[name]["parent"]
+            if parent in rig and rig[parent]["tail"] == rig[name]["head"]:
+                rig[parent]["tail"] = head
+            rig[name]["head"] = head
+
+
 def bilateral(side_entries):
     return [(e, s) for e in side_entries for s in ("L", "R")]
 

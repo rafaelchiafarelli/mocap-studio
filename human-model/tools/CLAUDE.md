@@ -14,9 +14,8 @@
 - `validation_table.py`: the tables in `docs/sources-and-validation.md`.
 - `build_bones.py`: the fitted skeleton of one individual.
 - `bone_neutral.py`: what a build's bones and rig measure in metres, for `data/bone_proportions.json` and the table in `docs/skeleton.md`.
-- `muscle_table.py`: the muscle's thickness per zone on an existing body in layers, for `data/muscle_mm_<sex>.json`.
 - `character_check.py`: one check on a character's body at rest, as a short report; warns and doesn't block (WSL, no Docker).
-- `outward_skin.py`: the skin as the result of the layers: bones, muscle, fat to the sheet's percentage, the skin moved onto them, same points and rig; writes a `skin_fit.npz` for `body_layers.py` and the zone fats for its `FAT_TABLE=` (`hm.sh --gpu`).
+- `outward_skin.py`: the bones, the trunk's cavity and the muscles attached to the bones as grids, the first shape's skin moved out only where they need it, the fat as what's left and reported; writes `skin_fit.npz`, `fat_table.json` and `tissue.npz` for `body_layers.py` (`hm.sh --gpu`).
 - `spec.py`: adds the jaw table and limits to a skeleton's metadata.
 - `build_muscles.py`, `build_fields.py`: muscle list and skin fields of one individual.
 - `solve_take.py`: a take's muscle activations, from shapes and from landmarks.
@@ -36,7 +35,7 @@
 
 ## Key facts / gotchas
 
-- `outward_skin.py` takes where the fat sits from the first shape (what lies between the muscle and that shape), so a silhouette survives; the percentage scales it. The skin is projected twice, the second time unsmoothed and `SKIN_OVER_LAYERS` outside the layers, or bones come through: `outward_skin.py`, search `SKIN_OVER_LAYERS`.
+- `outward_skin.py` keeps the first shape's skin and only pushes it out where bones, muscles or the breast need it (`SKIN_OVER_LAYERS` of tissue over them), so the neutral body stays on its own shape; the first pass smooths, the second takes up what smoothing lost.
 - `outward_skin.py` takes several GB: `fast_review.py` runs one at a time (`HEAVY`), since six at once were killed for memory.
 
 - The CT library is cached in the given folder; delete `ct_library_<sex>.pkl` after changing `bonelib`.
