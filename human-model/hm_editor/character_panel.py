@@ -193,7 +193,7 @@ def _fader(name, lo, hi, default=0.0):
 
 def _group():
     props = {
-        "b_projection": _fader("Projeção (cm; 0 = pela fita)", 0, 25), "b_base": _fader("Base (cm; 0 = da forma)", 0, 20), "b_upper": _fader("Alcance acima", 0, 2), "b_lower": _fader("Alcance abaixo", 0, 2), "b_power": _fader("Fechamento", 0, 5),
+        "b_projection": _fader("Projeção cm", 0, 25), "b_base": _fader("Base cm", 0, 20), "b_upper": _fader("Alcance acima", 0, 2), "b_lower": _fader("Alcance abaixo", 0, 2), "b_power": _fader("Concentração", 0, 5),
         "sex": EnumProperty(name="Sexo", items=(("female", "Feminino", ""), ("male", "Masculino", "")), default="female"),
         "name": StringProperty(name="Nome", default=""),
         "silhouette": EnumProperty(name="Silhueta", items=_silhouettes),
@@ -317,6 +317,28 @@ class HM_OT_check_character(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class HM_PT_breast(bpy.types.Panel):
+    bl_idname = "HM_PT_breast"
+    bl_label = "Seios (faders ao vivo)"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Human"
+    bl_order = 0
+
+    def draw(self, context):
+        p = context.scene.hm_character
+        layout = self.layout
+        if p.sex != "female":
+            layout.label(text="Só no corpo feminino")
+            return
+        layout.label(text="Projeção 0: calculada pela fita")
+        for prop in ("b_projection", "b_base", "b_upper", "b_lower", "b_power", "espacados", "pendentes", "assimetrico_R"):
+            layout.prop(p, prop, slider=True)
+        if _cache["message"]:
+            layout.label(text=_cache["message"])
+        layout.operator("hm_editor.make_character_human")
+
+
 class HM_PT_character(bpy.types.Panel):
     bl_idname = "HM_PT_character"
     bl_label = "Ficha do personagem"
@@ -346,10 +368,6 @@ class HM_PT_character(bpy.types.Panel):
         if p.sex == "female":
             for prop in ("underbust", "bust", "cup", "breast"):
                 box.prop(p, prop)
-            faders = layout.box()
-            faders.label(text="Faders do seio (ao vivo)")
-            for prop in ("b_projection", "b_base", "b_upper", "b_lower", "b_power", "espacados", "pendentes", "assimetrico_R"):
-                faders.prop(p, prop, slider=True)
         box = layout.box()
         box.label(text="Ossos (0 usa a proporção)")
         for prop in ("pelvis_width", "thigh_share", "humerus_share"):
@@ -386,7 +404,7 @@ _registered = []
 
 def register():
     group = _group()
-    _registered[:] = [group, HM_OT_save_character, HM_OT_make_human, HM_OT_generate, HM_OT_open_result, HM_OT_check_character, HM_PT_character]
+    _registered[:] = [group, HM_OT_save_character, HM_OT_make_human, HM_OT_generate, HM_OT_open_result, HM_OT_check_character, HM_PT_breast, HM_PT_character]
     for c in _registered:
         bpy.utils.register_class(c)
     bpy.types.Scene.hm_character = PointerProperty(type=group)

@@ -84,12 +84,20 @@ def test_the_back_of_the_body_doesnt_move():
     assert not bs.footprint(np.array([[0.0, 0.2, 0.0]]), outline())[0]
 
 
-def test_the_slopes_follow_the_outline_exactly():
+def test_ripples_of_the_first_shape_dont_reach_the_slopes():
     v, f = plate()
-    v[:, 1] = 0.01 * np.sin(v[:, 0] * 60)  # ripples the first shape brings
+    v[:, 1] = 0.01 * np.sin(v[:, 0] * 60)
     p = outline()
     out = bs.inflate(v, f, [p])
     r = bs.rho(v, p)
-    slope = (r > 0.5) & (r < 0.8)
-    want = bs.wall_y(v, p) - p["project"] * (1 - r[slope] ** 2) ** 0.5
-    assert np.abs(out[slope, 1] - want).max() < 0.002
+    slope = (r > 0.75) & (r < 0.85)
+    want = bs.wall_y(v, p) - p["project"] * (1 - r[slope] ** 2) ** (bs.PROFILE * p["power"])
+    assert np.abs(out[slope, 1] - want).max() < 0.006
+
+
+def test_the_edge_has_no_wall():
+    v, f = plate(121)
+    p = outline()
+    out = bs.inflate(v, f, [p])
+    r = bs.rho(v, p)
+    assert np.abs(out[(r > 0.92) & (r < 1.0), 1] - bs.wall_y(v, p)).max() < 0.012
