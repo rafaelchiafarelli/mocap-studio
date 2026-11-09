@@ -15,8 +15,8 @@
 - `ctbones.py`: labels to meshes in the model's frame; `split_mandible`.
 - `sources.py`: `.vtp`, `.osim` and BMF `.mat` readers.
 - `bonelib.py`: the bone library of one sex.
-- `fit.py`: placing a bone: segment and box maps, winding number, skin profiles, `outward` winding; `SkinDepth`, signed depth under the skin on the CPU, `solids`, the same over several closed meshes, `settle`, the smallest rigid move that leaves a bone under enough tissue, and `slim_to_skin`, which narrows bones height by height where the skin around them is too thin (with `largest_scale`).
-- `skeleton.py`: fits the whole skeleton to one individual; it narrows the femur's lower half, patella, tibia, fibula and larynx to the skin around them, and `settle_superficial` then moves the scapulae, clavicles and fibulae under the skin.
+- `fit.py`: placing a bone: segment and box maps, winding number, skin profiles, `outward` winding; `SkinDepth`, signed depth under the skin on the CPU, `solids`, the same over several closed meshes, `settle`, the smallest rigid move that leaves a bone under enough tissue, `slim_to_skin`, which narrows bones height by height where the skin around them is too thin (with `largest_scale`), and `thicken`, which scales a bone across its axis only.
+- `skeleton.py`: fits the whole skeleton to one individual; it narrows the femur's lower half, patella, tibia, fibula and larynx to the skin around them, and `settle_superficial` then moves the scapulae, clavicles and fibulae under the skin. With `targets` (`bone_targets`), the trunk, girdle and limbs take sizes from them instead of the skin; head, hands and feet still follow the skin there.
 - `parametric.py`: hyoid and larynx, which no allowed mesh covers.
 - `jaw.py`: jaw opening as rotation, then sliding.
 - `joints.py`: joint limits, measured and declared.
@@ -34,6 +34,7 @@
 - `skinfit.py`: pushes the skin out where a bone has less tissue over it than declared; a bone that would need more than the most push is left alone as misplaced.
 - `meshgpu.py`: inside-or-outside and closest point for millions of points, on Warp's meshes. GPU image only.
 - `character.py`: a character's sheet: reading and checking a character file (`problems`, `load`), and `resolve`: the full sheet, each field with its value and where it came from. Standard library only.
+- `bone_targets.py`: from a resolved sheet to the bones' target sizes in metres, each with where it came from (measure, proportion or parameter); `data/bone_proportions.json` holds the neutral bodies' proportions.
 - `regions.py`: physical values per tetrahedron, one default per tissue and overrides by tissue and zone that fade in at a zone's border.
 - `layers.py`: a limb from the inside out: skin patch, voxels labelled bone, muscle or fat, tetrahedra, and the skin tied to them. [docs/muscle-physics.md](../docs/muscle-physics.md#experiment-2-a-thigh-built-from-the-inside-out).
 

@@ -141,3 +141,12 @@ def test_slim_to_skin_along_one_direction_leaves_the_others():
     (a, b), least = fit.slim_to_skin([side, front], [0, 0, -1.0], [0, 0, 1.0], v, depth, 0.05, start=0.0, bin_size=0.05, reach=2.0, only=np.array([1.0, 0, 0]))
     assert 0.8 < least < 1 and a[:, 0].max() < 0.96
     assert b == pytest.approx(front, abs=1e-9)
+
+
+@pytest.mark.parametrize("k", [0.9, 1.0, 1.1])
+def test_thickening_keeps_the_length_and_scales_the_width(k):
+    from hmcore import fit
+    v = np.array([[0.01, 0, 0.0], [-0.01, 0, 0.0], [0.01, 0, 0.3], [0, 0.01, 0.15]])
+    out = fit.thicken(v, [0, 0, 0], [0, 0, 0.3], k)
+    assert np.ptp(out[:, 2]) == pytest.approx(0.3)
+    assert np.ptp(out[:, 0]) == pytest.approx(0.02 * k)

@@ -16,3 +16,5 @@ Task 2.
 ## Pre-work
 
 None.
+
+**Status:** Done (2026-11-08), unit-tested on the pure parts; that a change of fat alone changes no bone is tested at the targets (test_bone_targets.py), since the build reads them, not the trunk's skin. Head, hands and feet still follow their own skin.
