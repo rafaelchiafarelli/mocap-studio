@@ -15,7 +15,7 @@ def compact(verts, faces):
     return verts[used], inv.reshape(-1, 3)
 
 
-ZONES = ("neck", "chest", "breast", "upper_back", "belly", "flanks", "lower_back", "hips", "buttocks",
+ZONES = ("neck", "chest", "breast_L", "breast_R", "upper_back", "belly", "flanks", "lower_back", "hips", "buttocks_upper_center", "buttocks_upper_side", "buttocks_lower_center", "buttocks_lower_side",
          "thigh_front", "thigh_back", "thigh_inner", "thigh_outer", "knee", "calf_front", "calf_back",
          "upper_arm_front", "upper_arm_back", "forearm")  # as hmcore/body.py, which this Blender can't import
 
