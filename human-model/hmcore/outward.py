@@ -72,6 +72,17 @@ def push_needed(points, inner_sdf, origin, h):
     return np.maximum(-sample(inner_sdf, points, origin, h), 0.0)
 
 
+def push_needed_on_surface(points, tris, inner_sdf, origin, h):
+    """The same over the whole skin, not only at its vertices: a bone's edge can stand out between them. Each triangle is asked at its middle and its edges' middles, and every vertex takes the most its triangles ask for."""
+    t = points[tris]
+    samples = np.concatenate([t.mean(axis=1), t[:, [0, 1]].mean(axis=1), t[:, [1, 2]].mean(axis=1), t[:, [2, 0]].mean(axis=1), t[:, 0], t[:, 1], t[:, 2]])
+    need = np.maximum(-sample(inner_sdf, samples, origin, h), 0.0).reshape(7, -1).max(axis=0)
+    out = np.zeros(len(points))
+    for k in range(3):
+        np.maximum.at(out, tris[:, k], need)
+    return out
+
+
 def folded(before, after, tris):
     """How many triangles turned over: their normals point the other way after the move."""
     nb = np.cross(before[tris[:, 1]] - before[tris[:, 0]], before[tris[:, 2]] - before[tris[:, 0]])
