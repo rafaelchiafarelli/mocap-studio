@@ -6,8 +6,8 @@ from scipy import ndimage
 from scipy.spatial import ConvexHull
 from . import fit, layers
 
-BONE, MUSCLE, FAT, SKIN, CAVITY, FAT_DEEP, GLAND = 0, 1, 2, 3, 4, 5, 6
-LABELS = ("bone", "muscle", "fat", "skin", "cavity", "fat_deep", "gland")
+BONE, MUSCLE, FAT, SKIN, CAVITY, FAT_DEEP, GLAND, VISCERA = 0, 1, 2, 3, 4, 5, 6, 7
+LABELS = ("bone", "muscle", "fat", "skin", "cavity", "fat_deep", "gland", "viscera")
 GLUTEUS_ZONES = ("buttocks_upper_center", "buttocks_upper_side", "buttocks_lower_center", "buttocks_lower_side")
 BREAST_ZONES = ("breast_L", "breast_R")
 ZONES = ("neck", "chest", *BREAST_ZONES, "upper_back", "belly", "flanks", "lower_back", "hips", *GLUTEUS_ZONES,
@@ -218,11 +218,11 @@ def label_voxels(d_skin, t_fat, t_superficial, d_bone, inside, in_bone, in_chest
     """A tissue label per voxel from what build measured. t_superficial is where the fat's outer layer ends; where the fat is under two cubes thick it stays one layer, so a thin layer isn't split into bands narrower than the mesh can show."""
     lab = np.full(len(d_skin), MUSCLE, np.int8)
     deep = d_skin > t_fat + s["abdominal_wall_mm"]
-    lab[in_trunk & front_of_spine & deep & (d_bone > s["cavity_bone_gap_mm"])] = CAVITY
+    lab[in_trunk & front_of_spine & deep & (d_bone > s["cavity_bone_gap_mm"])] = VISCERA  # the belly's organs; the chest's cavity is laid over them next
     # The lungs reach back beside the spine, so the chest's cavity isn't held in front of it as the belly's is (body_v2 was)
     lab[in_chest & (d_bone > s["cavity_bone_gap_mm"])] = CAVITY
     lab[breast & ~in_chest & (~chest_bone | (d_bone > s["pectoral_mm"]))] = FAT
-    lab[(d_skin < t_fat) & (lab != CAVITY)] = FAT
+    lab[(d_skin < t_fat) & ~np.isin(lab, (CAVITY, VISCERA))] = FAT
     lab[(lab == FAT) & (d_skin >= t_superficial) & (t_fat >= 2 * h)] = FAT_DEEP
     if gland:  # the woman only: the breast's fat deeper than gland_skin_mm under the skin becomes gland
         lab[breast & np.isin(lab, (FAT, FAT_DEEP)) & (d_skin >= s["gland_skin_mm"])] = GLAND
@@ -298,7 +298,8 @@ def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None, d
     moved = {"muscle_to_fat": island_cleanup(clean, MUSCLE, FAT, int(structure["min_island_voxels"])),
              "deep_fat_to_fat": island_cleanup(clean, FAT_DEEP, FAT, int(structure["min_island_voxels"])),
              "gland_to_fat": island_cleanup(clean, GLAND, FAT, int(structure["min_island_voxels"])),
-             "cavity_to_muscle": island_cleanup(clean, CAVITY, MUSCLE, int(structure["min_island_voxels"]))}
+             "cavity_to_muscle": island_cleanup(clean, CAVITY, MUSCLE, int(structure["min_island_voxels"])),
+             "viscera_to_muscle": island_cleanup(clean, VISCERA, MUSCLE, int(structure["min_island_voxels"]))}
     nodes, tets, tet_voxel, vox = layers.tetrahedra(clean >= 0, origin, h)
     tet_label = clean[tuple(vox.T)][tet_voxel]
     zone_index = {z: i for i, z in enumerate(ZONES)}

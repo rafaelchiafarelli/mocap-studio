@@ -13,7 +13,7 @@ from hmcore import body, fit, layers, meshgpu
 
 N_BODY = 13380  # MakeHuman's body vertices come first; helpers follow, as in blender/export_blend.py
 DATA =os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
-COLORS = {"bone": (230, 220, 190), "muscle": (155, 30, 25), "fat": (240, 205, 90), "skin": (215, 165, 140), "cavity": (110, 140, 200), "fat_deep": (225, 175, 70), "gland": (220, 130, 150)}
+COLORS = {"bone": (230, 220, 190), "muscle": (155, 30, 25), "fat": (240, 205, 90), "skin": (215, 165, 140), "cavity": (110, 140, 200), "fat_deep": (225, 175, 70), "gland": (220, 130, 150), "viscera": (150, 110, 190)}
 
 
 def zone_colors(zone_names):
@@ -56,7 +56,7 @@ def measure(r, skin, bones, fat_mm, gpu_mesh, rig):
     closest = sorted(((v["closest_to_skin_mm"], k) for k, v in report.items() if v["closest_to_skin_mm"] is not None))[:10]
 
     grid_lab = r["labels_clean"]
-    under = r["centres"][(grid_lab == body.MUSCLE) | (grid_lab == body.CAVITY) | (grid_lab == body.BONE)]
+    under = r["centres"][(grid_lab == body.MUSCLE) | (grid_lab == body.CAVITY) | (grid_lab == body.VISCERA) | (grid_lab == body.BONE)]
     ids = r["skin_ids"]
     actual = cKDTree(under).query(skin[ids])[0] - r["h"] / 2
     fat = {}
