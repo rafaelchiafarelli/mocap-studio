@@ -173,3 +173,12 @@ def test_cut_zones_face_away_and_catch_what_lies_past_them():
     assert zones[0][1] @ [0, 0, 1] < -0.99 and zones[1][1] @ [0, 0, 1] > 0.99
     p = np.array([[0, 0, -0.01], [0, 0, 0.5], [0, 0, 1.02], [0.5, 0, 1.02]])
     assert body_walk.near_cuts(p, zones, 0.0).tolist() == [True, False, True, False]
+
+
+def test_volumes_are_measured_every_so_many_frames_and_on_the_last():
+    import os, sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
+    import body_walk
+    measured = [f for f in range(25) if body_walk.measures_volume(f, 24, 10)]
+    assert measured == [0, 10, 20, 24]
+    assert all(body_walk.measures_volume(f, 24, 1) for f in range(25))

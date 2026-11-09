@@ -1,7 +1,7 @@
 """The whole woman in layers, at rest (task muscle-physics/body-at-rest/1).
     hm.sh --gpu python human-model/tools/body_layers.py BUILD_DIR NAME OUT_DIR [fat.<zone>=mm ...] [structure.<name>=value ...] [VOXEL=m] [SKIN=skin_fit.npz]
 SKIN takes the skin from tools/skin_over_bone.py in place of the build's.
-Reads <NAME>.export.npz, .export.json and .bones.npz from BUILD_DIR, and the fat per zone from data/body_fat_<sex>.json.
+Reads <NAME>.export.npz, .export.json and .bones.npz from BUILD_DIR, the fat per zone from data/body_fat_<sex>.json and the cube's size from data/simulation.json (VOXEL=m overrides it for this run).
 Writes to OUT_DIR, every step numbered: 01_skin_cut.ply, 02_skin_capped.ply, 03_zones.ply, 04_fat_thickness.ply (coloured),
 05_raw_<label>.ply (voxel centres), 06_<label>_surface.ply, 07_cutaway_<label>.ply (the back half), <NAME>.body_layers.npz and .json."""
 import json, os, sys, time
@@ -12,8 +12,7 @@ import warp as wp
 from hmcore import body, fit, layers, meshgpu
 
 N_BODY = 13380  # MakeHuman's body vertices come first; helpers follow, as in blender/export_blend.py
-VOXEL = 0.005  # m, as the thigh
-DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
+DATA =os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
 COLORS = {"bone": (230, 220, 190), "muscle": (155, 30, 25), "fat": (240, 205, 90), "skin": (215, 165, 140), "cavity": (110, 140, 200)}
 
 
@@ -74,6 +73,7 @@ def measure(r, skin, bones, fat_mm, gpu_mesh, rig):
 
 def main(build_dir, name, out_dir, overrides):
     global VOXEL
+    VOXEL = json.load(open(os.path.join(DATA, "simulation.json")))["VOXEL_M"]
     skin_file = None
     os.makedirs(out_dir, exist_ok=True)
     meta = json.load(open(os.path.join(build_dir, f"{name}.export.json")))

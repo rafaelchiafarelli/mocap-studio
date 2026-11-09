@@ -16,9 +16,14 @@
 - `human-model/tools/hm_status.py` shows what is running.
 - The chain, per body: `build_model.py RECIPE OUT --from bones`, `tools/skin_over_bone.py`, `tools/body_layers.py SKIN=`, `blender/walk.py gait_walk.json SEX OUT 4 2` (the last 2 are the steps of the slow stop), `blender/body_walk_dump.py`, `tools/body_walk.py ABOVE_HIP=10`, `blender/body_walk_bake.py`. The commands are in `human-model/docs/muscle-physics.md`.
 
+## What the simulation costs (measured 2026-11-08)
+
+The table is in `human-model/docs/muscle-physics.md`, section "Where a walk's time goes". With the new defaults (5 mm, volumes every 10 frames), a simulation takes 3 to 3.5 minutes instead of 8.5.
+
 ## To work out when planning
 
-- **Run the two bodies side by side.** The machine has room (28 threads, under a third of the GPU's memory in use); most of the time is the bones on the CPU and Blender. Each stage only needs the one before it, for its own body.
-- **Skip what didn't change:** a change to the tissue values needs only the simulation and the file, not the bones.
-- **Where results go,** with names that say what they are, since every attempt is kept.
+- **Run the two bodies side by side.** The machine has room (28 threads, and two simulations at once used about 400 MB of the GPU's memory). Bones take about 11 minutes per body; whether two at once slow each other isn't measured. Each stage only needs the one before it, for its own body.
+- **Skip what didn't change:** a change to the tissue values needs only the simulation and the file, not the bones. To decide: name the stage and the earlier run to reuse (recommended), or detect it. Rafael hasn't chosen.
+- **Where results go,** with names that say what they are, since every attempt is kept. Rafael (2026-11-08) asked for every run in one Blender file, each with its nickname, given on the command line, as text floating over the model. The proposal: each run keeps its own file (855 MB) and the shared file links to them. Whether links play the walk, and how much memory they take, is to be tested with two runs first. The walk moves about 6 m along Y, so runs sit side by side along X.
+- **The simulation's stages will change** if the body's construction is redesigned (`body-type-selection`), so the front of the chain must be replaceable.
 - **Moving the section:** the inner view is a fixed half today. A plane to drag belongs to initiative `xray-view`.
