@@ -70,6 +70,8 @@ Flow inside the liquid, fibres as separate objects, force changing with fibre le
 
 ## Experiment 2: a thigh built from the inside out
 
+**Moved on 2026-11-08:** this experiment's scripts are in `scratch/`, so the paths below are from before the move. To run them, move them back; see [scratch/CLAUDE.md](../scratch/CLAUDE.md).
+
 Epic `thigh` of `initiatives/muscle-physics/`. Today the skin comes first and the bones are fitted inside it. Here the order is turned round on one thigh: the femur, muscle around it, fat under the skin, and the skin tied to them. Task 2 builds it at rest; task 3 will make it walk on the GPU.
 
 **How it's built** (`hmcore/layers.py`, `tools/thigh_layers.py`):
@@ -150,6 +152,8 @@ Task 1 of epic `thigh`: can the RTX 4080 SUPER simulate soft tissue fast enough 
     human-model/hm.sh --gpu python human-model/tools/gpu_bench.py OUT_DIR [NAME=value ...]
 
 ## Experiment 3: the layered thigh walks
+
+**Moved on 2026-11-08:** this experiment's scripts are in `scratch/`, so the paths below are from before the move. To run them, move them back; see [scratch/CLAUDE.md](../scratch/CLAUDE.md).
 
 Task 3 of epic `thigh`. The thigh of experiment 2 goes through the neutral woman's walk (`female_walk_review.blend`, 105 frames, 4.4 s), then holds still for one second. The femur is moved exactly as in that file; muscle, fat and skin follow on the GPU. The same steps, measured on the current model's skin, are the comparison.
 
