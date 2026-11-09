@@ -8,7 +8,7 @@
 
 - **The walk glues the foot.** A foot point that touches the floor keeps that place until the foot leaves, and the leg's hip, knee and ankle are corrected to hold it (`human-model/blender/walk.py:144`). This floor is a height rule, with no forces.
 - **The GPU solver has a floor,** used only by the soft cube test (`human-model/tools/gpu_bench.py:31`). A point that touches it stays where it touched, so its friction is total, which is also a kind of glue (`human-model/hmcore/xpbd.py:60`).
-- **The simulated body ends at the ankles** (`human-model/hmcore/body.py:16`): the feet aren't in the layers, so nothing there could touch a floor.
+- **The simulated body ends at the ankles** (`human-model/hmcore/body.py:18`): the feet aren't in the layers, so nothing there could touch a floor.
 - **Bones are imposed.** The simulation carries tissue on bones whose motion is already decided, so a floor can't hold or push a bone back. The foot only sticks by friction if the foot is part of what gets solved.
 
 ## The three levels

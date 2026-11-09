@@ -2,7 +2,7 @@
 
 **Goal:** choose a character's silhouette and biotype by name, and have the whole body follow the choice (Rafael, 2026-11-08). Silhouette and biotype must stay selectable whatever fixes the body receives.
 
-**Status:** planned: epics and tasks in [epics/](epics/README.md). Nothing built.
+**Status:** built in a first pass on branch `body-type-selection`, not merged: epics and tasks in [epics/](epics/README.md). The gate is Rafael's verdict on the eight bodies (`review\\fast_review_todas.blend`, 2026-11-09). Task `editor-sheet/3` waits for its pre-work.
 
 ## What Rafael has asked for
 

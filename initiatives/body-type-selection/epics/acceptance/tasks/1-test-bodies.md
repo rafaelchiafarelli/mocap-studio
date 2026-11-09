@@ -16,3 +16,5 @@ Epic `character-sheet`.
 ## Pre-work
 
 None.
+
+**Status:** Done (2026-11-08).
