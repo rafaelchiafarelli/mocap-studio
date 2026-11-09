@@ -69,4 +69,10 @@ def test_the_sacrum_meets_l5():
     import numpy as np
     from hmcore import skeleton
     sacrum = np.array([[0, 0.05, 1.0], [0, 0.02, 1.0], [0, 0.08, 1.2], [0, 0.07, 1.25]])
-    assert skeleton.pelvis_forward(sacrum, 0.02, gap=0.003) == pytest.approx(0.08 - 0.02 - 0.003)
+    assert skeleton.pelvis_forward(sacrum, 0.02, gap=0.003) == pytest.approx(0.07 - 0.02 - 0.003)  # the top tenth of its height is the last point
+
+
+def test_a_bone_of_the_targets_length_ends_along_the_rigs_direction():
+    import numpy as np
+    from hmcore import skeleton
+    assert skeleton.along([0, 0, 1], [0, 0, 0.5], 0.4) == pytest.approx(np.array([0, 0, 0.6]))
