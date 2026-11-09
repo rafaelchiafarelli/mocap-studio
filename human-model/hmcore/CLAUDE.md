@@ -33,7 +33,7 @@
 - `body.py`: the whole body in layers at rest: cut at neck (along the rig's head weights), wrists and ankles, plastic-surgery zones, bone, muscle, fat, skin band and cavity. Takes the GPU mesh class as an argument, so it imports without Warp.
 - `skinfit.py`: pushes the skin out where a bone has less tissue over it than declared; a bone that would need more than the most push is left alone as misplaced.
 - `meshgpu.py`: inside-or-outside and closest point for millions of points, on Warp's meshes. GPU image only.
-- `character.py`: a character's sheet: reading and checking a character file (`problems`, `load`), standard library only.
+- `character.py`: a character's sheet: reading and checking a character file (`problems`, `load`), and `resolve`: the full sheet, each field with its value and where it came from. Standard library only.
 - `layers.py`: a limb from the inside out: skin patch, voxels labelled bone, muscle or fat, tetrahedra, and the skin tied to them. [docs/muscle-physics.md](../docs/muscle-physics.md#experiment-2-a-thigh-built-from-the-inside-out).
 
 ## Key facts / gotchas
