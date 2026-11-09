@@ -1,5 +1,5 @@
 """The whole woman in layers, at rest (task muscle-physics/body-at-rest/1).
-    hm.sh --gpu python human-model/tools/body_layers.py BUILD_DIR NAME OUT_DIR [fat.<zone>=mm ...] [structure.<name>=value ...] [VOXEL=m] [SKIN=skin_fit.npz]
+    hm.sh --gpu python human-model/tools/body_layers.py BUILD_DIR NAME OUT_DIR [fat.<zone>=mm ...] [structure.<name>=value ...] [VOXEL=m] [SKIN=skin_fit.npz] [FAT_TABLE=fat_table.json]
 SKIN takes the skin from tools/skin_over_bone.py in place of the build's.
 Reads <NAME>.export.npz, .export.json and .bones.npz from BUILD_DIR, the fat per zone from data/body_fat_<sex>.json and the cube's size from data/simulation.json (VOXEL=m overrides it for this run).
 Writes to OUT_DIR, every step numbered: 01_skin_cut.ply, 02_skin_capped.ply, 03_zones.ply, 04_fat_thickness.ply (coloured),
@@ -88,6 +88,9 @@ def main(build_dir, name, out_dir, overrides):
             continue
         if k == "SKIN":
             skin_file = val
+            continue
+        if k == "FAT_TABLE":  # each zone's fat, from tools/outward_skin.py, in place of the table's
+            fat_mm.update(json.load(open(val))["fat_mm"])
             continue
         group, _, key = k.partition(".")
         table = {"fat": fat_mm, "structure": structure}.get(group)

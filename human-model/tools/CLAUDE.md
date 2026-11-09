@@ -15,6 +15,7 @@
 - `build_bones.py`: the fitted skeleton of one individual.
 - `bone_neutral.py`: what a build's bones and rig measure in metres, for `data/bone_proportions.json` and the table in `docs/skeleton.md`.
 - `muscle_table.py`: the muscle's thickness per zone on an existing body in layers, for `data/muscle_mm_<sex>.json`.
+- `outward_skin.py`: the skin as the result of the layers: bones, muscle, fat to the sheet's percentage, the skin moved onto them, same points and rig; writes a `skin_fit.npz` for `body_layers.py` and the zone fats for its `FAT_TABLE=` (`hm.sh --gpu`).
 - `spec.py`: adds the jaw table and limits to a skeleton's metadata.
 - `build_muscles.py`, `build_fields.py`: muscle list and skin fields of one individual.
 - `solve_take.py`: a take's muscle activations, from shapes and from landmarks.
