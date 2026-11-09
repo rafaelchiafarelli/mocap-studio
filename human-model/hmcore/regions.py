@@ -5,7 +5,7 @@ from scipy import ndimage
 
 SMOOTH_VOXELS = 3
 VALUES = ("young", "density", "poisson", "damping")
-KEY = {"bone": "MUSCLE", "muscle": "MUSCLE", "fat": "FAT", "skin": "SKIN", "cavity": "CAVITY", "fat_deep": "FAT_DEEP"}
+KEY = {"bone": "MUSCLE", "muscle": "MUSCLE", "fat": "FAT", "skin": "SKIN", "cavity": "CAVITY", "fat_deep": "FAT_DEEP", "gland": "GLAND"}
 
 
 def defaults(cfg, labels):

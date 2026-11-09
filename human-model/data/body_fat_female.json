@@ -6,6 +6,7 @@
  "fat_deep_share": {"breast_L": 0.4, "breast_R": 0.4, "buttocks_upper_center": 0.5, "buttocks_upper_side": 0.5, "buttocks_lower_center": 0.5, "buttocks_lower_side": 0.5, "belly": 0.3, "flanks": 0.3, "hips": 0.3},
  "structure": {
   "pectoral_mm": 15,
+  "gland_skin_mm": 12,
   "abdominal_wall_mm": 15,
   "cavity_bone_gap_mm": 5,
   "cavity_behind_spine_front_mm": 30,
