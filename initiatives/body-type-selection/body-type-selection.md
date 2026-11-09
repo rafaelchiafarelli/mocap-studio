@@ -18,6 +18,47 @@ Silhouettes he named:
 - **Female:** ampulheta, triângulo/pêra, triângulo invertido, retângulo, oval.
 - **Male:** trapézio, triângulo invertido, retângulo, triângulo, oval.
 
+## Specification under study (Rafael, 2026-11-08)
+
+From an investigation session; nothing here is built. It would change the order in which a body is made, so it needs a redesign agreed before tasks are written.
+
+**Order of the choices:**
+
+1. Silhouette and biotype.
+2. Height and body-fat percentage.
+3. Key distances, from which the bones are calculated. Reference: `G:\mocap-studio-downloads\Modelagem_Plana-referencia.pdf` (one page, 15 pattern-making measures). Measures 7 and 9 are bony landmarks; 4, 5 and 12 are near it; 8, 14 and 15 are girths with little fat. The rest are soft tissue or garment lengths.
+4. Every physical quantity per body region: stiffness, Poisson's ratio, density, damping, fat thickness.
+
+**Bone inputs the sheet doesn't give** are parameters of the configuration: the pelvis's real width (measure 3 goes over the fat), the thigh/shin split and the humerus/forearm split.
+
+**Tissues:**
+
+- **Two fat layers,** more marked in some regions, the gluteus and the breast above all.
+- **Mammary gland** as its own tissue (proposed in the session, not yet confirmed).
+- **Viscera:** the belly gets its own tissue, separate from the chest, in the woman and the man, kept computationally simple.
+
+**Gluteus shape,** chosen by name:
+
+- **Quadrado/retangular:** hip, waist and side of the thigh of similar width; a straight side line, little projection.
+- **Redondo:** balanced, symmetric volume with defined curves throughout.
+- **Coração/pêra invertida:** narrow near the waist, full at the base, a marked curve.
+- **Em V/triângulo invertido:** wider above, narrower at the base; less lower fat or loss of muscle support.
+- **Em A/trapezoidal:** narrow above, wider in the lower buttocks and hips.
+
+**Breast shape:**
+
+- **Exclusive shapes:** redondos, lágrima/gota, cônicos, tuberosos.
+- **Independent adjustments, combined with any shape:** espaçados (leste-oeste), assimétricos, pendentes/flácidos.
+- **Always adjustable after the choice:** volume, density and the other physical values.
+
+**Breast measures:**
+
+- **Sub-busto:** just under the breasts, snug and level around the thorax.
+- **Busto:** horizontally at the fullest part, usually at the nipples.
+- **Copa/taça, two-way:** its letter comes from bust minus sub-busto, at 2 cm per letter. Setting the cup holds the thorax and raises the bust; setting the bust recalculates the cup.
+
+**Still open:** whether waist and hip are typed in or follow from silhouette and body fat (a proposal: they follow, with fine adjustment by the pattern-making sheet).
+
 ## What exists today
 
 - **No selector by name.** The Human Model Editor offers sliders only: weight, proportions, muscle, regional circumferences (`human-model/docs/character-controls.md:44`). A silhouette can only be approached by hand.
