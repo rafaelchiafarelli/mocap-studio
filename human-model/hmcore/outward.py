@@ -67,3 +67,40 @@ def per_cell(points, values, centres):
     """A value per grid cell from the nearest of these points, as the fat's thickness per skin vertex becomes a thickness per cell."""
     from scipy.spatial import cKDTree
     return values[cKDTree(points).query(centres, workers=-1)[1]]
+
+
+def signed_distance(solid, h):
+    """Metres to the solid's surface, on the cell grid: positive outside, negative inside."""
+    return (ndimage.distance_transform_edt(~solid) - ndimage.distance_transform_edt(solid)) * h
+
+
+def sample(field, points, origin, h):
+    """A cell-centred field at these points, by linear interpolation."""
+    return ndimage.map_coordinates(field, ((np.asarray(points) - origin) / h - 0.5).T, order=1, mode="nearest")
+
+
+def vertex_normals(points, tris):
+    n = np.cross(points[tris[:, 1]] - points[tris[:, 0]], points[tris[:, 2]] - points[tris[:, 0]])
+    out = np.zeros(points.shape)
+    for k in range(3):
+        np.add.at(out, tris[:, k], n)
+    return out / np.maximum(np.linalg.norm(out, axis=1, keepdims=True), 1e-12)
+
+
+def project(points, normals, sdf, origin, h, most, iterations=8):
+    """Moves points along their normals onto the surface where sdf is zero, by at most most metres. Their topology stays the same."""
+    p = np.asarray(points, float).copy()
+    start = p.copy()
+    for _ in range(iterations):
+        d = sample(sdf, p, origin, h)
+        p -= normals * np.clip(d, -3 * h, 3 * h)[:, None]
+        along = np.einsum("ij,ij->i", p - start, normals)
+        p = start + normals * np.clip(along, -most, most)[:, None]
+    return p
+
+
+def folded(before, after, tris):
+    """How many triangles turned over: their normals point the other way after the move."""
+    nb = np.cross(before[tris[:, 1]] - before[tris[:, 0]], before[tris[:, 2]] - before[tris[:, 0]])
+    na = np.cross(after[tris[:, 1]] - after[tris[:, 0]], after[tris[:, 2]] - after[tris[:, 0]])
+    return int((np.einsum("ij,ij->i", nb, na) < 0).sum())

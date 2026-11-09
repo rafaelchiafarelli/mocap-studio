@@ -502,3 +502,12 @@ Measured on 2026-11-08 (investigation session), the man and the woman side by si
 With 5 mm, volumes every 10 frames and the bone test on (`c5_padrao_novo_5mm_volumes_10q`), the simulation takes 176 s for the woman and 210 s for the man, side by side. With the bone test off, `bone_through_skin` in `body_walk.json` reads `"measured": false` and the CSV has no bone columns: no result there doesn't mean no bone came through.
 
 **What the sampled volumes miss:** `volume_range` in `body_walk.json` now covers only the measured frames, and the worst moment can fall between them. On the man, the fat's range reads 99.85% to 100.16% against 98.49% to 100.84% measured every frame; its worst is frame 2, the start of the walk. To see the whole range, run with `VOLUME_EVERY=1`. In `body_walk_frames.csv`, the frames not measured have those columns empty.
+
+
+## The new path (body-type-selection), and the fit fixes it should make unnecessary
+
+`tools/outward_skin.py` makes the skin the result of bones, muscle and fat. With bones from the sheet (`hmcore/bone_targets.py`, `skeleton.build(targets=...)`), these fixes should stop being needed; none is removed yet (Rafael: today's path stays until the new one beats it):
+
+- `tools/skin_over_bone.py`, the skin pushed over the bones.
+- In `hmcore/skeleton.py`: `settle_superficial`, the slim-to-skin steps for femur, tibia, fibula, larynx, ribs and foot, and the pelvis's `settle`.
+- Bones reading the trunk's skin at all: `fit.body_half_width`, `fit.body_profile` for spine and ribs.

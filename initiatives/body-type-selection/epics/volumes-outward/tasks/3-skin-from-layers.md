@@ -25,3 +25,5 @@ None.
 ## Stop and bring to Rafael if
 
 - Points can't reach the surface without tearing or folding the mesh.
+
+**Status:** Done (2026-11-08), unit-tested on pure parts; tools/outward_skin.py reports triangles turned over, the stop condition of this task, and hasn't run on a body yet, by Rafael's instruction. Fit fixes no longer needed are listed in human-model/docs/muscle-physics.md.

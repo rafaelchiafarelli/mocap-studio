@@ -88,3 +88,60 @@ def test_masses_count_the_real_skin():
     m = outward.masses_kg(in_bone, core, muscle, np.zeros_like(in_bone), keep, h, 1.0)
     assert m["skin"] == pytest.approx(1.0 * 0.0015 * 1100)
     assert outward.fat_percent(m) == 0.0
+
+
+def _sphere(n=24, m=12, radius=1.0):
+    th = np.linspace(0.2, np.pi - 0.2, m)
+    ph = np.linspace(0, 2 * np.pi, n, endpoint=False)
+    v = np.array([[radius * np.sin(t) * np.cos(p), radius * np.sin(t) * np.sin(p), radius * np.cos(t)] for t in th for p in ph])
+    f = []
+    for i in range(m - 1):
+        for j in range(n):
+            a, b = i * n + j, i * n + (j + 1) % n
+            f += [(a, b + n, b), (a, a + n, b + n)]
+    return v, np.array(f)
+
+
+def test_the_skin_lands_on_the_layers_outer_surface():
+    h = 0.01
+    a = (np.arange(90) + 0.5) * h - 0.45
+    xyz = np.stack(np.meshgrid(a, a, a, indexing="ij"), axis=-1)
+    solid = np.linalg.norm(xyz, axis=-1) < 0.30
+    origin = np.array([-0.45, -0.45, -0.45])
+    sdf = outward.signed_distance(solid, h)
+    skin, tris = _sphere(radius=0.36)
+    n = outward.vertex_normals(skin, tris)
+    moved = outward.project(skin, n, sdf, origin, h, most=0.1)
+    assert np.linalg.norm(moved, axis=1) == pytest.approx(np.full(len(moved), 0.30), abs=1.2 * h)
+    assert outward.folded(skin, moved, tris) == 0
+
+
+def test_the_skin_grows_out_to_a_bigger_surface_too():
+    h = 0.01
+    a = (np.arange(90) + 0.5) * h - 0.45
+    xyz = np.stack(np.meshgrid(a, a, a, indexing="ij"), axis=-1)
+    solid = np.linalg.norm(xyz, axis=-1) < 0.38
+    sdf = outward.signed_distance(solid, h)
+    skin, tris = _sphere(radius=0.30)
+    moved = outward.project(skin, outward.vertex_normals(skin, tris), sdf, np.array([-0.45, -0.45, -0.45]), h, most=0.1)
+    assert np.linalg.norm(moved, axis=1) == pytest.approx(np.full(len(moved), 0.38), abs=1.2 * h)
+
+
+def test_the_move_is_limited():
+    h = 0.01
+    a = (np.arange(90) + 0.5) * h - 0.45
+    xyz = np.stack(np.meshgrid(a, a, a, indexing="ij"), axis=-1)
+    solid = np.linalg.norm(xyz, axis=-1) < 0.15
+    sdf = outward.signed_distance(solid, h)
+    skin, tris = _sphere(radius=0.40)
+    moved = outward.project(skin, outward.vertex_normals(skin, tris), sdf, np.array([-0.45, -0.45, -0.45]), h, most=0.05)
+    n = outward.vertex_normals(skin, tris)
+    assert np.einsum("ij,ij->i", moved - skin, n) == pytest.approx(np.full(len(moved), -0.05), abs=1e-6)
+
+
+def test_a_turned_over_triangle_is_counted():
+    v = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], float)
+    tris = np.array([[0, 1, 2]])
+    assert outward.folded(v, v * np.array([1, 1, 1]), tris) == 0
+    flipped = v * np.array([-1, 1, 1])
+    assert outward.folded(v, flipped, tris) == 1
