@@ -1,4 +1,4 @@
-"""Builds one individual from a recipe, from WSL: python3 build_model.py RECIPE.json OUT_DIR [--from STAGE]
+"""Builds one individual from a recipe, from WSL: python3 build_model.py RECIPE.json OUT_DIR [--from STAGE] [--targets TARGETS.json]
 Stages: export, bones, muscles, fields, assemble. Writes OUT_DIR/<name>.blend. Docker runs hmcore, Windows Blender runs blender/."""
 import argparse, json, os, subprocess, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -19,6 +19,7 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--from", dest="start", default="export", choices=STAGES)
     ap.add_argument("--to", default="assemble", choices=STAGES)
+    ap.add_argument("--targets", help="the bones' target sizes (hmcore.bone_targets), instead of reading the skin")
     a = ap.parse_args()
     out_abs = os.path.abspath(a.out)
     if not out_abs.startswith(("/mnt/g/", "/tmp/")):
@@ -37,7 +38,7 @@ def main():
         if stage == "export":
             blender(f"{HERE}/blender/export_human.py", recipe, f"{base}.export.npz", f"{base}.export.json")
         elif stage == "bones":
-            docker(f"{tools}/build_bones.py", sex, f"{base}.export.npz", f"{base}.export.json", f"{base}.bones.npz", cache)
+            docker(f"{tools}/build_bones.py", sex, f"{base}.export.npz", f"{base}.export.json", f"{base}.bones.npz", cache, *([os.path.abspath(a.targets)] if a.targets else []))
             docker(f"{tools}/spec.py", f"{base}.bones.npz", sex)
         elif stage == "muscles" and os.path.exists(f"{HERE}/tools/build_muscles.py"):
             docker(f"{tools}/build_muscles.py", f"{base}.export.npz", f"{base}.export.json", f"{base}.bones.npz", f"{base}.muscles.json", sex)

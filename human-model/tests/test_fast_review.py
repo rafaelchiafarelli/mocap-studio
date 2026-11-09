@@ -204,3 +204,68 @@ def test_a_run_is_added_to_the_shared_file_and_can_leave_it(tmp_path):
 def test_the_shared_file_has_one_writer(tmp_path):
     assert fr.locked_shared(str(tmp_path), ["x"], "log", execute=lambda argv, log: 0) == 0
     assert (tmp_path / "fast_review_todas.lock").exists()
+
+
+CHARACTER_MADE = {"sheet": "/f/sheet.json", "recipe": "/f/n.recipe.json", "shape": "/f/shape.json", "targets": "/f/targets.json", "build_dir": "/f/build", "skin_fit": "/f/skin/n.skin_fit.npz", "fat_table": "/f/skin/n.fat_table.json", "regions": "/f/skin/n.regions.json", "layers": "/f/layers/n.body_layers.npz", "bones": "/f/build/n.bones.npz", "dump": "/f/dump.npz"}
+
+
+def test_the_character_path_has_its_own_stages():
+    assert fr.CHARACTER_STAGES == ("shape", "build", "outward", "layers", "walk", "dump", "simulate", "file")
+    build = fr.commands("build", "/f", "n", "female", "/r", CHARACTER_MADE, {}, here="/h")[0]
+    assert "/f/n.recipe.json" in build and build[-2:] == ["--targets", "/f/targets.json"]
+    layers = fr.commands("layers", "/f", "n", "female", "/r", CHARACTER_MADE, {"layers": ["VOXEL=0.01"]}, here="/h")[0]
+    assert "FAT_TABLE=/f/skin/n.fat_table.json" in layers and "VOXEL=0.01" in layers
+    simulate = fr.commands("simulate", "/f", "n", "female", "/r", {**CHARACTER_MADE, "walked": "x"}, {}, here="/h")[0]
+    assert "REGIONS=/f/skin/n.regions.json" in simulate
+    outward = fr.commands("outward", "/f", "n", "female", "/r", CHARACTER_MADE, {"layers": ["VOXEL=0.01", "fat.belly=3"]}, here="/h")[0]
+    assert "VOXEL=0.01" in outward and "fat.belly=3" not in outward
+
+
+def test_the_recipe_path_keeps_its_commands():
+    assert fr.commands("build", "/f", "n", "female", "/r", {}, {}, here="/h")[0][-2:] == ["/r", "/f/build"]
+
+
+def test_prepare_character_writes_sheet_and_targets(tmp_path):
+    c = tmp_path / "c.json"
+    c.write_text(json.dumps({"sex": "female", "name": "ana", "silhouette": "pera", "height_cm": 168}))
+    folder = str(tmp_path / "run" / "female")
+    assert fr.prepare_character(str(c), "female", folder) == "ana"
+    sheet = json.load(open(f"{folder}/sheet.json"))
+    assert sheet["resolved"]["fields"]["height"]["value"] == 168.0 and sheet["character"]["silhouette"] == "pera"
+    assert "biacromial_m" in json.load(open(f"{folder}/targets.json"))
+
+
+def test_a_character_of_the_other_sex_is_refused(tmp_path):
+    c = tmp_path / "c.json"
+    c.write_text(json.dumps({"sex": "male"}))
+    with pytest.raises(fr.Refused, match="male character"):
+        fr.prepare_character(str(c), "female", str(tmp_path / "r"))
+
+
+def test_a_bad_character_is_refused(tmp_path):
+    c = tmp_path / "c.json"
+    c.write_text(json.dumps({"sex": "female", "silhouette": "x"}))
+    with pytest.raises(fr.Refused, match="silhouette"):
+        fr.prepare_character(str(c), "female", str(tmp_path / "r"))
+
+
+def test_a_run_stops_at_to(tmp_path):
+    recipe = tmp_path / "female.json"
+    recipe.write_text(json.dumps({"name": "female"}))
+    record = fr.run_body("first", "female", str(recipe), [], str(tmp_path / "run"), execute=lambda argv, log: 0, to="layers")
+    assert list(record["stages"]) == ["build", "tape", "skin", "layers"] and record["status"] == "done"
+
+
+def test_warnings_of_the_check():
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
+    import character_check as cc
+    from hmcore import character as ch
+    ratios = ch.silhouette_ratios()
+    measures = {"waist": 80.0, "hip": 90.0, "bust": 90.0, "shoulder_width": 37.0}
+    clean_layers = {"bones_with_points_outside_skin": {}}
+    clean_skin = {"reached_within_0_5": True, "percent": 28.0, "target_percent": 28.0, "triangles_turned_over": 0}
+    assert cc.warnings({"sex": "female", "silhouette": "pera"}, {"waist": 75.0, "hip": 90.0, "bust": 78.0, "shoulder_width": 30.0}, ratios, clean_layers, clean_skin) == []
+    bad = cc.warnings({"sex": "female", "silhouette": "ampulheta"}, measures, ratios, {"bones_with_points_outside_skin": {"femur_L": {}}}, {**clean_skin, "reached_within_0_5": False, "triangles_turned_over": 3})
+    assert any("femur_L" in w for w in bad) and any("tolerância" in w for w in bad) and any("viraram" in w for w in bad)
+    assert any("waist_hip" in w for w in bad)
+    assert cc.warnings({"sex": "female"}, measures, ratios, clean_layers, clean_skin) == []

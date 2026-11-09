@@ -1,6 +1,6 @@
 """The character sheet panel in Blender: silhouette, biotype with its two other parts, height, body fat, the pattern-making distances, shapes and cup, each field of the resolved sheet shown with where it came from; saving the character file (initiative body-type-selection).
 Portuguese labels: the trade's terms. Uses hmcore's character module from this add-on's repository."""
-import json
+import json, os, subprocess, tempfile, time
 import bpy
 from bpy.props import EnumProperty, FloatProperty, PointerProperty, StringProperty
 from . import builder, sheet
@@ -80,7 +80,29 @@ class HM_OT_save_character(bpy.types.Operator):
             return {"CANCELLED"}
         with open(self.filepath, "w", encoding="utf-8") as f:
             json.dump(c, f, indent=1, ensure_ascii=False)
+        _cache["saved"] = self.filepath
         self.report({"INFO"}, f"Salvo em {self.filepath}")
+        return {"FINISHED"}
+
+
+class HM_OT_check_character(bpy.types.Operator):
+    bl_idname = "hm_editor.check_character"
+    bl_label = "Conferir o personagem"
+    bl_description = "Calcula os ossos uma vez e confere o corpo em repouso: ossos sob a pele, proporções e porcentagem de gordura. Só avisa, não bloqueia"
+
+    def execute(self, context):
+        path = _cache.get("saved")
+        if not path or not os.path.exists(path):
+            self.report({"ERROR"}, "Salve o personagem primeiro")
+            return {"CANCELLED"}
+        cfg = builder.config()
+        p = context.scene.hm_character
+        nickname = f"ficha_{p.name or 'personagem'}_{time.strftime('%H%M%S')}"
+        wsl_file = builder.wsl_path(path, cfg)
+        log = open(os.path.join(tempfile.gettempdir(), f"{nickname}.log"), "w", encoding="utf-8")
+        subprocess.Popen(["wsl.exe", "-d", cfg["distro"], "--cd", cfg["repo"], "-e", "python3", "human-model/fast_review.py", nickname, "--body", p.sex, "--character", f"{p.sex}={wsl_file}", "--to", "layers", "--check"],
+                         stdout=log, stderr=subprocess.STDOUT, creationflags=builder.NO_WINDOW)
+        self.report({"INFO"}, f"Conferindo: o relatório fica em review/<hoje>/fast_review/{nickname}/{p.sex}/check.md")
         return {"FINISHED"}
 
 
@@ -134,6 +156,7 @@ class HM_PT_character(bpy.types.Panel):
         except OSError as e:
             box.label(text=f"Repositório indisponível: {e}", icon="ERROR")
         layout.operator("hm_editor.save_character")
+        layout.operator("hm_editor.check_character")
 
 
 _registered = []
@@ -141,7 +164,7 @@ _registered = []
 
 def register():
     group = _group()
-    _registered[:] = [group, HM_OT_save_character, HM_PT_character]
+    _registered[:] = [group, HM_OT_save_character, HM_OT_check_character, HM_PT_character]
     for c in _registered:
         bpy.utils.register_class(c)
     bpy.types.Scene.hm_character = PointerProperty(type=group)
