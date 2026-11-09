@@ -53,7 +53,7 @@ def test_report_masses_come_from_inside_the_skin():
     import sys, os
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
     import body_report
-    built = {"litres": {"bone": 3.0, "muscle": 17.0, "fat": 11.0, "skin": 11.0, "cavity": 7.0}, "enclosed_litres": 45.0, "skin_area_m2": 1.2}
+    built = {"litres": {"bone": 3.0, "muscle": 17.0, "fat": 11.0, "skin": 11.0, "cavity": 7.0, "fat_deep": 0.0}, "enclosed_litres": 45.0, "skin_area_m2": 1.2}
     litres = body_report.inside_skin(built)
     assert litres["skin"] == pytest.approx(1.2 * body_report.REAL_SKIN_MM)
     assert litres["fat"] == pytest.approx(45.0 - 3.0 - 17.0 - 7.0 - 1.8)
@@ -115,3 +115,25 @@ def test_the_new_zones_keep_todays_fat(sex, parent_breast, parent_buttocks):
     assert len(breast) == 1 and len(buttocks) == 1
     if parent_breast:
         assert breast == {parent_breast} and buttocks == {parent_buttocks}
+
+
+def _voxels(n=4):
+    return dict(d_bone=np.full(n, 0.05), inside=np.ones(n, bool), in_bone=np.zeros(n, bool), in_chest=np.zeros(n, bool), in_trunk=np.zeros(n, bool),
+                front_of_spine=np.ones(n, bool), chest_bone=np.zeros(n, bool), breast=np.zeros(n, bool), h=0.005,
+                s={"abdominal_wall_mm": 0.015, "cavity_bone_gap_mm": 0.005, "pectoral_mm": 0.015}, skin_band_voxels=1)
+
+
+def test_fat_splits_in_two_layers_only_where_it_is_thick_enough():
+    d_skin = np.array([0.012, 0.022, 0.012, 0.009])  # m under the skin
+    t_fat = np.array([0.030, 0.030, 0.008, 0.009])   # thick, thick, thin, thin
+    t_superficial = t_fat * 0.5
+    lab = body.label_voxels(d_skin, t_fat, t_superficial, **_voxels())
+    assert lab.tolist() == [body.FAT, body.FAT_DEEP, body.MUSCLE, body.MUSCLE]
+
+
+def test_two_layers_only_change_the_label_not_where_the_fat_ends():
+    d_skin = np.array([0.005, 0.02, 0.025])
+    t_fat = np.full(3, 0.03)
+    a = body.label_voxels(d_skin, t_fat, t_fat, **_voxels(3))
+    b = body.label_voxels(d_skin, t_fat, t_fat * 0.4, **_voxels(3))
+    assert ((a == body.FAT) == ((b == body.FAT) | (b == body.FAT_DEEP))).all()

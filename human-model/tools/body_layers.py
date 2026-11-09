@@ -13,7 +13,7 @@ from hmcore import body, fit, layers, meshgpu
 
 N_BODY = 13380  # MakeHuman's body vertices come first; helpers follow, as in blender/export_blend.py
 DATA =os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
-COLORS = {"bone": (230, 220, 190), "muscle": (155, 30, 25), "fat": (240, 205, 90), "skin": (215, 165, 140), "cavity": (110, 140, 200)}
+COLORS = {"bone": (230, 220, 190), "muscle": (155, 30, 25), "fat": (240, 205, 90), "skin": (215, 165, 140), "cavity": (110, 140, 200), "fat_deep": (225, 175, 70)}
 
 
 def zone_colors(zone_names):
@@ -103,7 +103,7 @@ def main(build_dir, name, out_dir, overrides):
 
     wp.init()
     t0 = time.time()
-    r = body.build(skin, tris, meta["bones"], bones, fat_mm, structure, VOXEL, meshgpu.Mesh, groups=meta["groups"])
+    r = body.build(skin, tris, meta["bones"], bones, fat_mm, structure, VOXEL, meshgpu.Mesh, groups=meta["groups"], deep_share=cfg.get("fat_deep_share"))
     seconds = time.time() - t0
     m = measure(r, skin, bones, fat_mm, meshgpu.Mesh, meta["bones"])
 
