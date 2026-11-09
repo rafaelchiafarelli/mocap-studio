@@ -20,3 +20,5 @@ Task 1.
 ## Pre-work
 
 None.
+
+**Status:** Done (2026-11-08), within 0.5 percentage points by default, unit-tested; the layer's two parts are the deep share of body_layers.py (epic tissues-and-regions), and no body was computed in this session, by Rafael's instruction.
