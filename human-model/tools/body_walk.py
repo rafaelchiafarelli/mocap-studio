@@ -107,6 +107,7 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
     keep, used, tets = region(L["nodes"].astype(float), L["tets"], z_top)
     nodes = L["nodes"].astype(float)[used]
     label = L["tet_label"][keep]
+    zone_of_tet = L["tet_zone"][keep] if "tet_zone" in L.files else None  # layers made before the zones were kept have none
 
     # Each node's bone: the nearest bone vertex, among bones reaching below the cut
     # Only bones that hold some of the region's bone voxels: the hands hang below the waist in the rest pose but are outside the region,
