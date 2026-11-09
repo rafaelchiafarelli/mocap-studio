@@ -37,6 +37,7 @@
 - `bone_targets.py`: from a resolved sheet to the bones' target sizes in metres, each with where it came from (measure, proportion or parameter); `data/bone_proportions.json` holds the neutral bodies' proportions.
 - `outward.py`: the body's inside (`core_mask`: bones, chest, belly in front of the spine) and the first shape's skin moved out only where what's inside needs it (`push_needed`, `project`, `ring_fade`).
 - `muscle_bodies.py`: muscles as voxel solids, thin at the tendons, on the attachments of `muscle.py`; `fans`, the wide muscles of `data/muscle_fans.json` as spindles.
+- `breast_skin.py`: the skin grows with the breast: the mesh moves onto a smooth outline, keeping its detail, fading out around it. Numpy only, used by Blender too.
 - `shapes.py`: the gluteus's shapes as multipliers on the zones' fat, and the breast as a volume of its own over the chest (`breast_volume`).
 - `regions.py`: physical values per tetrahedron, one default per tissue and overrides by tissue and zone that fade in at a zone's border.
 - `layers.py`: a limb from the inside out: skin patch, voxels labelled bone, muscle or fat, tetrahedra, and the skin tied to them. [docs/muscle-physics.md](../docs/muscle-physics.md#experiment-2-a-thigh-built-from-the-inside-out).
