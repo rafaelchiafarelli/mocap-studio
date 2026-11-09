@@ -4,8 +4,9 @@ With no --body, the woman and the man side by side, then both in <nickname>/mulh
 Stages, in order: build, tape, skin, layers, walk, dump, simulate, file. A NAME=value goes to the stage that knows it (VOXEL, fat.<zone> and
 structure.<name> to layers; depth.<prefix> and MAX_PUSH_MM to skin; the tissue values, VOLUME_EVERY and BONE_TEST to simulate); one that no
 stage knows stops the run before it starts. Results go to review/<today>/fast_review/<nickname>/<sex>/, with run.json and a log per stage.
-A nickname already used that day is refused, so nothing is overwritten."""
-import argparse, concurrent.futures, datetime, json, os, re, subprocess, sys, time
+A nickname already used that day is refused, so nothing is overwritten.
+--from STAGE --base EARLIER starts at STAGE and reads the stages before it from the earlier run, not copied; run.json records where each part came from, through chains of reuse, and a base run that lacks a needed stage's output is refused before anything runs."""
+import argparse, concurrent.futures, datetime, glob, json, os, re, subprocess, sys, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REVIEW = "/mnt/g/mocap-studio-downloads/review"
@@ -112,6 +113,38 @@ def commands(stage, folder, name, sex, recipe, made, routed, here=HERE):
     raise ValueError(stage)
 
 
+def find_base(root, nickname):
+    """The newest run with this nickname, whichever day it was."""
+    found = sorted(glob.glob(os.path.join(root, "*", "fast_review", nickname)))
+    if not found:
+        raise Refused(f"no earlier run is called {nickname}")
+    return found[-1]
+
+
+def reusable(base, sex, start):
+    """{stage: entry} for the stages before start, read from the earlier run. Raises Refused if a stage or one of its outputs is missing."""
+    path = f"{base}/{sex}/run.json"
+    if not os.path.exists(path):
+        raise Refused(f"{base} has no run of the {sex} body")
+    stages, out = _json(path).get("stages", {}), {}
+    for stage in STAGES[:STAGES.index(start)]:
+        entry = stages.get(stage)
+        if not entry or entry.get("status") not in ("done", "reused"):
+            raise Refused(f"{base}/{sex} didn't finish the stage {stage}")
+        missing = [p for p in entry["output"].values() if not os.path.exists(p)]
+        if missing:
+            raise Refused(f"{base}/{sex}: the stage {stage}'s output is gone: {missing[0]}")
+        out[stage] = {"status": "reused", "output": entry["output"], "origin": entry.get("origin", f"{base}/{sex}")}
+    return out
+
+
+def check_start(routed, start):
+    """An override for a stage that won't run would silently do nothing, so it stops the run."""
+    skipped = [s for s in STAGES[:STAGES.index(start)] if s in routed]
+    if skipped:
+        raise Refused(f"{', '.join(routed[skipped[0]])}: the stage {skipped[0]} comes before {start}, so it wouldn't run")
+
+
 def commit(here=HERE):
     try:
         return subprocess.run(["git", "-C", here, "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
@@ -135,8 +168,8 @@ def run_stage(argv, log, cwd=HERE):
         return subprocess.call(argv, stdout=fh, stderr=subprocess.STDOUT, cwd=cwd)
 
 
-def run_body(nickname, sex, recipe, overrides, folder, execute=run_stage):
-    """Runs every stage of one body in order. Writes run.json after each. Raises StageFailed at the first that fails."""
+def run_body(nickname, sex, recipe, overrides, folder, execute=run_stage, reused=None):
+    """Runs every stage of one body in order, past the ones in reused ({stage: entry} of an earlier run). Writes run.json after each. Raises StageFailed at the first that fails."""
     name = _json(recipe)["name"]
     routed = route(overrides, known_values(sex))
     os.makedirs(f"{folder}/logs", exist_ok=True)
@@ -147,6 +180,11 @@ def run_body(nickname, sex, recipe, overrides, folder, execute=run_stage):
     save_record(folder, record)
     made = {}
     for stage in STAGES:
+        if reused and stage in reused:
+            record["stages"][stage] = dict(reused[stage])
+            made.update(reused[stage]["output"])
+            save_record(folder, record)
+            continue
         log = f"{folder}/logs/{stage}.log"
         entry = {"status": "running", "log": log, "output": outputs(stage, folder, name)}
         record["stages"][stage] = entry
@@ -173,14 +211,14 @@ def pair_command(run, here=HERE):
             f"{run}/male/body_walk.blend", f"{run}/{PAIR_NAME}", LABELS["female"], LABELS["male"]]
 
 
-def run_both(nickname, overrides, run, recipes, execute=run_stage):
+def run_both(nickname, overrides, run, recipes, execute=run_stage, reused=None):
     """Both bodies side by side, each only waiting for its own previous stage. Returns (record, failures: {sex: StageFailed})."""
     t0 = time.time()
     record = {"nickname": nickname, "commit": commit(), "overrides": list(overrides), "status": "running", "bodies": {}}
     save_record(run, record)
     failures = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(BODIES)) as pool:
-        running = {sex: pool.submit(run_body, nickname, sex, recipes[sex], overrides, f"{run}/{sex}", execute) for sex in BODIES}
+        running = {sex: pool.submit(run_body, nickname, sex, recipes[sex], overrides, f"{run}/{sex}", execute, (reused or {}).get(sex)) for sex in BODIES}
     for sex, future in running.items():
         try:
             future.result()
@@ -207,27 +245,35 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="From recipes to walked bodies in a Blender file, no rendering")
     ap.add_argument("nickname")
     ap.add_argument("--body", choices=BODIES)
+    ap.add_argument("--from", dest="start", choices=STAGES, default=STAGES[0], help="the stage to start from; the ones before it are read from --base")
+    ap.add_argument("--base", help="the earlier run's nickname, with --from")
     ap.add_argument("overrides", nargs="*", metavar="NAME=value")
     a = ap.parse_args(argv)
     day = datetime.date.today().isoformat()
     bodies = (a.body,) if a.body else BODIES
+    reused = {}
     try:
         check_nickname(a.nickname)
+        if (a.start != STAGES[0]) != bool(a.base):
+            raise Refused("--from and --base go together")
         for sex in bodies:
-            route(a.overrides, known_values(sex))
+            check_start(route(a.overrides, known_values(sex)), a.start)
         refuse_used(REVIEW, day, a.nickname)
+        if a.base:
+            base = find_base(REVIEW, a.base)
+            reused = {sex: reusable(base, sex, a.start) for sex in bodies}
     except Refused as e:
         sys.exit(str(e))
     run = run_folder(REVIEW, day, a.nickname)
     recipes = {sex: os.path.join(DATA, "recipes", f"{sex}.json") for sex in bodies}
     if a.body:
         try:
-            run_body(a.nickname, a.body, recipes[a.body], a.overrides, f"{run}/{a.body}")
+            run_body(a.nickname, a.body, recipes[a.body], a.overrides, f"{run}/{a.body}", reused=reused.get(a.body))
         except StageFailed as e:
             sys.exit(str(e))
         print("done:", f"{run}/{a.body}")
         return
-    _, failures = run_both(a.nickname, a.overrides, run, recipes)
+    _, failures = run_both(a.nickname, a.overrides, run, recipes, reused=reused)
     if failures:
         sys.exit("\n".join(f"{sex}: {e}" for sex, e in failures.items()))
     print("done:", f"{run}/{PAIR_NAME}")

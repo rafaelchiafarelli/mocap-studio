@@ -125,3 +125,53 @@ def test_if_one_body_fails_the_other_finishes_and_no_pair_is_made(tmp_path):
     assert record["status"] == "failed" and record["bodies"]["female"]["status"] == "done"
     assert not [c for c in calls if any("body_walk_pair.py" in x for x in c)]
     assert any("/female/body_walk.blend" in x for c in calls for x in c)  # the woman went all the way
+
+
+def finished(tmp_path, sex="female"):
+    """A finished run with its outputs on disk."""
+    base = tmp_path / "2026-11-08" / "fast_review" / "early"
+    recipe = tmp_path / f"{sex}.json"
+    recipe.write_text(json.dumps({"name": sex}))
+    fr.run_body("early", sex, str(recipe), [], str(base / sex), execute=lambda argv, log: 0)
+    record = json.load(open(base / sex / "run.json"))
+    for entry in record["stages"].values():
+        for name, path in entry["output"].items():
+            if name != "build_dir":
+                open(path, "w").close()
+    return str(base), str(recipe)
+
+
+def test_restart_reads_earlier_stages_from_the_base_run(tmp_path):
+    base, recipe = finished(tmp_path)
+    assert fr.find_base(str(tmp_path), "early") == base
+    reused = fr.reusable(base, "female", "simulate")
+    calls = []
+    folder = str(tmp_path / "next" / "female")
+    record = fr.run_body("next", "female", recipe, ["FAT_YOUNG=3000"], folder, execute=lambda argv, log: calls.append(argv) or 0, reused=reused)
+    assert len(calls) == 2  # simulate and file only
+    assert f"{base}/female/layers/female.body_layers.npz" in calls[0] and f"{folder}/simulate" in calls[0]
+    assert record["stages"]["layers"]["status"] == "reused" and record["stages"]["layers"]["origin"] == f"{base}/female"
+    assert record["stages"]["simulate"]["status"] == "done"
+
+
+def test_a_chain_of_reuse_names_the_first_run(tmp_path):
+    base, recipe = finished(tmp_path)
+    folder = tmp_path / "2026-11-09" / "fast_review" / "next" / "female"
+    fr.run_body("next", "female", recipe, [], str(folder), execute=lambda argv, log: 0, reused=fr.reusable(base, "female", "simulate"))
+    assert fr.reusable(str(folder.parent), "female", "simulate")["layers"]["origin"] == f"{base}/female"
+
+
+def test_a_base_without_a_stages_output_is_refused(tmp_path):
+    base, _ = finished(tmp_path)
+    os.remove(f"{base}/female/layers/female.body_layers.npz")
+    with pytest.raises(fr.Refused, match="layers"):
+        fr.reusable(base, "female", "simulate")
+    assert fr.reusable(base, "female", "layers")  # needing only what's left is fine
+    with pytest.raises(fr.Refused):
+        fr.find_base(str(tmp_path), "nobody")
+
+
+def test_an_override_for_a_skipped_stage_is_refused():
+    with pytest.raises(fr.Refused, match="VOXEL"):
+        fr.check_start({"layers": ["VOXEL=0.01"]}, "simulate")
+    fr.check_start({"simulate": ["FAT_YOUNG=3000"]}, "simulate")

@@ -81,7 +81,7 @@ def fast_review_lines(pattern, now, hours):
                 r = json.load(f)
         except (OSError, ValueError):
             continue
-        done = sum(s.get("status") == "done" for s in r.get("stages", {}).values())
+        done = sum(s.get("status") in ("done", "reused") for s in r.get("stages", {}).values())
         current = next((k for k, s in r.get("stages", {}).items() if s.get("status") in ("running", "failed")), "")
         word = {"running": "▶", "done": "✓", "failed": "✗"}.get(r.get("status"), "?")
         lines.append(f"  {word} {r.get('nickname', '?')}/{r.get('sex', '?')}: {done}/{len(r.get('stages', {}))} etapas" + (f", {current}" if current else ""))
