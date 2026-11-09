@@ -3,7 +3,7 @@ On a built model: the live controls and the layers. Identity is baked in a built
 import json, os, tempfile, textwrap
 import bpy
 from bpy.props import BoolProperty, EnumProperty, FloatProperty, PointerProperty, StringProperty
-from . import builder, catalog, human, recipe as rc, tape
+from . import builder, catalog, character_panel, human, recipe as rc, tape
 
 SLIDERS = []
 _state = {"message": "", "readout": None, "build": None, "built_blend": None, "unsaved": False, "failed": None, "tape": None}
@@ -986,9 +986,11 @@ def register():
     bpy.types.Scene.hm_muscles = PointerProperty(type=groups[1])
     bpy.types.Scene.hm_editor = PointerProperty(type=groups[2])
     bpy.app.handlers.load_post.append(_file_loaded)
+    character_panel.register()
 
 
 def unregister():
+    character_panel.unregister()
     bpy.app.handlers.load_post.remove(_file_loaded)
     for timer in (_build_timer, _settle_timer):
         if bpy.app.timers.is_registered(timer):

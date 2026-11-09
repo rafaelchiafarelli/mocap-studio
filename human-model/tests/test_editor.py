@@ -2,7 +2,7 @@ import json, os, sys
 import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "hm_editor"))
 import numpy as np
-import catalog, recipe as rc, tape  # the add-on's package needs bpy; these three modules don't
+import catalog, recipe as rc, sheet, tape  # the add-on's package needs bpy; these modules don't
 
 SECTIONS = {
     "nose": {"categories": [{"name": "nose-hump-decr-incr", "has_left_and_right": False, "opposites": {"negative-unsided": "nose-hump-decr", "positive-unsided": "nose-hump-incr"}},
@@ -178,3 +178,29 @@ def test_a_recipe_may_carry_measures():
     r = rc.new("a", "female")
     r["measures_cm"] = {"bust": 92.0}
     assert rc.problems(r) == []
+
+
+def test_blank_panel_values_stay_unset():
+    v = {"sex": "female", "name": "", "silhouette": "NONE", "height_cm": 0.0, "biotype": "NONE", "others": {}, "distances": {"busto": 0.0}, "bone_parameters": {"pelvis_width_cm": 0.0}, "gluteus": "NONE", "breast": "NONE", "cup": "NONE"}
+    assert sheet.character_from_values(v) == {"sex": "female"}
+
+
+def test_panel_values_make_a_character():
+    v = {"sex": "female", "name": "a", "silhouette": "pera", "height_cm": 168.0, "body_fat_percent": 26.0, "biotype": "mesomorph", "others": {"ectomorph": 0.2, "endomorph": 0.0},
+         "distances": {"cintura": 66.0, "busto": 0.0}, "gluteus": "coracao", "breast": "gota", "espacados": 0.3, "pendentes": 0.0, "assimetrico_R": 0.9}
+    c = sheet.character_from_values(v)
+    assert c["biotype"] == {"type": "mesomorph", "others": {"ectomorph": 0.2}} and c["distances"] == {"cintura": 66.0}
+    assert c["gluteus"] == {"shape": "coracao"} and c["breast"] == {"shape": "gota", "espacados": 0.3, "assimetricos": {"L": 1.0, "R": 0.9}}
+    assert "pendentes" not in c["breast"]
+
+
+def test_the_sheet_rows_say_where_each_value_came_from():
+    resolved = {"fields": {"height": {"value": 168.0, "source": "typed"}, "waist": {"value": 70.2, "source": "silhouette"}, "cup": {"value": "C", "source": "current"}}}
+    assert sheet.rows(resolved) == [("Altura", "168.0", "digitado"), ("Copa", "C", "atual"), ("Cintura", "70.2", "silhueta")]
+
+
+def test_sheet_labels_every_distance_and_biotype():
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from hmcore import character as ch
+    assert {k for k, _ in sheet.DISTANCE_LABELS} == set(ch.DISTANCES)
+    assert {k for k, _ in sheet.BIOTYPE_LABELS} == set(ch.BIOTYPES)
