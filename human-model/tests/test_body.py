@@ -92,3 +92,26 @@ def test_every_tetrahedron_knows_its_voxels_zone():
     vox = np.array([[0, 0, 0], [1, 0, 1], [1, 1, 1]])  # flat indices 0, 5 and 7, in grid order
     tet_voxel = np.array([0, 0, 1, 2, 2])
     assert body.tet_zones(zone_of_included, included, shape, vox, tet_voxel).tolist() == [4, 4, 7, 2, 2]
+
+
+def test_the_buttocks_divide_by_height_and_side():
+    points = np.array([[0.01, 0, 0.9], [0.1, 0, 0.9], [0.01, 0, 0.8], [0.1, 0, 0.8], [0.05, 0, 0.85]])
+    zone = np.array(["buttocks"] * 4 + ["hips"], object)
+    out = body.divide_zones(points, zone)
+    assert out.tolist() == ["buttocks_upper_center", "buttocks_upper_side", "buttocks_lower_center", "buttocks_lower_side", "hips"]
+
+
+def test_the_breast_divides_by_side():
+    assert body.divide_zones(np.array([[0.1, 0, 1.3], [-0.1, 0, 1.3]]), np.array(["breast", "breast"], object)).tolist() == ["breast_L", "breast_R"]
+
+
+@pytest.mark.parametrize("sex,parent_breast,parent_buttocks", [("female", 15, 30), ("male", None, None)])
+def test_the_new_zones_keep_todays_fat(sex, parent_breast, parent_buttocks):
+    import json, os
+    fat = json.load(open(os.path.join(os.path.dirname(__file__), "..", "data", f"body_fat_{sex}.json")))["fat_mm"]
+    assert set(fat) == set(body.ZONES)
+    breast = {fat[z] for z in body.BREAST_ZONES}
+    buttocks = {fat[z] for z in body.GLUTEUS_ZONES}
+    assert len(breast) == 1 and len(buttocks) == 1
+    if parent_breast:
+        assert breast == {parent_breast} and buttocks == {parent_buttocks}

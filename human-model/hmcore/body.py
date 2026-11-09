@@ -8,7 +8,9 @@ from . import fit, layers
 
 BONE, MUSCLE, FAT, SKIN, CAVITY = 0, 1, 2, 3, 4
 LABELS = ("bone", "muscle", "fat", "skin", "cavity")
-ZONES = ("neck", "chest", "breast", "upper_back", "belly", "flanks", "lower_back", "hips", "buttocks",
+GLUTEUS_ZONES = ("buttocks_upper_center", "buttocks_upper_side", "buttocks_lower_center", "buttocks_lower_side")
+BREAST_ZONES = ("breast_L", "breast_R")
+ZONES = ("neck", "chest", *BREAST_ZONES, "upper_back", "belly", "flanks", "lower_back", "hips", *GLUTEUS_ZONES,
          "thigh_front", "thigh_back", "thigh_inner", "thigh_outer", "knee", "calf_front", "calf_back",
          "upper_arm_front", "upper_arm_back", "forearm")
 # Where the skin is cut: (rig bone whose head is the joint, rig bone along which the plane faces, how far from the joint the cut reaches, m)
@@ -147,6 +149,21 @@ def zones(skin, ids, rig, bones, knee=0.06):
     return out
 
 
+def divide_zones(points, zone):
+    """The gluteus into upper and lower and centre and side, the breast into left and right, for the shapes. Upper and lower at the middle height of
+    the buttocks' own points, centre and side at the middle of their distance from the midline. Left is +X."""
+    out = zone.copy()
+    glute = zone == "buttocks"
+    if glute.any():
+        p = points[glute]
+        high = p[:, 2] >= (p[:, 2].min() + p[:, 2].max()) / 2
+        side = np.abs(p[:, 0]) >= np.median(np.abs(p[:, 0]))
+        out[glute] = [f"buttocks_{'upper' if h else 'lower'}_{'side' if s else 'center'}" for h, s in zip(high, side)]
+    breast = zone == "breast"
+    out[breast] = ["breast_L" if x > 0 else "breast_R" for x in points[breast, 0]]
+    return out
+
+
 def smooth_on_surface(values, tris, n_verts, iterations):
     """Averages each vertex with its neighbours, so a value changes gradually between zones instead of in steps."""
     edges = np.concatenate([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
@@ -211,7 +228,7 @@ def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None):
     ids = np.unique(patch)
     closed_v, closed_t = layers.capped(skin, patch)
     zone = np.empty(len(skin), object)
-    zone[ids] = zones(skin, ids, rig, bones)
+    zone[ids] = divide_zones(skin[ids], zones(skin, ids, rig, bones))
     thick = np.zeros(len(skin))
     thick[ids] = [fat_mm[z] / 1000 for z in zone[ids]]
     thick = smooth_on_surface(thick, patch, len(skin), int(structure["smoothing_iterations"]))
@@ -257,7 +274,7 @@ def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None):
     lab[in_trunk & front_of_spine & deep & (d_bone > s["cavity_bone_gap_mm"])] = CAVITY
     # The lungs reach back beside the spine, so the chest's cavity isn't held in front of it as the belly's is (body_v2 was)
     lab[in_chest & (d_bone > s["cavity_bone_gap_mm"])] = CAVITY
-    lab[(z_of == "breast") & ~in_chest & (~chest_bone | (d_bone > s["pectoral_mm"]))] = FAT
+    lab[np.isin(z_of, BREAST_ZONES) & ~in_chest & (~chest_bone | (d_bone > s["pectoral_mm"]))] = FAT
     lab[(d_skin < t_fat) & (lab != CAVITY)] = FAT
     lab[(d_skin < structure["skin_band_voxels"] * h) | ~inside[included]] = SKIN
     lab[in_bone] = BONE
