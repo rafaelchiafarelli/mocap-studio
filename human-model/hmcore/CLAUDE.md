@@ -30,10 +30,11 @@
 - `morph.py`: real sizes to sliders; height so far.
 - `retire.py`: a compact linear basis of the fields.
 - `xpbd.py`: soft tissue as tetrahedra on the GPU, Neo-Hookean, XPBD, through Warp. GPU image only. [docs/muscle-physics.md](../docs/muscle-physics.md#the-gpu-what-tissue-costs).
-- `body.py`: the whole body in layers at rest: cut at neck (along the rig's head weights), wrists and ankles, plastic-surgery zones, bone, muscle, fat, skin band and cavity. Takes the GPU mesh class as an argument, so it imports without Warp.
+- `body.py`: the whole body in layers at rest: cut at neck (along the rig's head weights), wrists and ankles, plastic-surgery zones with the gluteus and breast divided (`divide_zones`) and kept per tetrahedron (`tet_zones`), bone, muscle, fat in two layers, the mammary gland (woman only), skin band, the chest's cavity and the belly's viscera apart (`label_voxels` is the pure labelling). Takes the GPU mesh class as an argument, so it imports without Warp.
 - `skinfit.py`: pushes the skin out where a bone has less tissue over it than declared; a bone that would need more than the most push is left alone as misplaced.
 - `meshgpu.py`: inside-or-outside and closest point for millions of points, on Warp's meshes. GPU image only.
 - `character.py`: a character's sheet: reading and checking a character file (`problems`, `load`), and `resolve`: the full sheet, each field with its value and where it came from. Standard library only.
+- `regions.py`: physical values per tetrahedron, one default per tissue and overrides by tissue and zone that fade in at a zone's border.
 - `layers.py`: a limb from the inside out: skin patch, voxels labelled bone, muscle or fat, tetrahedra, and the skin tied to them. [docs/muscle-physics.md](../docs/muscle-physics.md#experiment-2-a-thigh-built-from-the-inside-out).
 
 ## Key facts / gotchas

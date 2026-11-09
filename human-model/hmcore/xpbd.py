@@ -66,23 +66,23 @@ def _floor(x: wp.array(dtype=wp.vec3), x_prev: wp.array(dtype=wp.vec3), floor: f
 
 @wp.kernel
 def _velocity(x: wp.array(dtype=wp.vec3), x_prev: wp.array(dtype=wp.vec3), v: wp.array(dtype=wp.vec3), inv_mass: wp.array(dtype=float),
-              dt: float, damping: float):
+              dt: float, damping: wp.array(dtype=float)):
     i = wp.tid()
     if inv_mass[i] > 0.0:
-        v[i] = (x[i] - x_prev[i]) / dt * (1.0 - damping * dt)
+        v[i] = (x[i] - x_prev[i]) / dt * (1.0 - damping[i] * dt)
 
 
 @wp.kernel
 def _velocity_relative(x: wp.array(dtype=wp.vec3), x_prev: wp.array(dtype=wp.vec3), v: wp.array(dtype=wp.vec3), inv_mass: wp.array(dtype=float),
                        rest: wp.array(dtype=wp.vec3), bone: wp.array(dtype=int), T0: wp.array(dtype=wp.mat44), T1: wp.array(dtype=wp.mat44),
-                       frame: float, dt: float, damping: float):
+                       frame: float, dt: float, damping: wp.array(dtype=float)):
     """Damps only the motion relative to the node's bone: a limb carried at speed isn't slowed, as if by air."""
     i = wp.tid()
     if inv_mass[i] > 0.0:
         b = bone[i]
         carried = (wp.transform_point(T1[b], rest[i]) - wp.transform_point(T0[b], rest[i])) / frame
         own = (x[i] - x_prev[i]) / dt - carried
-        v[i] = carried + own * (1.0 - damping * dt)
+        v[i] = carried + own * (1.0 - damping[i] * dt)
 
 
 @wp.kernel
@@ -161,7 +161,8 @@ class Solver:
         self.tets, self.rest_volume = a(tets, wp.vec4i), a(vol, float)
         self.inv_rest = a(np.linalg.inv(Dm), wp.mat33)
         self.mu, self.lam = a(mu, float), a(lam, float)
-        self.damping, self.floor = damping, floor
+        # one value per node, or the same for all
+        self.damping, self.floor = a(np.full(len(nodes), float(damping)) if np.ndim(damping) == 0 else np.asarray(damping, float), float), floor
         self.gravity = wp.vec3(0.0, 0.0, -9.81)
         self.rest_total = float(vol.sum())
         self.tets_host = tets

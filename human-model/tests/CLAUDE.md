@@ -19,6 +19,7 @@
 - `test_layers.py`: `hmcore/layers.py`.
 - `test_measures.py`: `hmcore/measures.py`, `ctbones.py` and `tsdata.py`.
 - `test_muscle.py`: `hmcore/muscle.py`.
+- `test_regions.py`: `hmcore/regions.py`.
 - `test_skinfit.py`: `hmcore/skinfit.py`.
 - `test_softtissue.py`: `hmcore/softtissue.py`.
 - `test_xpbd.py`: the GPU solver, and the pure parts of `tools/body_walk.py`. Skipped without Warp; uses Warp's CPU device.

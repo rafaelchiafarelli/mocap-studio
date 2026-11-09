@@ -6,9 +6,11 @@ from scipy import ndimage
 from scipy.spatial import ConvexHull
 from . import fit, layers
 
-BONE, MUSCLE, FAT, SKIN, CAVITY = 0, 1, 2, 3, 4
-LABELS = ("bone", "muscle", "fat", "skin", "cavity")
-ZONES = ("neck", "chest", "breast", "upper_back", "belly", "flanks", "lower_back", "hips", "buttocks",
+BONE, MUSCLE, FAT, SKIN, CAVITY, FAT_DEEP, GLAND, VISCERA = 0, 1, 2, 3, 4, 5, 6, 7
+LABELS = ("bone", "muscle", "fat", "skin", "cavity", "fat_deep", "gland", "viscera")
+GLUTEUS_ZONES = ("buttocks_upper_center", "buttocks_upper_side", "buttocks_lower_center", "buttocks_lower_side")
+BREAST_ZONES = ("breast_L", "breast_R")
+ZONES = ("neck", "chest", *BREAST_ZONES, "upper_back", "belly", "flanks", "lower_back", "hips", *GLUTEUS_ZONES,
          "thigh_front", "thigh_back", "thigh_inner", "thigh_outer", "knee", "calf_front", "calf_back",
          "upper_arm_front", "upper_arm_back", "forearm")
 # Where the skin is cut: (rig bone whose head is the joint, rig bone along which the plane faces, how far from the joint the cut reaches, m)
@@ -147,6 +149,21 @@ def zones(skin, ids, rig, bones, knee=0.06):
     return out
 
 
+def divide_zones(points, zone):
+    """The gluteus into upper and lower and centre and side, the breast into left and right, for the shapes. Upper and lower at the middle height of
+    the buttocks' own points, centre and side at the middle of their distance from the midline. Left is +X."""
+    out = zone.copy()
+    glute = zone == "buttocks"
+    if glute.any():
+        p = points[glute]
+        high = p[:, 2] >= (p[:, 2].min() + p[:, 2].max()) / 2
+        side = np.abs(p[:, 0]) >= np.median(np.abs(p[:, 0]))
+        out[glute] = [f"buttocks_{'upper' if h else 'lower'}_{'side' if s else 'center'}" for h, s in zip(high, side)]
+    breast = zone == "breast"
+    out[breast] = ["breast_L" if x > 0 else "breast_R" for x in points[breast, 0]]
+    return out
+
+
 def smooth_on_surface(values, tris, n_verts, iterations):
     """Averages each vertex with its neighbours, so a value changes gradually between zones instead of in steps."""
     edges = np.concatenate([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
@@ -190,24 +207,51 @@ def island_cleanup(grid_labels, label, into, min_voxels):
     return int(m.sum())
 
 
+def tet_zones(zone_of_included, included, shape, vox, tet_voxel):
+    """The zone index of each tetrahedron: zone_of_included gives one for each included voxel, in grid order (included is the flat mask over the whole grid)."""
+    grid_zone = np.full(int(np.prod(shape)), -1, np.int16)
+    grid_zone[included] = zone_of_included
+    return grid_zone.reshape(shape)[tuple(vox.T)][tet_voxel]
+
+
+def label_voxels(d_skin, t_fat, t_superficial, d_bone, inside, in_bone, in_chest, in_trunk, front_of_spine, chest_bone, breast, h, s, skin_band_voxels, gland=False):
+    """A tissue label per voxel from what build measured. t_superficial is where the fat's outer layer ends; where the fat is under two cubes thick it stays one layer, so a thin layer isn't split into bands narrower than the mesh can show."""
+    lab = np.full(len(d_skin), MUSCLE, np.int8)
+    deep = d_skin > t_fat + s["abdominal_wall_mm"]
+    lab[in_trunk & front_of_spine & deep & (d_bone > s["cavity_bone_gap_mm"])] = VISCERA  # the belly's organs; the chest's cavity is laid over them next
+    # The lungs reach back beside the spine, so the chest's cavity isn't held in front of it as the belly's is (body_v2 was)
+    lab[in_chest & (d_bone > s["cavity_bone_gap_mm"])] = CAVITY
+    lab[breast & ~in_chest & (~chest_bone | (d_bone > s["pectoral_mm"]))] = FAT
+    lab[(d_skin < t_fat) & ~np.isin(lab, (CAVITY, VISCERA))] = FAT
+    lab[(lab == FAT) & (d_skin >= t_superficial) & (t_fat >= 2 * h)] = FAT_DEEP
+    if gland:  # the woman only: the breast's fat deeper than gland_skin_mm under the skin becomes gland
+        lab[breast & np.isin(lab, (FAT, FAT_DEEP)) & (d_skin >= s["gland_skin_mm"])] = GLAND
+    lab[(d_skin < skin_band_voxels * h) | ~inside] = SKIN
+    lab[in_bone] = BONE
+    return lab
+
+
 def outward(verts, tris):
     """fit.outward. Builds made before bug human-model/11 was fixed have the left leg's bones inside out, and a winding number of -1
     called them outside (body_v2 had no left femur), so every bone is still turned outward before use."""
     return fit.outward(verts, tris)
 
 
-def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None):
+def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None, deep_share=None, gland=False):
     """Everything for the body. bones: {name: (verts, tris)}. fat_mm: {zone: mm}. structure: declared depths in mm and smoothing.
-    gpu_mesh: meshgpu.Mesh, passed in so this module imports without Warp. groups: the rig's vertex groups, for the head's cut.
+    gpu_mesh: meshgpu.Mesh, passed in so this module imports without Warp. groups: the rig's vertex groups, for the head's cut. deep_share: {zone: part of the fat that is its deep layer}. gland: label the mammary gland (the woman only).
     Returns a dict of arrays, every intermediate kept."""
     patch = cut_skin(skin, tris, rig, groups)
     ids = np.unique(patch)
     closed_v, closed_t = layers.capped(skin, patch)
     zone = np.empty(len(skin), object)
-    zone[ids] = zones(skin, ids, rig, bones)
+    zone[ids] = divide_zones(skin[ids], zones(skin, ids, rig, bones))
     thick = np.zeros(len(skin))
     thick[ids] = [fat_mm[z] / 1000 for z in zone[ids]]
     thick = smooth_on_surface(thick, patch, len(skin), int(structure["smoothing_iterations"]))
+    share = np.zeros(len(skin))
+    share[ids] = [(deep_share or {}).get(z, 0.0) for z in zone[ids]]
+    share = smooth_on_surface(share, patch, len(skin), int(structure["smoothing_iterations"]))
 
     pv = skin[ids]
     origin, shape, centres = layers.grid(pv.min(axis=0), pv.max(axis=0), h)
@@ -220,6 +264,7 @@ def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None):
     f, u, v = patch[face[included]], uv[included, 0], uv[included, 1]
     w = np.column_stack([u, v, 1 - u - v])
     t_fat = np.einsum("ij,ij->i", w, thick[f])
+    t_superficial = t_fat * (1 - np.einsum("ij,ij->i", w, share[f]))
     z_of = zone[f[np.arange(len(f)), w.argmax(axis=1)]]
 
     names = sorted(bones)
@@ -245,25 +290,22 @@ def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None):
     chest_bone = np.isin(near_bone, CHEST_BONES)
 
     s = {k: v / 1000 for k, v in structure.items() if k.endswith("_mm")}
-    lab = np.full(len(c), MUSCLE, np.int8)
-    deep = d_skin > t_fat + s["abdominal_wall_mm"]
-    lab[in_trunk & front_of_spine & deep & (d_bone > s["cavity_bone_gap_mm"])] = CAVITY
-    # The lungs reach back beside the spine, so the chest's cavity isn't held in front of it as the belly's is (body_v2 was)
-    lab[in_chest & (d_bone > s["cavity_bone_gap_mm"])] = CAVITY
-    lab[(z_of == "breast") & ~in_chest & (~chest_bone | (d_bone > s["pectoral_mm"]))] = FAT
-    lab[(d_skin < t_fat) & (lab != CAVITY)] = FAT
-    lab[(d_skin < structure["skin_band_voxels"] * h) | ~inside[included]] = SKIN
-    lab[in_bone] = BONE
+    lab = label_voxels(d_skin, t_fat, t_superficial, d_bone, inside[included], in_bone, in_chest, in_trunk, front_of_spine, chest_bone, np.isin(z_of, BREAST_ZONES), h, s, structure["skin_band_voxels"], gland=gland)
     raw = np.full(int(np.prod(shape)), -1, np.int8)
     raw[included] = lab
 
     clean = raw.copy().reshape(shape)
     moved = {"muscle_to_fat": island_cleanup(clean, MUSCLE, FAT, int(structure["min_island_voxels"])),
-             "cavity_to_muscle": island_cleanup(clean, CAVITY, MUSCLE, int(structure["min_island_voxels"]))}
+             "deep_fat_to_fat": island_cleanup(clean, FAT_DEEP, FAT, int(structure["min_island_voxels"])),
+             "gland_to_fat": island_cleanup(clean, GLAND, FAT, int(structure["min_island_voxels"])),
+             "cavity_to_muscle": island_cleanup(clean, CAVITY, MUSCLE, int(structure["min_island_voxels"])),
+             "viscera_to_muscle": island_cleanup(clean, VISCERA, MUSCLE, int(structure["min_island_voxels"]))}
     nodes, tets, tet_voxel, vox = layers.tetrahedra(clean >= 0, origin, h)
     tet_label = clean[tuple(vox.T)][tet_voxel]
+    zone_index = {z: i for i, z in enumerate(ZONES)}
+    tet_zone = tet_zones(np.array([zone_index[z] for z in z_of], np.int16), included, shape, vox, tet_voxel)
     skin_tet, skin_bary, skin_score = layers.tie(skin[ids], nodes, tets, tet_voxel, vox, origin, h)
     return dict(patch=patch, skin_ids=ids, capped_verts=closed_v, capped_tris=closed_t, zone=zone, thickness=thick,
                 origin=origin, shape=shape, h=h, centres=centres, included=included, labels_raw=raw, labels_clean=clean.ravel(), moved=moved,
-                nodes=nodes, tets=tets, tet_voxel=tet_voxel, vox=vox, tet_label=tet_label,
+                nodes=nodes, tets=tets, tet_voxel=tet_voxel, vox=vox, tet_label=tet_label, tet_zone=tet_zone,
                 skin_tet=skin_tet, skin_bary=skin_bary, skin_score=skin_score, bone_names=names)
