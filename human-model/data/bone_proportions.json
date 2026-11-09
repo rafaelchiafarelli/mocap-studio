@@ -1,0 +1,27 @@
+{
+ "_about": "Bone proportions of the neutral bodies as built on 2026-11-08 (tools/bone_neutral.py, female_2026-11-08_v4_foot-width and male_2026-11-08_v5_foot-width) and the tape's base measures: a blank bone parameter takes one of these, recorded as a proportion. Edit to change them.",
+ "female": {
+  "pelvis_share_of_height": 0.158,
+  "trunk_over_tape": 1.22,
+  "thigh_share_of_leg": 0.4951,
+  "humerus_share_of_arm": 0.5244,
+  "leg_bone_over_inseam": 1.0162,
+  "arm_bone_over_tape": 0.9717,
+  "biacromial_over_tape": 0.9162,
+  "ribcage_width_over_biacromial": 0.7075,
+  "ribcage_depth_over_biacromial": 0.3872,
+  "acromion_beyond_joint_m": 0.0121
+ },
+ "male": {
+  "pelvis_share_of_height": 0.1381,
+  "trunk_over_tape": 1.1537,
+  "thigh_share_of_leg": 0.4895,
+  "humerus_share_of_arm": 0.4853,
+  "leg_bone_over_inseam": 1.0282,
+  "arm_bone_over_tape": 0.9789,
+  "biacromial_over_tape": 0.9112,
+  "ribcage_width_over_biacromial": 0.7379,
+  "ribcage_depth_over_biacromial": 0.3042,
+  "acromion_beyond_joint_m": 0.0105
+ }
+}

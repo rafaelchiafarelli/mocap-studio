@@ -41,6 +41,16 @@ def segment_fit(verts, a, b, target_a, target_b, radial_power=0.7, rotation=None
     return scaled @ R.T + ta
 
 
+def thicken(verts, a, b, k):
+    """Scales a bone's thickness by k about the axis from a to b: across it only, so its length doesn't change."""
+    a, b = np.asarray(a, float), np.asarray(b, float)
+    axis = (b - a) / np.linalg.norm(b - a)
+    p = np.asarray(verts, float) - a
+    along = p @ axis
+    radial = p - np.outer(along, axis)
+    return a + np.outer(along, axis) + radial * k
+
+
 def similarity(verts, a, b, target_a, target_b):
     return segment_fit(verts, a, b, target_a, target_b, radial_power=1.0)
 
