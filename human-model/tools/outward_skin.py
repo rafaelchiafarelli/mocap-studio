@@ -7,7 +7,7 @@ import numpy as np
 from scipy import ndimage
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import warp as wp
-from hmcore import body, fit, layers, meshgpu, muscle_bodies, outward, shapes
+from hmcore import body, fit, layers, meshgpu, muscle, muscle_bodies, outward, shapes, skeleton
 
 N_BODY = 13380  # as in blender/export_blend.py
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -72,7 +72,12 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
     behind = cfg["structure"]["cavity_behind_spine_front_mm"] / 1000
     front = centres[:, 1] < body.spine_front(bones, centres[:, 2]) + behind
     core = outward.core_mask(centres, chest, trunk, front, in_bone.ravel()).reshape(shape) & (keep | in_bone)
-    muscles = muscle_bodies.select(json.load(open(os.path.join(build_dir, f"{name}.muscles.json"))))
+    fan_table = json.load(open(os.path.join(DATA, "muscle_fans.json")))
+    ind = skeleton.load_individual(os.path.join(build_dir, f"{name}.export.npz"), os.path.join(build_dir, f"{name}.export.json"))
+    with open(os.path.join(build_dir, f"{name}.bones.npz.json")) as f:
+        muscle.follow_rig_edits(ind["rig"], json.load(f)["anchors"]["rig_edits"])
+    resolver = muscle.Resolver(ind, {k: {"verts": v[0], "parent": ""} for k, v in bones.items()})
+    muscles = muscle_bodies.select(json.load(open(os.path.join(build_dir, f"{name}.muscles.json"))), replaced=fan_table["replaces"]) + muscle_bodies.fans(fan_table, resolver)
     muscle = muscle_bodies.solids(muscles, origin, shape, voxel, fields["muscle"]["value"], gluteus_factor) & keep & ~core
     breast = np.zeros(shape, bool)
     inner = core | muscle | breast

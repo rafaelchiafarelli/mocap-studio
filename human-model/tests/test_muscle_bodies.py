@@ -64,3 +64,32 @@ def test_what_isnt_muscle_is_fat():
     t_fat = np.full(n, 0.01)
     lab = body.label_voxels(d_skin, t_fat, np.full(n, 1.0), muscle_mask=np.array([True, False, True]), **args)
     assert lab.tolist() == [body.MUSCLE, body.FAT, body.MUSCLE]
+
+
+class FakeResolver:
+    scale = 1.0
+
+    def snapped(self, lm, side):
+        return np.array(lm, float) * (-1 if side == "R" else 1), "bone"
+
+
+def test_a_fan_opens_between_its_ends_on_both_sides():
+    table = {"fans": [{"name": "fan", "radius": 0.01, "count": 3, "origin_a": [0.1, 0, 0], "origin_b": [0.1, 0, 0.2], "insertion_a": [0.3, 0, 0.1], "insertion_b": [0.3, 0, 0.1]}]}
+    out = mb.fans(table, FakeResolver())
+    assert len(out) == 6 and [m["name"] for m in out[:3]] == ["fan_0_L", "fan_1_L", "fan_2_L"]
+    assert out[1]["points"][0] == pytest.approx([0.1, 0, 0.1]) and out[1]["points"][1] == pytest.approx([0.3, 0, 0.1])
+    assert out[3]["points"][0][0] == pytest.approx(-0.1) and out[3]["group"] == "trunk"
+
+
+def test_every_fan_is_declared_and_replaces_real_muscles():
+    import json, os
+    table = json.load(open(os.path.join(os.path.dirname(__file__), "..", "data", "muscle_fans.json")))
+    names = {e["name"] for e in json.load(open(os.path.join(os.path.dirname(__file__), "..", "data", "muscles.json")))["trunk"]}
+    assert set(table["replaces"]) <= names and {e["name"] for e in table["fans"]} == {"pectoralis_major", "latissimus_dorsi", "trapezius", "external_oblique", "deltoid"}
+
+
+def test_follow_rig_edits_moves_the_parents_tail_too():
+    from hmcore import muscle
+    rig = {"thigh.L": {"head": [0, 0, 1], "tail": [0, 0, 0.5], "parent": "spine"}, "shin.L": {"head": [0, 0, 0.5], "tail": [0, 0, 0], "parent": "thigh.L"}}
+    muscle.follow_rig_edits(rig, {"shin.L": [0, 0.1, 0.5]})
+    assert rig["shin.L"]["head"] == [0, 0.1, 0.5] and rig["thigh.L"]["tail"] == [0, 0.1, 0.5]
