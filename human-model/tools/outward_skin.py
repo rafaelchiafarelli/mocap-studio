@@ -78,18 +78,18 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
         muscle.follow_rig_edits(ind["rig"], json.load(f)["anchors"]["rig_edits"])
     resolver = muscle.Resolver(ind, {k: {"verts": v[0], "parent": ""} for k, v in bones.items()})
     muscles = muscle_bodies.select(json.load(open(os.path.join(build_dir, f"{name}.muscles.json"))), replaced=fan_table["replaces"]) + muscle_bodies.fans(fan_table, resolver)
-    muscle = muscle_bodies.solids(muscles, origin, shape, voxel, fields["muscle"]["value"], gluteus_factor) & keep & ~core
+    muscle_solid = muscle_bodies.solids(muscles, origin, shape, voxel, fields["muscle"]["value"], gluteus_factor) & keep & ~core
     breast = np.zeros(shape, bool)
     if sex == "female":
         breast_table, wish = json.load(open(os.path.join(DATA, "breast_shapes.json"))), character.get("breast") or {}
         base = ch.base_measures("female")
-        wall_inner = core | muscle
+        wall_inner = core | muscle_solid
         for side, label in ((1, "breast_L"), (-1, "breast_R")):
             on_it = ids[zone[ids] == label]
             apex = skin[on_it[np.argmin(skin[on_it, 1])]]
             breast |= shapes.breast_volume(apex, side, wall_inner, origin, shape, voxel, fields["bust"]["value"] - fields["underbust"]["value"], base["bust"] - base["underbust"], wish, breast_table)
         regions_out = shapes.breast_regions(wish, breast_table)
-    inner = core | muscle | breast
+    inner = core | muscle_solid | breast
 
     # The skin stays on the first shape and goes out only where what's inside needs it; the shapes and typed zones change the fat's depth from there
     inner_sdf = outward.signed_distance(inner | outward.grow(inner, SKIN_OVER_LAYERS, keep, voxel), voxel)
@@ -114,7 +114,7 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
     full[:N_BODY] = new
     push = np.linalg.norm(new - skin, axis=1)
     np.savez_compressed(os.path.join(out_dir, f"{name}.skin_fit.npz"), verts=full, push=push.astype(np.float32), patch=patch.astype(np.int32))
-    np.savez_compressed(os.path.join(out_dir, f"{name}.tissue.npz"), origin=origin, shape=np.array(shape), h=voxel, muscle=np.packbits(muscle.ravel()), breast=np.packbits(breast.ravel()))
+    np.savez_compressed(os.path.join(out_dir, f"{name}.tissue.npz"), origin=origin, shape=np.array(shape), h=voxel, muscle=np.packbits(muscle_solid.ravel()), breast=np.packbits(breast.ravel()))
     final = np.maximum(outward.sample(depth_field, new[ids], origin, voxel), 0.0)
     final_zone = zone[ids]
     with open(os.path.join(out_dir, f"{name}.fat_table.json"), "w") as f:
@@ -129,7 +129,7 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
     pv = new[patch]
     area = float(np.linalg.norm(np.cross(pv[:, 1] - pv[:, 0], pv[:, 2] - pv[:, 0]), axis=1).sum() / 2)
     closed = meshgpu.Mesh(*layers.capped(new, patch)).inside(centres).reshape(shape)
-    masses = outward.masses_kg(in_bone, core, muscle, closed & ~inner, closed, voxel, area)
+    masses = outward.masses_kg(in_bone, core, muscle_solid, closed & ~inner, closed, voxel, area)
     percent, target = outward.fat_percent(masses), fields["body_fat_percent"]["value"]
     report = {"name": name, "voxel_m": voxel, "target_percent": target, "percent": round(percent, 2), "reached_within_0_5": bool(abs(percent - target) <= 0.5), "masses_kg": {k: round(v, 2) for k, v in masses.items()},
               "muscle_scale": fields["muscle"]["value"], "muscles": len(muscles), "skin_points_moved": int(len(ids)), "largest_move_mm": round(float(push.max()) * 1000, 1), "mean_move_mm": round(float(push[ids].mean()) * 1000, 1),
