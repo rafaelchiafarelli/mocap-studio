@@ -107,7 +107,7 @@ def prepare_character(path, sex, folder, data=DATA):
 def outputs(stage, folder, name):
     """What a stage leaves behind, by name."""
     return {"shape": {"sheet": f"{folder}/sheet.json", "targets": f"{folder}/targets.json", "recipe": f"{folder}/{name}.recipe.json", "shape": f"{folder}/shape.json"},
-            "outward": {"skin_fit": f"{folder}/skin/{name}.skin_fit.npz", "fat_table": f"{folder}/skin/{name}.fat_table.json", "regions": f"{folder}/skin/{name}.regions.json", "skin_report": f"{folder}/skin/{name}.skin_fit.json"},
+            "outward": {"skin_fit": f"{folder}/skin/{name}.skin_fit.npz", "fat_table": f"{folder}/skin/{name}.fat_table.json", "regions": f"{folder}/skin/{name}.regions.json", "skin_report": f"{folder}/skin/{name}.skin_fit.json", "tissue": f"{folder}/skin/{name}.tissue.npz"},
             "build": {"blend": f"{folder}/build/{name}.blend", "bones": f"{folder}/build/{name}.bones.npz", "build_dir": f"{folder}/build"},
             "tape": {"tape": f"{folder}/tape.json"},
             "skin": {"skin_fit": f"{folder}/skin/{name}.skin_fit.npz"},
@@ -138,7 +138,7 @@ def commands(stage, folder, name, sex, recipe, made, routed, here=HERE, render=F
     if stage == "skin":
         return [[*gpu, f"{tools}/skin_over_bone.py", made["build_dir"], name, made["tape"], f"{folder}/skin", *extra]]
     if stage == "layers":
-        table = [f"FAT_TABLE={made['fat_table']}"] if "fat_table" in made else []
+        table = [f"FAT_TABLE={made['fat_table']}", f"TISSUE={made['tissue']}"] if "fat_table" in made else []
         return [[*gpu, f"{tools}/body_layers.py", made["build_dir"], name, f"{folder}/layers", f"SKIN={made['skin_fit']}", *table, *extra]]
     if stage == "walk":
         return [[*blender, "--blend", made["blend"], f"{here}/blender/walk.py", f"{here}/data/gait_walk.json", sex, f"{folder}/walk/{name}_walk.blend", WALK_CYCLES, WALK_STOP_STEPS]]

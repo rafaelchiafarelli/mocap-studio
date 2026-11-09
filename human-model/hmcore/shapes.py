@@ -10,15 +10,13 @@ def _json(name, data):
         return json.load(fh)
 
 
-def gluteus(fat_mm, muscle_mm, shape, table):
-    """New fat and muscle tables for this gluteus shape; a zone without a shape keeps its value."""
+def gluteus(fat_mm, shape, table):
+    """A new fat table for this gluteus shape; a zone without a shape keeps its value. The shape's muscle factor goes to hmcore.muscle_bodies.solids, on the gluteus muscles."""
     s = table[shape]
-    fat, muscle = dict(fat_mm), dict(muscle_mm)
+    fat = dict(fat_mm)
     for zone, key in (("buttocks_upper_side", "width_above"), ("buttocks_lower_side", "width_base"), ("buttocks_upper_center", "projection"), ("buttocks_lower_center", "projection"), ("hips", "side_line")):
         fat[zone] *= s[key]
-    for zone in ("buttocks_upper_center", "buttocks_upper_side", "buttocks_lower_center", "buttocks_lower_side"):
-        muscle[zone] *= s["muscle"]
-    return fat, muscle
+    return fat
 
 
 def breast(fat_mm, breast_character, table, cup_ratio=1.0):

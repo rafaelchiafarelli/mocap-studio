@@ -506,7 +506,7 @@ With 5 mm, volumes every 10 frames and the bone test on (`c5_padrao_novo_5mm_vol
 
 ## The new path (body-type-selection), and the fit fixes it should make unnecessary
 
-`tools/outward_skin.py` makes the skin the result of bones, muscle and fat. With bones from the sheet (`hmcore/bone_targets.py`, `skeleton.build(targets=...)`), these fixes should stop being needed; none is removed yet (Rafael: today's path stays until the new one beats it):
+`tools/outward_skin.py` keeps the first shape's skin and moves it out only where bones, the real muscles or the breast need it. With bones from the sheet (`hmcore/bone_targets.py`, `skeleton.build(targets=...)`), these fixes should stop being needed; none is removed yet (Rafael: today's path stays until the new one beats it):
 
 - `tools/skin_over_bone.py`, the skin pushed over the bones.
 - In `hmcore/skeleton.py`: `settle_superficial`, the slim-to-skin steps for femur, tibia, fibula, larynx, ribs and foot, and the pelvis's `settle`.
