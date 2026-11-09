@@ -101,3 +101,10 @@ def test_the_edge_has_no_wall():
     out = bs.inflate(v, f, [p])
     r = bs.rho(v, p)
     assert np.abs(out[(r > 0.92) & (r < 1.0), 1] - bs.wall_y(v, p)).max() < 0.012
+
+
+def test_the_move_fades_towards_the_back():
+    v, f = plate(41)
+    p = {**outline(), "front_y": bs.FRONT_FADE / 2}  # the plate lies halfway through the fade
+    out = bs.inflate(v, f, [p])
+    assert out[:, 1].min() == pytest.approx(-p["project"] / 2, abs=0.004)
