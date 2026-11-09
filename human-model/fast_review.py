@@ -15,6 +15,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REVIEW = "/mnt/g/mocap-studio-downloads/review"
 DATA = os.path.join(HERE, "data")
 BODIES = ("female", "male")
+HEAVY = ("outward_skin.py",)  # one at a time, whatever else runs: its distance fields on the whole grid take several GB, and six at once were killed for memory (2026-11-09)
 PAIR_NAME = "mulher_e_homem.blend"
 SHARED_NAME = "fast_review_todas.blend"
 LABELS = {"female": "mulher", "male": "homem"}
@@ -203,6 +204,14 @@ def save_record(folder, record):
 
 def run_stage(argv, log, cwd=HERE):
     """Runs one command, its output going to the stage's log. Returns its exit code."""
+    if os.path.basename(next((a for a in argv if a.endswith(".py") and "blender_run" not in a), "")) in HEAVY:
+        with open(f"{REVIEW}/fast_review_heavy.lock", "w") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            return _call(argv, log, cwd)
+    return _call(argv, log, cwd)
+
+
+def _call(argv, log, cwd):
     with open(log, "a", encoding="utf-8") as fh:
         fh.write("$ " + " ".join(argv) + "\n")
         fh.flush()
@@ -231,7 +240,7 @@ def run_body(nickname, sex, recipe, overrides, folder, execute=run_stage, reused
         record["stages"][stage] = entry
         save_record(folder, record)
         t0 = time.time()
-        for argv in commands(stage, folder, name, sex, recipe, made, routed, render=render, nickname=nickname):
+        for argv in commands(stage, folder, name, sex, recipe, {**made, **entry["output"]}, routed, render=render, nickname=nickname):
             code = execute(argv, log)
             if code != 0:
                 entry.update(status="failed", seconds=round(time.time() - t0, 1), exit_code=code)
@@ -301,7 +310,7 @@ def run_both(nickname, overrides, run, recipes, execute=run_stage, reused=None, 
     return record, failures
 
 
-def main(argv=None):
+def parser():
     ap = argparse.ArgumentParser(description="From recipes to walked bodies in a Blender file, no rendering")
     ap.add_argument("nickname")
     ap.add_argument("--body", choices=BODIES)
@@ -314,7 +323,11 @@ def main(argv=None):
     ap.add_argument("--no-shared", action="store_true", help="leave this run out of the file with every run")
     ap.add_argument("--remove-shared", action="store_true", help="take this nickname out of the file with every run, and stop")
     ap.add_argument("overrides", nargs="*", metavar="NAME=value")
-    a = ap.parse_args(argv)
+    return ap
+
+
+def main(argv=None):
+    a = parser().parse_intermixed_args(argv)  # NAME=value may come after the options
     shared = f"{REVIEW}/{SHARED_NAME}"
     if a.remove_shared:
         code = locked_shared(REVIEW, shared_command("remove", shared, a.nickname), f"{REVIEW}/fast_review_todas.log")

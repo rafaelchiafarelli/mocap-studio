@@ -155,3 +155,11 @@ def test_setting_the_bust_recalculates_the_cup():
 def test_cup_and_bust_together_are_refused():
     assert any("cup or the bust" in p for p in ch.problems({"sex": "female", "cup": "B", "bust_cm": 90}))
     assert any("letter" in p for p in ch.problems({"sex": "female", "cup": "Z"}))
+
+
+def test_the_sixteen_test_bodies_are_valid():
+    d = os.path.join(os.path.dirname(__file__), "..", "data", "characters", "test")
+    names = sorted(os.listdir(d))
+    assert len(names) == 16 and sum(n.startswith("female") for n in names) == 8
+    for n in names:
+        assert ch.problems(json.load(open(os.path.join(d, n)))) == []

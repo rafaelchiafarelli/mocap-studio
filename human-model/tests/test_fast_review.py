@@ -269,3 +269,27 @@ def test_warnings_of_the_check():
     assert any("femur_L" in w for w in bad) and any("tolerância" in w for w in bad) and any("viraram" in w for w in bad)
     assert any("waist_hip" in w for w in bad)
     assert cc.warnings({"sex": "female"}, measures, ratios, clean_layers, clean_skin) == []
+
+
+def test_overrides_may_come_after_the_options():
+    a = fr.parser().parse_intermixed_args(["first", "--character", "female=a.json", "--character", "male=b.json", "BONE_TEST=1", "VOXEL=0.01"])
+    assert a.nickname == "first" and a.overrides == ["BONE_TEST=1", "VOXEL=0.01"] and a.character == ["female=a.json", "male=b.json"]
+
+
+def test_a_character_run_goes_through_every_stage(tmp_path):
+    recipe = tmp_path / "female.json"
+    recipe.write_text(json.dumps({"name": "female"}))
+    calls = []
+    record = fr.run_body("first", "female", str(recipe), [], str(tmp_path / "run"), execute=lambda argv, log: calls.append(argv) or 0, chain=fr.CHARACTER_STAGES, name="ana")
+    assert list(record["stages"]) == list(fr.CHARACTER_STAGES) and record["status"] == "done"
+    assert any("character_shape.py" in x for x in calls[0]) and any("--targets" == x for c in calls for x in c)
+
+
+def test_the_heavy_stage_takes_a_lock(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(fr, "REVIEW", str(tmp_path))
+    monkeypatch.setattr(fr, "_call", lambda argv, log, cwd: calls.append(argv) or 0)
+    fr.run_stage(["python3", "x/outward_skin.py"], "log")
+    assert (tmp_path / "fast_review_heavy.lock").exists() and len(calls) == 1
+    fr.run_stage(["python3", "x/body_layers.py"], "log")  # others run freely
+    assert len(calls) == 2
