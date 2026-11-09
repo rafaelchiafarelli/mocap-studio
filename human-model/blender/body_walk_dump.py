@@ -1,4 +1,4 @@
-"""Every bone mesh's motion and the current skin, every frame of a file from walk.py, for tools/lower_body_walk.py. Args: OUT.npz
+"""Every bone mesh's motion and the current skin, every frame of a file from walk.py, for tools/body_walk.py. Args: OUT.npz
 Like thigh_walk_dump.py for all bones: per bone, its world transform relative to rest (frames x 4 x 4), as T_<bone>;
 skin_rest and skins (frames x 13380 x 3) as there; bone_names lists them."""
 import sys

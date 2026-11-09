@@ -77,7 +77,7 @@ Epic `thigh` of `initiatives/muscle-physics/`. Today the skin comes first and th
 1. **Cut.** The left thigh's skin between 2 cm under the crotch and 8 cm above the femur's lowest point. Only whole MPFB triangles are kept, so the patch ends at the nearest ring of vertices, about 3 cm short of each cut.
 2. **Close.** Each open end gets a fan to its centre, so inside and outside can be told apart (winding number, `fit.winding_number`).
 3. **Fill.** A 5 mm voxel grid: a voxel counts if its centre is inside the skin, or close enough to it that every skin vertex lies in a counted voxel (`layers.py:189`).
-4. **Label.** Inside the femur is bone. Within the declared fat thickness of the skin is fat. The rest is muscle. A voxel outside the skin is fat (`layers.py:206`). The thickness changes smoothly around the femur between front, back, inner and outer.
+4. **Label.** Inside the femur is bone. Within the declared fat thickness of the skin is fat. The rest is muscle. A voxel outside the skin is fat (`layers.py:207`). The thickness changes smoothly around the femur between front, back, inner and outer.
 5. **Clean.** Only the largest piece of bone and of muscle is kept. The rest becomes muscle and fat.
 6. **Tetrahedra.** Six per voxel, on shared corners.
 7. **Tie the skin.** Each skin vertex gets the tetrahedron that holds it, with its barycentric weights. The skin stays smooth while the tetrahedra are steps.
@@ -469,3 +469,30 @@ Those numbers still count joint bending (bug `human-model/14`), so they compare 
 
     human-model/hm.sh --gpu python human-model/tools/body_walk.py LAYERS.npz BONES.npz DUMP.npz RUN_DIR ABOVE_HIP=10 [NAME=value ...]
     python3 human-model/blender_run.py human-model/blender/body_walk_bake.py RUN_DIR/body_walk.npz LAYERS.npz BONES.npz DUMP.npz RUN_DIR/body_walk.blend RUN_DIR/frames
+
+## Where a walk's time goes, and the two settings
+
+Measured on 2026-11-08 (investigation session), the man and the woman side by side, up to the Blender file with both, no rendering. Kept in `G:\mocap-studio-downloads\review\2026-11-08\investigacao_simulacao\comparativo_tempo\`, each variant in its folder. The stages are drawn in [diagrams/](diagrams/).
+
+| Variant | Total | The man's walking loop |
+|---|---|---|
+| `c0`: 5 mm, bone test, volumes every frame | 8 min 58 s | 438 s |
+| `c1`: 5 mm, no bone test, volumes every frame | 8 min 12 s | 414 s |
+| `c2`: 10 mm, bone test, volumes every frame | 2 min 20 s | 90 s |
+| `c3`: 10 mm, no bone test, volumes every frame | 1 min 42 s | 53 s |
+| `c4`: 5 mm, bone test, no volumes | 3 min 39 s | 138 s |
+
+- **Inside the man's loop at `c0`:** the physics 33 s, the bone test 36 s (ours and the current model's), everything else 369 s. Of that, about 300 s was summing each tissue's volume over all the tetrahedra, every frame (`c4` against `c0`). Physics, preparation and writing the file together are under a minute.
+- **The bone test and the volumes only measure.** `c0`, `c1` and `c4` give identical skin motion and inverted tetrahedra.
+- **10 mm changes the motion** by up to 29% (the woman's breast, 19.6 to 13.9 mm). The skin band is one voxel thick, so at 10 mm the skin is twice as thick and any zone with less than 10 mm of fat loses it (the woman's calf front, forearm, neck and upper-arm front). Bones through the man's skin fall from 40 frames and 2.7 mm to 29 and 0.9, which that thicker skin may explain.
+
+**The defaults** (Rafael, 2026-11-08), in `data/simulation.json`, with an override per run for a character whose proportions do badly:
+
+| Setting | Default | Override |
+|---|---|---|
+| `VOXEL_M`: the cube's side | 5 mm | `VOXEL=m` on `tools/body_layers.py` |
+| `VOLUME_EVERY_FRAMES`: how often the volumes are summed, and always on the last frame | 10 | `VOLUME_EVERY=frames` on `tools/body_walk.py` |
+
+With these defaults (`c5_padrao_novo_5mm_volumes_10q`) the simulation takes 176 s for the woman and 210 s for the man, side by side.
+
+**What the sampled volumes miss:** `volume_range` in `body_walk.json` now covers only the measured frames, and the worst moment can fall between them. On the man, the fat's range reads 99.85% to 100.16% against 98.49% to 100.84% measured every frame; its worst is frame 2, the start of the walk. To see the whole range, run with `VOLUME_EVERY=1`. In `body_walk_frames.csv`, the frames not measured have those columns empty.

@@ -8,6 +8,7 @@
 
 ## Files
 
+- `__init__.py`: marks the package; its docstring says why nothing here imports Blender.
 - `remote_zip.py`: reads single members of a remote zip by byte range.
 - `tsdata.py`: the CT dataset's metadata and coverage from the zip index.
 - `measures.py`: ANSUR values and CT measurements, in metres.

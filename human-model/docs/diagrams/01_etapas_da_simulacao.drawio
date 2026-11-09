@@ -1,0 +1,144 @@
+<mxfile host="mocap-studio">
+  <diagram id="etapas" name="Etapas da simulação">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1320" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="&lt;b style='font-size:18px'&gt;Simulação do corpo caminhando: as etapas&lt;/b&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="15" width="900" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="lane0" value="A · Preparar o corpo" style="swimlane;html=1;startSize=28;rounded=1;arcSize=2;fontSize=13;fontStyle=1;align=left;spacingLeft=8;fillColor=#f5f5f5;strokeColor=#999999;swimlaneFillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="1240" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" value="&lt;b&gt;1&lt;/b&gt;&lt;br&gt;Ler as camadas, os ossos, a caminhada e os valores de tecido" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="60" y="94" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="&lt;b&gt;2&lt;/b&gt;&lt;br&gt;Escolher a parte do corpo a simular (hoje: o corpo inteiro)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="235" y="94" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s1" target="s2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" value="&lt;b&gt;3&lt;/b&gt;&lt;br&gt;Anotar o osso de referência de cada ponto (para os presos e para o amortecimento)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="410" y="94" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s2" target="s3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s4" value="&lt;b&gt;4&lt;/b&gt;&lt;br&gt;Achar a pele e os cortes: pescoço, pulsos e tornozelos" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="585" y="94" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s3" target="s4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s5" value="&lt;b&gt;5&lt;/b&gt;&lt;br&gt;Definir os pontos presos: os dos ossos e os dos cortes" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="760" y="94" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s4" target="s5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s6" value="&lt;b&gt;6&lt;/b&gt;&lt;br&gt;Dar rigidez e densidade a cada tecido e preparar a GPU" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="935" y="94" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s5" target="s6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lane1" value="B · Chegar à primeira pose" style="swimlane;html=1;startSize=28;rounded=1;arcSize=2;fontSize=13;fontStyle=1;align=left;spacingLeft=8;fillColor=#f5f5f5;strokeColor=#999999;swimlaneFillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="40" y="218" width="1240" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="s7" value="&lt;b&gt;7&lt;/b&gt;&lt;br&gt;Sair da pose de repouso para a primeira pose da caminhada (24 quadros)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="60" y="252" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="s8" value="&lt;b&gt;8&lt;/b&gt;&lt;br&gt;Deixar o tecido assentar nessa pose (12 quadros)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="235" y="252" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s7" target="s8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s9" value="&lt;b&gt;9&lt;/b&gt;&lt;br&gt;Preparar as medições e escolher a metade que aparecerá em corte" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="410" y="252" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s8" target="s9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lane2" value="C · Caminhar, quadro a quadro&lt;span style='font-weight:normal'&gt; · 168 quadros: 144 andando + 24 parado no fim&lt;/span&gt;" style="swimlane;html=1;startSize=28;rounded=1;arcSize=2;fontSize=13;fontStyle=1;align=left;spacingLeft=8;fillColor=#f5f5f5;strokeColor=#999999;swimlaneFillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="40" y="376" width="1240" height="185" as="geometry" />
+        </mxCell>
+        <mxCell id="s10" value="&lt;b&gt;10&lt;/b&gt;&lt;br&gt;Mover os ossos para a pose deste quadro" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="60" y="410" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="s11" value="&lt;b&gt;11&lt;/b&gt;&lt;br&gt;Calcular o tecido: 160 passos por quadro" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="235" y="410" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s10" target="s11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s12" value="&lt;b&gt;12&lt;/b&gt;&lt;br&gt;Recolocar a pele sobre a malha calculada" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="410" y="410" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s11" target="s12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s13" value="&lt;b&gt;13&lt;/b&gt;&lt;br&gt;Medir movimento da pele e tetraedros invertidos; volumes a cada 10 quadros" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="585" y="410" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s12" target="s13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s14" value="&lt;b&gt;14&lt;/b&gt;&lt;br&gt;Procurar osso atravessando a pele" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="760" y="410" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s13" target="s14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s15" value="&lt;b&gt;15&lt;/b&gt;&lt;br&gt;Repetir a procura no modelo atual, para comparar (nos 144 quadros)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="935" y="410" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s14" target="s15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s16" value="&lt;b&gt;16&lt;/b&gt;&lt;br&gt;Guardar a pele e o corte deste quadro" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="1110" y="410" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s15" target="s16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="loop" value="próximo quadro" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;entryX=0.5;entryY=1;strokeColor=#666666;dashed=1;" edge="1" parent="1" source="s16" target="s10">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1185.0" y="526" />
+              <mxPoint x="135.0" y="526" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lane3" value="D · Entregar" style="swimlane;html=1;startSize=28;rounded=1;arcSize=2;fontSize=13;fontStyle=1;align=left;spacingLeft=8;fillColor=#f5f5f5;strokeColor=#999999;swimlaneFillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="40" y="589" width="1240" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="s17" value="&lt;b&gt;17&lt;/b&gt;&lt;br&gt;Resumir as medições da rodada" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="60" y="623" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="s18" value="&lt;b&gt;18&lt;/b&gt;&lt;br&gt;Gravar o resultado em arquivo comprimido" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="235" y="623" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s17" target="s18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="down0" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeWidth=2;" edge="1" parent="1" source="lane0" target="lane1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="down1" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeWidth=2;" edge="1" parent="1" source="lane1" target="lane2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="down2" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeWidth=2;" edge="1" parent="1" source="lane2" target="lane3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="leg1" value="Produz o resultado" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="585" y="629" width="150" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="leg2" value="Só mede: não muda o movimento" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="760" y="629" width="200" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
