@@ -2,7 +2,7 @@
 
 **Goal:** choose a character's silhouette and biotype by name, and have the whole body follow the choice (Rafael, 2026-11-08). Silhouette and biotype must stay selectable whatever fixes the body receives.
 
-**Status:** to be planned, with every question answered. No epics or tasks yet.
+**Status:** planned: epics and tasks in [epics/](epics/README.md). Nothing built.
 
 ## What Rafael has asked for
 

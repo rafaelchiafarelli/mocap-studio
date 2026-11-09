@@ -2,7 +2,7 @@
 
 **Goal:** one command that rebuilds the man and the woman and leaves them in one Blender file, with no rendering unless asked (Rafael, 2026-11-08). Today each change takes a chain of steps by hand, and most of the waiting is renders nobody asked for.
 
-**Status:** to be planned. Rafael wants it first in the next session.
+**Status:** planned: epics and tasks in [epics/](epics/README.md). Rafael wants it first.
 
 ## What Rafael asked for
 
@@ -22,7 +22,7 @@ The table is in `human-model/docs/muscle-physics.md`, section "Where a walk's ti
 
 The bone test is off by default, to generate faster, and is asked for on one body when a bump shows (`BONE_TEST=1`, Rafael, 2026-11-08). A "safe rule" that would replace it is left for later.
 
-## To work out when planning
+## Notes from planning
 
 - **Run the two bodies side by side.** The machine has room (28 threads, and two simulations at once used about 400 MB of the GPU's memory). Bones take about 11 minutes per body and, in the redesign (`body-type-selection`), are calculated once, when the character's design is finished, so they aren't part of a usual round. Each stage only needs the one before it, for its own body.
 - **Skip what didn't change:** a change to the tissue values needs only the simulation and the file, not the bones. Decided (Rafael, 2026-11-08): the command is told the stage to start from and the earlier run to reuse; it doesn't detect changes, and the run notes where each part came from.
