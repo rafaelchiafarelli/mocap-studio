@@ -204,3 +204,15 @@ def test_sheet_labels_every_distance_and_biotype():
     from hmcore import character as ch
     assert {k for k, _ in sheet.DISTANCE_LABELS} == set(ch.DISTANCES)
     assert {k for k, _ in sheet.BIOTYPE_LABELS} == set(ch.BIOTYPES)
+
+
+def test_breast_faders_reach_the_character_when_set():
+    v = {"sex": "female", "breast": "gota", "projection_cm": 9.0, "base_cm": 0.0, "upper": 1.2, "lower": 0.0, "power": 2.5, "others": {}, "distances": {}, "bone_parameters": {}}
+    c = sheet.character_from_values(v)
+    assert c["breast"] == {"shape": "gota", "projection_cm": 9.0, "upper": 1.2, "power": 2.5}
+
+
+def test_a_runs_progress_line():
+    assert sheet.stage_line({"status": "running", "stages": {"shape": {"status": "done"}, "build": {"status": "running"}}}) == "Etapa 2 de 8: build"
+    assert sheet.stage_line({"status": "done", "stages": {}}) == "Pronto"
+    assert sheet.stage_line({"status": "failed", "failed_stage": "outward", "stages": {}}) == "Falhou na etapa outward"

@@ -163,3 +163,8 @@ def test_the_sixteen_test_bodies_are_valid():
     assert len(names) == 16 and sum(n.startswith("female") for n in names) == 8
     for n in names:
         assert ch.problems(json.load(open(os.path.join(d, n)))) == []
+
+
+def test_breast_faders_are_checked():
+    assert ch.problems({"sex": "female", "breast": {"shape": "gota", "projection_cm": 9.0, "power": 2.5}}) == []
+    assert any("projection_cm" in p for p in ch.problems({"sex": "female", "breast": {"projection_cm": -1}}))

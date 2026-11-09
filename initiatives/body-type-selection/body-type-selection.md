@@ -4,6 +4,26 @@
 
 **Status:** built in a first pass on branch `body-type-selection`, not merged: epics and tasks in [epics/](epics/README.md). The gate is Rafael's verdict on the eight bodies (`review\\fast_review_todas.blend`, 2026-11-09). Task `editor-sheet/3` waits for its pre-work.
 
+## Where it stands (2026-11-09), for the next session
+
+**On branch `body-type-selection`, not merged into `features` or `dev`.** Today's path stays intact. `fast-review` is an ancestor of this branch, and neither has gone up: both gates are Rafael's.
+
+**Rafael's decisions, on seeing the first eight bodies:**
+- Tissue from **real muscles attached to the bones** (option B), not a shell per zone. Sixteen bodies run directly, without stopping at the neutral.
+- Wide trunk muscles as **fans of spindles by hand** (`data/muscle_fans.json`); no open data with a commercial licence covers them.
+- Muscle volumes **as published** (Rajagopal); what's left up to the first shape is fat, and the percentage is **reported, not forced**.
+- The breast is a **volume from the cup**; "the skin should grow, not press on the breast" (`hmcore/breast_skin.py`).
+
+**What happened:** runs `t1` (shell), `t2` (shell with fixes), `t3`/`t4`/`t5` (muscles) are kept in `review\\2026-11-09\\fast_review\\` (`t1_neutro` in `2026-11-08`). The shared file holds `t5`.
+
+**The breast round (Rafael, 2026-11-09):** on one body, the neutral woman, ampulheta, bust 105, waist 80, hip 105, gluteus coração (the character file: `review\\2026-11-09\\fichas\\mulher_ampulheta_seios.json`). He gave "taça 50, costas 42". **The underbust of 84 assumes costas 42 is half the underbust, and "taça 50" isn't used: confirm with him.** Runs `seios_v1` and `seios_v2` predate the last two fixes and have the walk; the current breast exists only in the faders.
+
+**Rafael pilots in Blender:** `review\\2026-11-09\\pilotar\\abrir_faders.bat` opens `mulher_ampulheta_faders.blend` in the project's Blender (Windows' own Blender has no add-on). Tab Human, panels "Seios (faders ao vivo)" and "Ficha do personagem". **Next, by his plan:** a round with him in control of Blender, options and faders.
+
+**His verdict so far on the eight bodies (`t5`):** "no systemic problems apart from the breasts". Open: arm entering the body (bug 36), legs too fat (37), silhouettes not marked enough (38), the man's chest (39), areolas and nipples (40). Also open: upper arm too thick (34), about half fat (35), bones through the skin at rest (27), waists the sliders can't reach (29), bone test counts the cranium (28), seams at elbow and neck (41).
+
+**Not done:** clothing size (`editor-sheet/3`, waits for Rafael to check the table's numbers). The man's breast. Viscera measured in the walk.
+
 ## What Rafael has asked for
 
 The body is shaped from fashion anthropometry and plastic surgery (2026-11-05), in this order (2026-11-07):

@@ -7,7 +7,8 @@ import numpy as np
 from scipy import ndimage
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import warp as wp
-from hmcore import body, character as ch, fit, layers, meshgpu, muscle, muscle_bodies, outward, shapes, skeleton
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from hmcore import body, breast_skin, character as ch, fit, layers, meshgpu, muscle, muscle_bodies, outward, shapes, skeleton
 
 N_BODY = 13380  # as in blender/export_blend.py
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -79,17 +80,38 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
     resolver = muscle.Resolver(ind, {k: {"verts": v[0], "parent": ""} for k, v in bones.items()})
     muscles = muscle_bodies.select(json.load(open(os.path.join(build_dir, f"{name}.muscles.json"))), replaced=fan_table["replaces"]) + muscle_bodies.fans(fan_table, resolver)
     muscle_solid = muscle_bodies.solids(muscles, origin, shape, voxel, fields["muscle"]["value"], gluteus_factor) & keep & ~core
-    breast = np.zeros(shape, bool)
+    first = skin.copy()
+    outlines = []
+    bust_report = {}
     if sex == "female":
+        # The skin grows with the breast before anything else: it isn't pushed up to a volume, or it presses on it (Rafael, 2026-11-09)
+        from skin_over_bone import tape, tape_topology
         breast_table, wish = json.load(open(os.path.join(DATA, "breast_shapes.json"))), character.get("breast") or {}
         base = ch.base_measures("female")
-        wall_inner = core | muscle_solid
-        for side, label in ((1, "breast_L"), (-1, "breast_R")):
-            on_it = ids[zone[ids] == label]
-            apex = skin[on_it[np.argmin(skin[on_it, 1])]]
-            breast |= shapes.breast_volume(apex, side, wall_inner, origin, shape, voxel, fields["bust"]["value"] - fields["underbust"]["value"], base["bust"] - base["underbust"], wish, breast_table)
+        difference, neutral = fields["bust"]["value"] - fields["underbust"]["value"], base["bust"] - base["underbust"]
+        nipple = np.array([i for i, _ in meta["groups"]["nippleTip"] if i < N_BODY])
+        apexes = {1: skin[nipple[skin[nipple, 0] > 0]].mean(axis=0), -1: skin[nipple[skin[nipple, 0] < 0]].mean(axis=0)}
+        topo = tape_topology(e["starts"], e["sizes"], e["loops"])
+        bust_at = lambda v, z: tape.length_of(tape._girth_loop(topo, v, z)) * 100
+
+        def inflated(factor):
+            lines = [breast_skin.params(apexes[s], s, difference, neutral, wish, breast_table, factor) for s in (1, -1)]
+            return lines, breast_skin.inflate(skin, patch, lines)
+
+        z_nipple = float((apexes[1][2] + apexes[-1][2]) / 2) - wish.get("pendentes", 0.0) * breast_table["adjustments"]["pendentes_m"]
+        asked = fields["bust"]["value"]
+        low, high = 0.3, 3.0
+        if not wish.get("projection_cm"):  # the projection that makes the tape read the sheet's bust; a fader's value is taken as it is
+            for _ in range(12):
+                mid = (low + high) / 2
+                low, high = (mid, high) if bust_at(inflated(mid)[1], z_nipple) < asked else (low, mid)
+            factor = (low + high) / 2
+        else:
+            factor = 1.0
+        outlines, skin = inflated(factor)
+        bust_report = {"asked_cm": round(asked, 1), "reached_cm": round(bust_at(skin, z_nipple), 1), "projection_cm": round(outlines[0]["project"] * 100, 1), "base_cm": round(outlines[0]["radius"] * 100, 1), "difference_cm": round(difference, 1), "first_shape_bust_cm": round(bust_at(first, z_nipple), 1)}
         regions_out = shapes.breast_regions(wish, breast_table)
-    inner = core | muscle_solid | breast
+    inner = core | muscle_solid
 
     # The skin stays on the first shape and goes out only where what's inside needs it; the shapes and typed zones change the fat's depth from there
     inner_sdf = outward.signed_distance(inner | outward.grow(inner, SKIN_OVER_LAYERS, keep, voxel), voxel)
@@ -112,8 +134,13 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
 
     full = e["verts"].astype(np.float32).copy()
     full[:N_BODY] = new
-    push = np.linalg.norm(new - skin, axis=1)
+    push = np.linalg.norm(new - first, axis=1)
     np.savez_compressed(os.path.join(out_dir, f"{name}.skin_fit.npz"), verts=full, push=push.astype(np.float32), patch=patch.astype(np.int32))
+    closed = meshgpu.Mesh(*layers.capped(new, patch)).inside(centres).reshape(shape)
+    breast = np.zeros(shape, bool)
+    for outline in outlines:
+        breast |= breast_skin.footprint(centres, outline).reshape(shape)
+    breast &= closed & ~inner
     np.savez_compressed(os.path.join(out_dir, f"{name}.tissue.npz"), origin=origin, shape=np.array(shape), h=voxel, muscle=np.packbits(muscle_solid.ravel()), breast=np.packbits(breast.ravel()))
     final = np.maximum(outward.sample(depth_field, new[ids], origin, voxel), 0.0)
     final_zone = zone[ids]
@@ -128,12 +155,11 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
         json.dump(regions_out, f, indent=1)
     pv = new[patch]
     area = float(np.linalg.norm(np.cross(pv[:, 1] - pv[:, 0], pv[:, 2] - pv[:, 0]), axis=1).sum() / 2)
-    closed = meshgpu.Mesh(*layers.capped(new, patch)).inside(centres).reshape(shape)
     masses = outward.masses_kg(in_bone, core, muscle_solid, closed & ~inner, closed, voxel, area)
     percent, target = outward.fat_percent(masses), fields["body_fat_percent"]["value"]
     report = {"name": name, "voxel_m": voxel, "target_percent": target, "percent": round(percent, 2), "reached_within_0_5": bool(abs(percent - target) <= 0.5), "masses_kg": {k: round(v, 2) for k, v in masses.items()},
               "muscle_scale": fields["muscle"]["value"], "muscles": len(muscles), "skin_points_moved": int(len(ids)), "largest_move_mm": round(float(push.max()) * 1000, 1), "mean_move_mm": round(float(push[ids].mean()) * 1000, 1),
-              "ring_steps_mm": outward.ring_steps(skin, new, rings), "triangles_turned_over": outward.folded(skin, new, patch), "triangles": int(len(patch)), "regions_bones": len(region)}
+              "bust": bust_report, "ring_steps_mm": outward.ring_steps(first, new, rings), "triangles_turned_over": outward.folded(first, new, patch), "triangles": int(len(patch)), "regions_bones": len(region)}
     with open(os.path.join(out_dir, f"{name}.skin_fit.json"), "w") as f:
         json.dump(report, f, indent=1)
     print(json.dumps(report, indent=1))
