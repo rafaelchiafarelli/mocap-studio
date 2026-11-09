@@ -13,6 +13,7 @@
 - `ct_stats.py`: per-subject measurements from the sample.
 - `validation_table.py`: the tables in `docs/sources-and-validation.md`.
 - `build_bones.py`: the fitted skeleton of one individual.
+- `bone_neutral.py`: what a build's bones and rig measure in metres, for `data/bone_proportions.json` and the table in `docs/skeleton.md`.
 - `spec.py`: adds the jaw table and limits to a skeleton's metadata.
 - `build_muscles.py`, `build_fields.py`: muscle list and skin fields of one individual.
 - `solve_take.py`: a take's muscle activations, from shapes and from landmarks.
