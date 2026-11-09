@@ -10,6 +10,19 @@ def select(muscles, replaced=()):
     return [m for m in muscles if m["group"] in GROUPS and m["name"].rsplit("_", 1)[0] not in replaced]
 
 
+def fans(table, resolver):
+    """Each wide muscle of data/muscle_fans.json as its spindles, on both sides, from a hmcore.muscle.Resolver of this body."""
+    out = []
+    for e in table["fans"]:
+        for side in "LR":
+            ends = {k: resolver.snapped(e[k], side)[0] for k in ("origin_a", "origin_b", "insertion_a", "insertion_b")}
+            for i, t in enumerate(np.linspace(0.0, 1.0, e["count"])):
+                a = ends["origin_a"] * (1 - t) + ends["origin_b"] * t
+                b = ends["insertion_a"] * (1 - t) + ends["insertion_b"] * t
+                out.append({"name": f"{e['name']}_{i}_{side}", "group": "trunk", "side": side, "points": [a.tolist(), b.tolist()], "radius": e["radius"] * resolver.scale})
+    return out
+
+
 def rasterize(points, radius, origin, shape, h, mask):
     """Marks in mask the cells inside this muscle: for each cell near the chain, its distance to the chain against the spindle's radius at that place along it."""
     points = np.asarray(points, float)

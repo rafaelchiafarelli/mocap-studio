@@ -17,3 +17,5 @@ Task 2.
 ## Pre-work
 
 None.
+
+**Status:** Done (2026-11-09), declared by eye; run in task 5.

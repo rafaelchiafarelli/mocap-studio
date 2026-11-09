@@ -36,7 +36,7 @@
 - `character.py`: a character's sheet: reading and checking a character file (`problems`, `load`), and `resolve`: the full sheet, each field with its value and where it came from. Standard library only.
 - `bone_targets.py`: from a resolved sheet to the bones' target sizes in metres, each with where it came from (measure, proportion or parameter); `data/bone_proportions.json` holds the neutral bodies' proportions.
 - `outward.py`: the body's inside (`core_mask`: bones, chest, belly in front of the spine) and the first shape's skin moved out only where what's inside needs it (`push_needed`, `project`, `ring_fade`).
-- `muscle_bodies.py`: muscles as voxel solids, thin at the tendons, on the attachments of `muscle.py`.
+- `muscle_bodies.py`: muscles as voxel solids, thin at the tendons, on the attachments of `muscle.py`; `fans`, the wide muscles of `data/muscle_fans.json` as spindles.
 - `shapes.py`: the gluteus's and the breast's shapes as multipliers on the zones' fat and muscle.
 - `regions.py`: physical values per tetrahedron, one default per tissue and overrides by tissue and zone that fade in at a zone's border.
 - `layers.py`: a limb from the inside out: skin patch, voxels labelled bone, muscle or fat, tetrahedra, and the skin tied to them. [docs/muscle-physics.md](../docs/muscle-physics.md#experiment-2-a-thigh-built-from-the-inside-out).
