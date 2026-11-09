@@ -30,7 +30,10 @@ def per_tet(label, zone, voxel_of_tet, vox, table, regions, labels, zones):
         for zone_name, values in by_zone.items():
             weight = _fade(m & (zone == zones.index(zone_name)), m, voxel_of_tet, vox)
             for v, value in values.items():
-                out[v][m] += weight[m] * (value - table[tissue][v])
+                if v == "young_factor":  # a share of the tissue's own stiffness, as the breast's pendentes gives
+                    out["young"][m] += weight[m] * (value - 1.0) * table[tissue]["young"]
+                else:
+                    out[v][m] += weight[m] * (value - table[tissue][v])
     return out
 
 

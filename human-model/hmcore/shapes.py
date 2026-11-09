@@ -19,3 +19,21 @@ def gluteus(fat_mm, muscle_mm, shape, table):
     for zone in ("buttocks_upper_center", "buttocks_upper_side", "buttocks_lower_center", "buttocks_lower_side"):
         muscle[zone] *= s["muscle"]
     return fat, muscle
+
+
+def breast(fat_mm, breast_character, table, cup_ratio=1.0):
+    """New fat table, and the skin-stiffness override in the two breast zones if pendentes is set, as (fat, regions, structure changes).
+    cup_ratio is the bust minus underbust against the neutral body's, so the cup sets how much the breast holds."""
+    s = table[breast_character["shape"]] if breast_character.get("shape") else {"fat": 1.0, "gland_skin_mm": None}
+    fat = dict(fat_mm)
+    a = breast_character.get("assimetricos", 1.0)
+    side = {"L": a if not isinstance(a, dict) else a.get("L", 1.0), "R": a if not isinstance(a, dict) else a.get("R", 1.0)}
+    for k in side:
+        fat[f"breast_{k}"] *= s["fat"] * cup_ratio * side[k]
+    fat["chest"] *= 1 - breast_character.get("espacados", 0.0) * table["adjustments"]["espacados_chest_fat_loss"]
+    regions = {}
+    if breast_character.get("pendentes"):
+        softening = breast_character["pendentes"] * table["adjustments"]["pendentes_skin_softening"]
+        regions["skin"] = {z: {"young_factor": 1 - softening} for z in ("breast_L", "breast_R")}
+    structure = {} if s["gland_skin_mm"] is None else {"gland_skin_mm": s["gland_skin_mm"]}
+    return fat, regions, structure
