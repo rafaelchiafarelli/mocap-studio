@@ -283,3 +283,13 @@ def test_a_character_run_goes_through_every_stage(tmp_path):
     record = fr.run_body("first", "female", str(recipe), [], str(tmp_path / "run"), execute=lambda argv, log: calls.append(argv) or 0, chain=fr.CHARACTER_STAGES, name="ana")
     assert list(record["stages"]) == list(fr.CHARACTER_STAGES) and record["status"] == "done"
     assert any("character_shape.py" in x for x in calls[0]) and any("--targets" == x for c in calls for x in c)
+
+
+def test_the_heavy_stage_takes_a_lock(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(fr, "REVIEW", str(tmp_path))
+    monkeypatch.setattr(fr, "_call", lambda argv, log, cwd: calls.append(argv) or 0)
+    fr.run_stage(["python3", "x/outward_skin.py"], "log")
+    assert (tmp_path / "fast_review_heavy.lock").exists() and len(calls) == 1
+    fr.run_stage(["python3", "x/body_layers.py"], "log")  # others run freely
+    assert len(calls) == 2

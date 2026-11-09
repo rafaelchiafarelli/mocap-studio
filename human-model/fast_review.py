@@ -15,6 +15,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REVIEW = "/mnt/g/mocap-studio-downloads/review"
 DATA = os.path.join(HERE, "data")
 BODIES = ("female", "male")
+HEAVY = ("outward_skin.py",)  # one at a time, whatever else runs: its distance fields on the whole grid take several GB, and six at once were killed for memory (2026-11-09)
 PAIR_NAME = "mulher_e_homem.blend"
 SHARED_NAME = "fast_review_todas.blend"
 LABELS = {"female": "mulher", "male": "homem"}
@@ -203,6 +204,14 @@ def save_record(folder, record):
 
 def run_stage(argv, log, cwd=HERE):
     """Runs one command, its output going to the stage's log. Returns its exit code."""
+    if os.path.basename(next((a for a in argv if a.endswith(".py") and "blender_run" not in a), "")) in HEAVY:
+        with open(f"{REVIEW}/fast_review_heavy.lock", "w") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            return _call(argv, log, cwd)
+    return _call(argv, log, cwd)
+
+
+def _call(argv, log, cwd):
     with open(log, "a", encoding="utf-8") as fh:
         fh.write("$ " + " ".join(argv) + "\n")
         fh.flush()

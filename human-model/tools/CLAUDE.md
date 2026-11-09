@@ -36,6 +36,9 @@
 
 ## Key facts / gotchas
 
+- `outward_skin.py` takes where the fat sits from the first shape (what lies between the muscle and that shape), so a silhouette survives; the percentage scales it. The skin is projected twice, the second time unsmoothed and `SKIN_OVER_LAYERS` outside the layers, or bones come through: `outward_skin.py`, search `SKIN_OVER_LAYERS`.
+- `outward_skin.py` takes several GB: `fast_review.py` runs one at a time (`HEAVY`), since six at once were killed for memory.
+
 - The CT library is cached in the given folder; delete `ct_library_<sex>.pkl` after changing `bonelib`.
 
 ## Touchpoints
