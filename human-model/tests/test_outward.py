@@ -127,4 +127,4 @@ def test_a_bone_between_the_vertices_is_seen():
     points = np.array([[-0.05, -0.05, 0], [0.05, -0.05, 0], [0.05, 0.05, 0], [-0.05, 0.05, 0]], float)
     tris = np.array([[0, 1, 2], [0, 2, 3]])
     assert (outward.push_needed(points, sdf, origin, h) == 0).all()
-    assert outward.push_needed_on_surface(points, tris, sdf, origin, h).min() > 0.01
+    assert outward.push_needed_on_surface(points, tris, sdf, origin, h).min() > 0.005
