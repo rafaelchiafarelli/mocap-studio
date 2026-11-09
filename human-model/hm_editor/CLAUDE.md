@@ -14,7 +14,7 @@
 - `tape.py`: the pattern-making measures, their paths on the body, which sliders drive each (`DRIVERS`) and the one-control solver. No `bpy`.
 - `human.py`: the MPFB human: create, remove, sliders, macros, stature by measuring, holding typed measures (`fit_measures`), drawing the tape, and reading a recipe back from a body or a built skin.
 - `builder.py`: `build_model.py` in WSL as a background process, read through its log. No `bpy`.
-- `character_panel.py`: the panel "Ficha do personagem": the character's silhouette, biotype, distances and shapes, the resolved sheet with where each value came from, saving the character file, and the button that checks it (`fast_review.py --to layers --check` in WSL).
+- `character_panel.py`: the panels "Seios (faders ao vivo)" (`HM_PT_breast`) and "Ficha do personagem": the character's silhouette, biotype, distances and shapes, the resolved sheet with where each value came from, saving the character file, the button that checks it (`fast_review.py --to layers --check` in WSL), the human made from the sheet with the breast faders live on a shape key (`preview`), and the buttons that generate the whole body and open it.
 - `sheet.py`: that panel's pure part, and `character_module`, which loads `hmcore/character.py` from the repository in `install.json`. No `bpy`.
 - `blender_manifest.toml`: the extension's metadata.
 
@@ -40,7 +40,9 @@
 - The panel's Portuguese labels are on purpose, in `tape.MEASURES`: they're the trade's terms, as Rafael uses them.
 - Typed measures are held only when typed or on **Reaplicar medidas**. Moving another slider doesn't re-fit, so a slider can still be dragged freely.
 
-- The panel "Ficha do personagem" reads `hmcore/character.py` from the repository through WSL's network path, cached once: the repository must exist on that WSL distribution.
+- The panel "Ficha do personagem" reads `hmcore/character.py` and `breast_skin.py` from the repository through WSL's network path, cached once: the repository must exist on that WSL distribution.
+
+- The add-on and MPFB are installed only in the project's portable Blender (`G:\mocap-studio-downloads\apps\blender\5.2.2\blender-5.2.2-windows-x64\blender.exe`). Windows opens `.blend` files with the Blender 5.2 in Program Files, which has neither, so the tab "Human" doesn't appear there.
 
 ## Touchpoints
 
