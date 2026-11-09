@@ -1,0 +1,7 @@
+{
+ "_about": "Each gluteus shape as multipliers on the fat of the divided zones (by eye, edit to change): width_above on the upper side, width_base on the lower side, projection on the centre, side_line on the hips, muscle on the buttocks' muscle. Coração is also A, pêra invertida and trapezoidal.",
+ "quadrado": {"width_above": 1.0, "width_base": 1.0, "projection": 0.9, "side_line": 1.05, "muscle": 1.0},
+ "redondo": {"width_above": 1.0, "width_base": 1.05, "projection": 1.15, "side_line": 1.0, "muscle": 1.05},
+ "coracao": {"width_above": 0.85, "width_base": 1.25, "projection": 1.1, "side_line": 1.1, "muscle": 1.0},
+ "em_v": {"width_above": 1.2, "width_base": 0.8, "projection": 0.9, "side_line": 0.95, "muscle": 0.9}
+}
