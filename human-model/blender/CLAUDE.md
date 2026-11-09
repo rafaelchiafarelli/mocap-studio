@@ -40,7 +40,7 @@
 - `skin_fit_view.py`: the skin before and after the push, painted by how far it moved, with front and back stills.
 - `body_tape.py`: a recipe's pattern measures and each girth's height, from the installed editor's tape.
 - `body_walk_dump.py`: every bone's transform from rest and the skin, every frame of a walk file.
-- `body_walk_bake.py`: a walked body, lower or whole, as shape keys per frame, the current skin 80 cm behind it, its bones and the feet (bones and skin, following the rig) animated, and frames for two videos framed on the region. A frames folder of `-` makes the file only.
+- `body_walk_bake.py`: a walked body, lower or whole, as shape keys per frame, the current skin 80 cm behind it, its bones and the feet (bones and skin, following the rig) animated, and frames for two videos framed on the region. A frames folder of `-` makes the file only. With a nickname, a text over each model, inside its own collection, follows its pelvis through the walk.
 - `body_walk_pair.py`: two walked bodies in one file, without the current model's skin: skin and section of each, a metre apart.
 
 ## Key facts / gotchas

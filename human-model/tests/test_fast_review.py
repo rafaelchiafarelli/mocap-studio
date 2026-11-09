@@ -184,3 +184,8 @@ def test_videos_only_when_asked():
     asked = fr.commands("file", "/f", "n", "female", "r", made, {}, here="/h", render=True)
     assert asked[0][-1] == "/f/frames" and [c[0] for c in asked[1:]] == ["ffmpeg", "ffmpeg"]
     assert asked[1][-1] == "/f/compare.mp4" and asked[2][-1] == "/f/inside.mp4" and "/f/frames/inside/%04d.png" in asked[2]
+
+
+def test_the_nickname_reaches_the_file_stage():
+    made = {"walked": "w", "layers": "l", "bones": "b", "dump": "d"}
+    assert fr.commands("file", "/f", "n", "female", "r", made, {}, here="/h", nickname="first")[0][-2:] == ["-", "first"]

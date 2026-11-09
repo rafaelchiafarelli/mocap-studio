@@ -91,7 +91,7 @@ def outputs(stage, folder, name):
             "file": {"body_blend": f"{folder}/body_walk.blend"}}[stage]
 
 
-def commands(stage, folder, name, sex, recipe, made, routed, here=HERE, render=False):
+def commands(stage, folder, name, sex, recipe, made, routed, here=HERE, render=False, nickname=None):
     """The commands of one stage. made: the outputs of the stages before it, as outputs() names them."""
     blender = [sys.executable, f"{here}/blender_run.py"]
     gpu = [f"{here}/hm.sh", "--gpu", "python"]
@@ -112,7 +112,7 @@ def commands(stage, folder, name, sex, recipe, made, routed, here=HERE, render=F
     if stage == "simulate":
         return [[*gpu, f"{tools}/body_walk.py", made["layers"], made["bones"], made["dump"], f"{folder}/simulate", "ABOVE_HIP=10", *extra]]
     if stage == "file":
-        bake = [*blender, f"{here}/blender/body_walk_bake.py", made["walked"], made["layers"], made["bones"], made["dump"], f"{folder}/body_walk.blend", f"{folder}/frames" if render else "-"]
+        bake = [*blender, f"{here}/blender/body_walk_bake.py", made["walked"], made["layers"], made["bones"], made["dump"], f"{folder}/body_walk.blend", f"{folder}/frames" if render else "-", *([nickname] if nickname else [])]
         if not render:
             return [bake]
         return [bake, *[["ffmpeg", "-y", "-framerate", VIDEO_FPS, "-i", f"{folder}/frames/{v}/%04d.png", "-c:v", "libx264", "-pix_fmt", "yuv420p", f"{folder}/{v}.mp4"] for v in VIDEOS]]
@@ -196,7 +196,7 @@ def run_body(nickname, sex, recipe, overrides, folder, execute=run_stage, reused
         record["stages"][stage] = entry
         save_record(folder, record)
         t0 = time.time()
-        for argv in commands(stage, folder, name, sex, recipe, made, routed, render=render):
+        for argv in commands(stage, folder, name, sex, recipe, made, routed, render=render, nickname=nickname):
             code = execute(argv, log)
             if code != 0:
                 entry.update(status="failed", seconds=round(time.time() - t0, 1), exit_code=code)
