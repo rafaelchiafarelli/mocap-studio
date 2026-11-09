@@ -24,6 +24,8 @@
 
 **Not done:** clothing size (`editor-sheet/3`, waits for Rafael to check the table's numbers). The man's breast. Viscera measured in the walk.
 
+**The editor by stages (Rafael, 2026-11-09):** first the selections and the pattern-making data, then, closed, the finer faders: epic `editor-stages`. The loose MPFB sliders stay out of this version (the sheet's generation never read them), reopening keeps the fine adjustments, and every choice gets a preview.
+
 ## What Rafael has asked for
 
 The body is shaped from fashion anthropometry and plastic surgery (2026-11-05), in this order (2026-11-07):

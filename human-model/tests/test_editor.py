@@ -216,3 +216,34 @@ def test_a_runs_progress_line():
     assert sheet.stage_line({"status": "running", "stages": {"shape": {"status": "done"}, "build": {"status": "running"}}}) == "Etapa 2 de 8: build"
     assert sheet.stage_line({"status": "done", "stages": {}}) == "Pronto"
     assert sheet.stage_line({"status": "failed", "failed_stage": "outward", "stages": {}}) == "Falhou na etapa outward"
+
+
+def test_a_built_file_and_a_running_generation_come_before_the_stored_stage():
+    assert sheet.current_stage("choices", False, False) == "choices"
+    assert sheet.current_stage("fine", False, True) == "generating"
+    assert sheet.current_stage("fine", True, True) == "built"
+
+
+def test_the_choices_close_and_reopen():
+    assert sheet.next_stage("choices", "close") == "fine"
+    assert sheet.next_stage("fine", "reopen") == "choices"
+
+
+@pytest.mark.parametrize("stage, action", [("choices", "reopen"), ("fine", "close"), ("built", "reopen"), ("generating", "close")])
+def test_a_move_from_the_wrong_stage_is_refused(stage, action):
+    with pytest.raises(ValueError):
+        sheet.next_stage(stage, action)
+
+
+def test_only_the_fine_adjustments_that_are_set_are_reported():
+    assert sheet.fine_moved({k: 0.0 for k in sheet.FINE_FIELDS}) == []
+    assert sheet.fine_moved({"b_base": 12.0, "other_mesomorph": 0.2, "pendentes": 0.0}) == ["b_base", "other_mesomorph"]
+
+
+def test_the_fine_fields_all_enter_the_character_file():
+    """A fader the panel shows in stage 2 must reach the file, or what is seen isn't what is generated."""
+    base = {"sex": "female", "biotype": "ectomorph", "others": {"mesomorph": 0.0, "endomorph": 0.0}}
+    for key, set_it in (("projection_cm", {"projection_cm": 9.0}), ("base_cm", {"base_cm": 9.0}), ("espacados", {"espacados": 0.5}), ("pendentes", {"pendentes": 0.5})):
+        assert key in sheet.character_from_values({**base, **set_it})["breast"]
+    assert sheet.character_from_values({**base, "others": {"mesomorph": 0.2}})["biotype"]["others"] == {"mesomorph": 0.2}
+    assert sheet.character_from_values({**base, "bone_parameters": {"pelvis_width_cm": 25.0}})["bone_parameters"] == {"pelvis_width_cm": 25.0}

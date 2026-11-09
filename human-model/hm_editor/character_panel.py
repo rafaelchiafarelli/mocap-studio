@@ -3,7 +3,7 @@ Portuguese labels: the trade's terms. Uses hmcore's character module from this a
 import datetime, json, os, subprocess, tempfile, time
 import bpy
 import numpy as np
-from bpy.props import EnumProperty, FloatProperty, PointerProperty, StringProperty
+from bpy.props import BoolProperty, EnumProperty, FloatProperty, PointerProperty, StringProperty
 from . import builder, catalog, human, sheet, tape
 
 N_BODY = tape.N_BODY
@@ -26,6 +26,22 @@ def _breast_module():
     if _cache["breast"] is None:
         _cache["breast"] = sheet.repo_module(builder.config(), "breast_skin")
     return _cache["breast"]
+
+
+def _stage(context):
+    """The stage the panels show: sheet.current_stage, from the scene and the run in progress."""
+    run = _cache["run"]
+    return sheet.current_stage(context.scene.hm_character.stage, human.is_built(), run is not None and not run.get("finished"))
+
+
+def _review_copy(character, name, stamp, tag=""):
+    """A copy of this character in today's review folder, kept with its own name. Returns its path."""
+    folder = os.path.join(REVIEW, datetime.date.today().isoformat(), "fichas")
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, f"{name}_{stamp}{tag}.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(character, f, indent=1, ensure_ascii=False)
+    return path
 
 
 def _redraw():
@@ -147,6 +163,11 @@ def _run_timer():
         with open(run["json"], encoding="utf-8") as f:
             state = json.load(f)
     except (OSError, ValueError):
+        if run["process"].poll() is not None:  # it ended before writing run.json: don't stay in "generating" for ever
+            run["finished"] = True
+            _cache["message"] = "A geração terminou sem resultado: veja o log na pasta temporária do Windows"
+            _redraw()
+            return None
         return 3.0
     _cache["message"] = sheet.stage_line(state)
     _redraw()
@@ -193,6 +214,8 @@ def _fader(name, lo, hi, default=0.0):
 
 def _group():
     props = {
+        "stage": EnumProperty(name="Etapa", items=(("choices", "Escolhas", ""), ("fine", "Ajustes finos", "")), default="choices"),
+        "legacy": BoolProperty(name="Modo antigo (faders soltos)", default=False, description="Mostra os faders do MPFB e o caminho antigo. O botão Gerar da ficha não lê esses faders"),
         "b_projection": _fader("Projeção cm", 0, 25), "b_base": _fader("Base cm", 0, 20), "b_upper": _fader("Alcance acima", 0, 2), "b_lower": _fader("Alcance abaixo", 0, 2), "b_power": _fader("Concentração", 0, 5),
         "sex": EnumProperty(name="Sexo", items=(("female", "Feminino", ""), ("male", "Masculino", "")), default="female"),
         "name": StringProperty(name="Nome", default=""),
@@ -236,10 +259,63 @@ class HM_OT_save_character(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class HM_OT_close_choices(bpy.types.Operator):
+    bl_idname = "hm_editor.close_choices"
+    bl_label = "Fechar escolhas"
+    bl_description = "Confere a ficha, cria o corpo na cena, guarda uma cópia com nome e abre os ajustes finos"
+
+    @classmethod
+    def poll(cls, context):
+        return _stage(context) == "choices"
+
+    def execute(self, context):
+        p = context.scene.hm_character
+        try:
+            make_human(context)
+            preview(context)
+            _review_copy(sheet.character_from_values(values(p)), sheet_safe(p.name or p.sex), time.strftime("%H%M%S"), "_fechada")
+        except (ValueError, OSError) as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
+        p.stage = sheet.next_stage(p.stage, "close")
+        return {"FINISHED"}
+
+
+class HM_OT_reopen_choices(bpy.types.Operator):
+    bl_idname = "hm_editor.reopen_choices"
+    bl_label = "Reabrir escolhas"
+    bl_description = "Volta às escolhas. Os ajustes finos ficam, e têm prioridade sobre as formas"
+
+    @classmethod
+    def poll(cls, context):
+        return _stage(context) == "fine"
+
+    def execute(self, context):
+        p = context.scene.hm_character
+        p.stage = sheet.next_stage(p.stage, "reopen")
+        return {"FINISHED"}
+
+
+class HM_OT_reset_fine(bpy.types.Operator):
+    bl_idname = "hm_editor.reset_fine"
+    bl_label = "Zerar ajustes finos"
+    bl_description = "Zera os faders do seio, a mistura de biotipos e os parâmetros dos ossos"
+
+    def execute(self, context):
+        p = context.scene.hm_character
+        for k in sheet.FINE_FIELDS:
+            setattr(p, k, 0.0)
+        return {"FINISHED"}
+
+
 class HM_OT_make_human(bpy.types.Operator):
     bl_idname = "hm_editor.make_character_human"
-    bl_label = "Criar corpo na cena"
-    bl_description = "Cria o corpo com as medidas da ficha; os faders do seio mudam esse corpo ao vivo"
+    bl_label = "Atualizar o corpo na cena"
+    bl_description = "Refaz o corpo com as medidas da ficha; os faders do seio mudam esse corpo ao vivo"
+
+    @classmethod
+    def poll(cls, context):
+        return _stage(context) == "fine"
 
     def execute(self, context):
         try:
@@ -256,6 +332,10 @@ class HM_OT_generate(bpy.types.Operator):
     bl_label = "Gerar o corpo completo"
     bl_description = "Roda fast_review.py: ossos, músculos, gordura, caminhada e o arquivo. Leva cerca de 10 minutos e o Blender continua livre"
 
+    @classmethod
+    def poll(cls, context):
+        return _stage(context) == "fine"
+
     def execute(self, context):
         p = context.scene.hm_character
         character = sheet.character_from_values(values(p))
@@ -266,11 +346,7 @@ class HM_OT_generate(bpy.types.Operator):
         cfg, day = builder.config(), datetime.date.today().isoformat()
         stamp = time.strftime("%H%M%S")
         name = sheet_safe(p.name or p.sex)
-        folder = os.path.join(REVIEW, day, "fichas")
-        os.makedirs(folder, exist_ok=True)
-        path = os.path.join(folder, f"{name}_{stamp}.json")
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(character, f, indent=1, ensure_ascii=False)
+        path = _review_copy(character, name, stamp)
         nickname = f"ficha_{name}_{stamp}"
         log = open(os.path.join(tempfile.gettempdir(), f"{nickname}.log"), "w", encoding="utf-8")
         process = subprocess.Popen(["wsl.exe", "-d", cfg["distro"], "--cd", cfg["repo"], "-e", "python3", "human-model/fast_review.py", nickname, "--body", p.sex, "--character", f"{p.sex}={builder.wsl_path(path, cfg)}"],
@@ -325,9 +401,14 @@ class HM_PT_breast(bpy.types.Panel):
     bl_category = "Human"
     bl_order = 0
 
+    @classmethod
+    def poll(cls, context):
+        return not context.scene.hm_character.legacy and _stage(context) in ("fine", "generating")
+
     def draw(self, context):
         p = context.scene.hm_character
         layout = self.layout
+        layout.enabled = _stage(context) == "fine"
         if p.sex != "female":
             layout.label(text="Só no corpo feminino")
             return
@@ -336,7 +417,55 @@ class HM_PT_breast(bpy.types.Panel):
             layout.prop(p, prop, slider=True)
         if _cache["message"]:
             layout.label(text=_cache["message"])
-        layout.operator("hm_editor.make_character_human")
+
+
+def _draw_choices(layout, p):
+    """Stage 1: what makes the character. In stage 2 the same fields, locked."""
+    for prop in ("sex", "name", "silhouette", "biotype", "height_cm", "body_fat"):
+        layout.prop(p, prop)
+    box = layout.box()
+    box.label(text="Medidas de modelagem (cm; 0 deixa em branco)")
+    for k, _ in sheet.DISTANCE_LABELS:
+        box.prop(p, f"d_{k}")
+    box = layout.box()
+    box.label(text="Formas")
+    box.prop(p, "gluteus")
+    if p.sex == "female":
+        for prop in ("underbust", "bust", "cup", "breast"):
+            box.prop(p, prop)
+
+
+def _draw_fine(layout, p):
+    """Stage 2's fields, besides the breast's faders in their own panel."""
+    if p.biotype != "NONE":
+        box = layout.box()
+        box.label(text="As duas outras partes do biotipo")
+        for k, _ in sheet.BIOTYPE_LABELS:
+            if k != p.biotype:
+                box.prop(p, f"other_{k}")
+    box = layout.box()
+    box.label(text="Ossos (0 usa a proporção)")
+    for prop in ("pelvis_width", "thigh_share", "humerus_share"):
+        box.prop(p, prop)
+
+
+def _draw_resolved(layout, p):
+    box = layout.box()
+    box.label(text="Ficha resolvida")
+    try:
+        m = _module()
+        character = sheet.character_from_values(values(p))
+        wrong = m.problems(character)
+        if wrong:
+            for w in wrong:
+                box.label(text=w, icon="ERROR")
+        else:
+            for label, value, source in sheet.rows(_resolved(character)):
+                row = box.row()
+                row.label(text=label)
+                row.label(text=f"{value} ({source})")
+    except OSError as e:
+        box.label(text=f"Repositório indisponível: {e}", icon="ERROR")
 
 
 class HM_PT_character(bpy.types.Panel):
@@ -345,58 +474,53 @@ class HM_PT_character(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Human"
-    bl_options = {"DEFAULT_CLOSED"}
+
+    @classmethod
+    def poll(cls, context):
+        return not context.scene.hm_character.legacy and _stage(context) != "built"
 
     def draw(self, context):
         p = context.scene.hm_character
         layout = self.layout
-        for prop in ("sex", "name", "silhouette", "biotype", "height_cm", "body_fat"):
-            layout.prop(p, prop)
-        if p.biotype != "NONE":
-            box = layout.box()
-            box.label(text="As duas outras partes do biotipo")
-            for k, _ in sheet.BIOTYPE_LABELS:
-                if k != p.biotype:
-                    box.prop(p, f"other_{k}")
-        box = layout.box()
-        box.label(text="Medidas de modelagem (cm; 0 deixa em branco)")
-        for k, _ in sheet.DISTANCE_LABELS:
-            box.prop(p, f"d_{k}")
-        box = layout.box()
-        box.label(text="Formas")
-        box.prop(p, "gluteus")
-        if p.sex == "female":
-            for prop in ("underbust", "bust", "cup", "breast"):
-                box.prop(p, prop)
-        box = layout.box()
-        box.label(text="Ossos (0 usa a proporção)")
-        for prop in ("pelvis_width", "thigh_share", "humerus_share"):
-            box.prop(p, prop)
-        box = layout.box()
-        box.label(text="Ficha resolvida")
-        try:
-            m = _module()
-            character = sheet.character_from_values(values(p))
-            wrong = m.problems(character)
-            if wrong:
-                for w in wrong:
-                    box.label(text=w, icon="ERROR")
-            else:
-                for label, value, source in sheet.rows(_resolved(character)):
-                    row = box.row()
-                    row.label(text=label)
-                    row.label(text=f"{value} ({source})")
-        except OSError as e:
-            box.label(text=f"Repositório indisponível: {e}", icon="ERROR")
-        layout.operator("hm_editor.make_character_human")
-        layout.operator("hm_editor.generate_character")
+        stage = _stage(context)
+        if stage == "choices":
+            layout.label(text="Etapa 1: escolhas", icon="PROPERTIES")
+            _draw_choices(layout, p)
+            moved = sheet.fine_moved({k: getattr(p, k) for k in sheet.FINE_FIELDS})
+            if moved:
+                box = layout.box()
+                box.alert = True
+                box.label(text=f"{len(moved)} ajustes finos têm prioridade sobre as formas", icon="ERROR")
+                box.operator("hm_editor.reset_fine")
+            _draw_resolved(layout, p)
+            layout.operator("hm_editor.close_choices", icon="CHECKMARK")
+            if _cache["message"]:
+                layout.label(text=_cache["message"])
+            return
+        layout.label(text="Etapa 2: ajustes finos" if stage == "fine" else "Gerando o corpo", icon="MODIFIER" if stage == "fine" else "SORTTIME")
+        header, body = layout.panel("hm_locked_choices", default_closed=True)
+        header.label(text="Escolhas fechadas", icon="LOCKED")
+        if body:
+            column = body.column()
+            column.enabled = False
+            _draw_choices(column, p)
+        column = layout.column()
+        column.enabled = stage == "fine"
+        _draw_fine(column, p)
+        _draw_resolved(layout, p)
+        if stage == "fine":
+            layout.operator("hm_editor.make_character_human")
+            layout.operator("hm_editor.generate_character", icon="PLAY")
         run = _cache["run"]
         if run is not None and run.get("finished") and os.path.exists(run["blend"]):
             layout.operator("hm_editor.open_generated")
         if _cache["message"]:
             layout.label(text=_cache["message"])
-        layout.operator("hm_editor.save_character")
-        layout.operator("hm_editor.check_character")
+        if stage == "fine":
+            layout.operator("hm_editor.save_character")
+            layout.operator("hm_editor.check_character")
+            layout.operator("hm_editor.reset_fine")
+            layout.operator("hm_editor.reopen_choices", icon="LOOP_BACK")
 
 
 _registered = []
@@ -404,7 +528,7 @@ _registered = []
 
 def register():
     group = _group()
-    _registered[:] = [group, HM_OT_save_character, HM_OT_make_human, HM_OT_generate, HM_OT_open_result, HM_OT_check_character, HM_PT_breast, HM_PT_character]
+    _registered[:] = [group, HM_OT_save_character, HM_OT_close_choices, HM_OT_reopen_choices, HM_OT_reset_fine, HM_OT_make_human, HM_OT_generate, HM_OT_open_result, HM_OT_check_character, HM_PT_breast, HM_PT_character]
     for c in _registered:
         bpy.utils.register_class(c)
     bpy.types.Scene.hm_character = PointerProperty(type=group)

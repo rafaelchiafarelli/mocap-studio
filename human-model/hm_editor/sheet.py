@@ -12,6 +12,30 @@ UNSET = (0, 0.0, "", None, "NONE")
 BREAST_FADERS = ("projection_cm", "base_cm", "upper", "lower", "power")  # hmcore.character.BREAST_FADERS
 
 
+# The panel's stages. Only choices and fine are stored; generating and built come from what is happening.
+STAGE_MOVES = {("choices", "close"): "fine", ("fine", "reopen"): "choices"}
+FINE_FIELDS = ("b_projection", "b_base", "b_upper", "b_lower", "b_power", "espacados", "pendentes", "assimetrico_R", *[f"other_{k}" for k, _ in BIOTYPE_LABELS], "pelvis_width", "thigh_share", "humerus_share")
+
+
+def current_stage(stored, built, generating):
+    """The stage the panel shows: a built file and a running generation come before the stored one."""
+    if built:
+        return "built"
+    return "generating" if generating else stored
+
+
+def next_stage(stage, action):
+    """The stage after this action, or ValueError if it isn't allowed from this stage."""
+    if (stage, action) not in STAGE_MOVES:
+        raise ValueError(f"'{action}' não vale na etapa '{stage}'")
+    return STAGE_MOVES[(stage, action)]
+
+
+def fine_moved(values):
+    """The names of the fine adjustments that are set. They stay when the choices are reopened, and take priority over the shapes."""
+    return [k for k in FINE_FIELDS if values.get(k) not in UNSET]
+
+
 def repo_path(cfg, *parts):
     """A path inside the repository this add-on was installed from, by its Windows path in WSL."""
     return os.path.join("\\\\wsl.localhost", cfg["distro"], *cfg["repo"].strip("/").split("/"), *parts)

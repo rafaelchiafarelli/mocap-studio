@@ -15,3 +15,4 @@ The order that matters, and what can run ahead:
 **Added after Rafael saw the first eight bodies (2026-11-09):**
 
 8. `muscle-bodies`: the volume built from real muscles attached to the bones, replacing the shell of epic `volumes-outward` (his choice B). The eight bodies per sex run directly, by his decision.
+9. `editor-stages` (2026-11-09): the panel as a state machine, choices first, finer faders once they are closed, and a live preview of every choice.

@@ -654,7 +654,8 @@ class _Panel:
 
 
 def _design_ready(context):
-    return not human.is_built() and context.mode == "OBJECT" and _body(context.scene) is not None
+    """The loose sliders: only in the old mode, because the sheet's generation doesn't read them."""
+    return context.scene.hm_character.legacy and not human.is_built() and context.mode == "OBJECT" and _body(context.scene) is not None
 
 
 def _draw_slider(layout, scene, s):
@@ -697,6 +698,10 @@ class HM_PT_main(_Panel, bpy.types.Panel):
     def _design(self, layout, context):
         scene = context.scene
         e = scene.hm_editor
+        layout.prop(scene.hm_character, "legacy")
+        if not scene.hm_character.legacy:
+            _wrapped(layout, "Monte o corpo na Ficha do personagem, abaixo. Os faders soltos ficam no modo antigo: o botão Gerar não os lê")
+            return
         body = _body(scene)
         if body is None:
             layout.label(text="Start a character:")
