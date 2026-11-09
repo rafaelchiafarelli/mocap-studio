@@ -184,3 +184,23 @@ def test_videos_only_when_asked():
     asked = fr.commands("file", "/f", "n", "female", "r", made, {}, here="/h", render=True)
     assert asked[0][-1] == "/f/frames" and [c[0] for c in asked[1:]] == ["ffmpeg", "ffmpeg"]
     assert asked[1][-1] == "/f/compare.mp4" and asked[2][-1] == "/f/inside.mp4" and "/f/frames/inside/%04d.png" in asked[2]
+
+
+def test_the_nickname_reaches_the_file_stage():
+    made = {"walked": "w", "layers": "l", "bones": "b", "dump": "d"}
+    assert fr.commands("file", "/f", "n", "female", "r", made, {}, here="/h", nickname="first")[0][-2:] == ["-", "first"]
+
+
+def test_a_run_is_added_to_the_shared_file_and_can_leave_it(tmp_path):
+    shared = str(tmp_path / "todas.blend")
+    add = fr.shared_command("add", shared, "first", "/run/pair.blend", here="/h")
+    assert "--blend" not in add and add[-4:] == ["add", shared, "first", "/run/pair.blend"]  # a new file is started empty
+    open(shared, "w").close()
+    again = fr.shared_command("add", shared, "next", "/run/pair.blend", here="/h")
+    assert again[again.index("--blend") + 1] == shared  # an existing one is opened
+    assert fr.shared_command("remove", shared, "first", here="/h")[-3:] == ["remove", shared, "first"]
+
+
+def test_the_shared_file_has_one_writer(tmp_path):
+    assert fr.locked_shared(str(tmp_path), ["x"], "log", execute=lambda argv, log: 0) == 0
+    assert (tmp_path / "fast_review_todas.lock").exists()

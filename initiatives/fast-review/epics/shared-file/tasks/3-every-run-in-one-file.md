@@ -21,3 +21,5 @@ Tasks 1 and 2.
 ## Pre-work
 
 None.
+
+**Status:** Done (2026-11-08): links, as task 1 recommended; unit-tested, blender/shared_file.py not exercised on real runs in this session.
