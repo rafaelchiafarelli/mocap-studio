@@ -3,6 +3,7 @@ Model frame: the body faces -Y, its left is +X, up is +Z. The outline is a heigh
 import numpy as np
 
 DETAIL_ITERATIONS = 20  # how far the mesh is smoothed to find what is detail (areola, nipple) and what is form
+DETAIL_FROM, DETAIL_TO = 0.25, 0.45  # in shares of the base: the areola and nipple
 FRONT_REACH = 0.09  # m behind the nipple: only the skin in front of this belongs to the breast, or the same x and z on the back would move too
 FADE_FROM, FADE_TO = 0.85, 1.3  # in shares of the base: full move inside, none beyond
 
@@ -55,7 +56,8 @@ def inflate(verts, tris, outlines):
         height = p["project"] * np.maximum(1.0 - r ** 2, 0.0) ** (1.0 / p["power"])
         t = np.clip((FADE_TO - r) / (FADE_TO - FADE_FROM), 0.0, 1.0)
         fade = t * t * (3 - 2 * t) * (v[:, 1] < p["front_y"])
-        v[:, 1] = (1 - fade) * v[:, 1] + fade * (wall - height + v[:, 1] - form)
+        near = np.clip((DETAIL_TO - r) / (DETAIL_TO - DETAIL_FROM), 0.0, 1.0)  # detail only around the nipple: on the slopes, the difference from the smoothed form is the slope itself, and it made bands in the skin
+        v[:, 1] = (1 - fade) * v[:, 1] + fade * (wall - height + (v[:, 1] - form) * near * near * (3 - 2 * near))
     return v
 
 

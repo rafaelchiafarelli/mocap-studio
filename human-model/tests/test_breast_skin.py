@@ -82,3 +82,14 @@ def test_the_back_of_the_body_doesnt_move():
     out = bs.inflate(both, tris, [outline()])
     assert out[len(v):, 1] == pytest.approx(back[:, 1])
     assert not bs.footprint(np.array([[0.0, 0.2, 0.0]]), outline())[0]
+
+
+def test_the_slopes_follow_the_outline_exactly():
+    v, f = plate()
+    v[:, 1] = 0.01 * np.sin(v[:, 0] * 60)  # ripples the first shape brings
+    p = outline()
+    out = bs.inflate(v, f, [p])
+    r = bs.rho(v, p)
+    slope = (r > 0.5) & (r < 0.8)
+    want = bs.wall_y(v, p) - p["project"] * (1 - r[slope] ** 2) ** 0.5
+    assert np.abs(out[slope, 1] - want).max() < 0.002
