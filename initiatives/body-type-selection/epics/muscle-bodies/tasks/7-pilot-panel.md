@@ -18,3 +18,5 @@ Task 6.
 ## Pre-work
 
 None.
+
+**Status:** Done (2026-11-09); the live faders and making the human were run headless (0.3 s per change, the bust read on the tape). The buttons are for Rafael to use in the window.
