@@ -1,0 +1,21 @@
+{
+ "_about": "The wide muscles as fans of spindles, declared from anatomy and set by eye (Rafael, 2026-11-09): each is count spindles between origin_a-origin_b and insertion_a-insertion_b. Landmarks as in muscles.json: rig bone, t along it, off in metres for the left side (+X left, -Y front, +Z up), snap to a bone mesh. radius in metres, as declared muscles'. They replace the single spindles named in replaces, in the body's volume only: today's path's muscle list doesn't change.",
+ "replaces": ["pectoralis_major_clavicular", "pectoralis_major_sternal", "latissimus_dorsi", "trapezius_upper", "trapezius_middle", "trapezius_lower", "external_oblique", "deltoid_anterior", "deltoid_middle", "deltoid_posterior"],
+ "fans": [
+  {"name": "pectoralis_major", "radius": 0.014, "count": 7,
+   "origin_a": {"rig": "shoulder.{s}", "t": 0.2, "off": [0, -0.015, -0.005], "snap": "clavicle_{s}"}, "origin_b": {"rig": "spine.002", "t": 0.7, "off": [0.01, -0.12, -0.03], "snap": "sternum"},
+   "insertion_a": {"rig": "upper_arm.{s}", "t": 0.22, "off": [0, -0.012, 0], "snap": "humerus_{s}"}, "insertion_b": {"rig": "upper_arm.{s}", "t": 0.22, "off": [0, -0.012, 0], "snap": "humerus_{s}"}},
+  {"name": "latissimus_dorsi", "radius": 0.012, "count": 7,
+   "origin_a": {"rig": "spine.002", "t": 0.0, "off": [0.02, 0.08, 0.0], "snap": "vertebra_T8"}, "origin_b": {"rig": "spine", "t": 0.0, "off": [0.06, 0.09, 0.02], "snap": "hip_{s}"},
+   "insertion_a": {"rig": "upper_arm.{s}", "t": 0.22, "off": [-0.012, 0.008, 0], "snap": "humerus_{s}"}, "insertion_b": {"rig": "upper_arm.{s}", "t": 0.22, "off": [-0.012, 0.008, 0], "snap": "humerus_{s}"}},
+  {"name": "trapezius", "radius": 0.01, "count": 9,
+   "origin_a": {"rig": "spine.005", "t": 0.0, "off": [0.01, 0.03, 0.02], "snap": "cranium"}, "origin_b": {"rig": "spine.001", "t": 0.8, "off": [0.01, 0.07, 0.0], "snap": "vertebra_T12"},
+   "insertion_a": {"rig": "shoulder.{s}", "t": 0.85, "off": [0, 0.005, 0.01], "snap": "clavicle_{s}"}, "insertion_b": {"rig": "shoulder.{s}", "t": 0.45, "off": [0, 0.06, -0.03], "snap": "scapula_{s}"}},
+  {"name": "external_oblique", "radius": 0.009, "count": 7,
+   "origin_a": {"rig": "spine.003", "t": 0.0, "off": [0.13, -0.06, 0.0], "snap": "rib_5_{s}"}, "origin_b": {"rig": "spine.001", "t": 0.6, "off": [0.13, 0.02, 0.0], "snap": "rib_11_{s}"},
+   "insertion_a": {"rig": "spine.001", "t": 0.0, "off": [0.03, -0.1, 0.0], "snap": null}, "insertion_b": {"rig": "spine", "t": 0.0, "off": [0.13, -0.03, 0.02], "snap": "hip_{s}"}},
+  {"name": "deltoid", "radius": 0.017, "count": 7,
+   "origin_a": {"rig": "shoulder.{s}", "t": 0.6, "off": [0, -0.01, 0], "snap": "clavicle_{s}"}, "origin_b": {"rig": "upper_arm.{s}", "t": 0.0, "off": [-0.02, 0.04, 0.018], "snap": "scapula_{s}"},
+   "insertion_a": {"rig": "upper_arm.{s}", "t": 0.42, "off": [0.01, 0, 0], "snap": "humerus_{s}"}, "insertion_b": {"rig": "upper_arm.{s}", "t": 0.42, "off": [0.01, 0, 0], "snap": "humerus_{s}"}}
+ ]
+}

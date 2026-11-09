@@ -35,8 +35,9 @@
 - `meshgpu.py`: inside-or-outside and closest point for millions of points, on Warp's meshes. GPU image only.
 - `character.py`: a character's sheet: reading and checking a character file (`problems`, `load`), and `resolve`: the full sheet, each field with its value and where it came from. Standard library only.
 - `bone_targets.py`: from a resolved sheet to the bones' target sizes in metres, each with where it came from (measure, proportion or parameter); `data/bone_proportions.json` holds the neutral bodies' proportions.
-- `outward.py`: muscle and fat grown outward from the bones, and the skin as their result.
-- `shapes.py`: the gluteus's and the breast's shapes as multipliers on the zones' fat and muscle.
+- `outward.py`: the body's inside (`core_mask`: bones, chest, belly in front of the spine) and the first shape's skin moved out only where what's inside needs it (`push_needed`, `project`, `ring_fade`).
+- `muscle_bodies.py`: muscles as voxel solids, thin at the tendons, on the attachments of `muscle.py`; `fans`, the wide muscles of `data/muscle_fans.json` as spindles.
+- `shapes.py`: the gluteus's shapes as multipliers on the zones' fat, and the breast as a volume of its own over the chest (`breast_volume`).
 - `regions.py`: physical values per tetrahedron, one default per tissue and overrides by tissue and zone that fade in at a zone's border.
 - `layers.py`: a limb from the inside out: skin patch, voxels labelled bone, muscle or fat, tetrahedra, and the skin tied to them. [docs/muscle-physics.md](../docs/muscle-physics.md#experiment-2-a-thigh-built-from-the-inside-out).
 
@@ -61,7 +62,7 @@
 - The clavicle is stretched to the placed acromion with a 3 mm joint before it settles, and settling may not move its lateral end more than 4 mm (`fit.settle`'s `keep`): `skeleton.py:535`.
 - `layers.cut_patch` keeps whole triangles only, so a patch ends at the ring of vertices short of each cut, about 3 cm on the thigh. `layers.measure` counts between the rings: `layers.py:230`.
 - `body.zones` reads the trunk's zone by height against the rib cage's bottom and the hip bones' top, and front, back or side from the trunk's middle; the breast zone is wherever the rig's breast bone is nearest, which is most of the front of the chest: `body.py:105`.
-- BMF's left leg comes wound inward in the source file itself, so `bonelib.bmf_library` turns every BMF mesh outward (`fit.outward`). `body.build` and the tools still turn every bone outward before use, since builds made earlier have the left leg inside out, and Warp's winding number then calls their inside outside: `body.py:234`.
+- BMF's left leg comes wound inward in the source file itself, so `bonelib.bmf_library` turns every BMF mesh outward (`fit.outward`). `body.build` and the tools still turn every bone outward before use, since builds made earlier have the left leg inside out, and Warp's winding number then calls their inside outside: `body.py:236`.
 - `skinfit.spread` shrinks the push at each step (`falloff`); without it the push spread over the whole skin and grew the bust 3.2 cm: `skinfit.py:23`.
 - `layers.cut_patch` takes `side=None` to keep both sides, as `body.cut_skin` does.
 - `body.near_a_cut` takes each cut's plane from the cut skin's own border (`body.cut_planes`), as `skinfit` and `body_layers.py` pass it; without planes it falls back to the joints' planes, which since the head's cut follows the rig's weights counted the neck's C4 as 44 mm out: `body.py:80`.
