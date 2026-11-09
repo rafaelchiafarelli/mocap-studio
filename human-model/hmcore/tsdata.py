@@ -48,10 +48,3 @@ def whole_body_score(sizes):
             if sizes.get(name, 0) < need:
                 return 0
     return sum(sizes.get(n, 0) for n in bone_labels())
-
-
-def pick_donors(meta, cov, sex, age=(25, 50), n=5):
-    """The most complete scans of one sex, without recorded pathology. Coverage is only a filter: a person checks the result."""
-    rows = [r for r in meta if r["gender"] == sex and r["age"] and age[0] <= r["age"] <= age[1] and r["pathology"] == "no_pathology"]
-    scored = [(whole_body_score(cov.get(r["image_id"], {})), r["image_id"]) for r in rows]
-    return [s for s in sorted(scored, reverse=True) if s[0] > 0][:n]

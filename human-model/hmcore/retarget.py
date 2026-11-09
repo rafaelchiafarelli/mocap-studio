@@ -23,11 +23,6 @@ def rotation_between(a, b):
     return np.eye(3) + k + k @ k / (1 + c)
 
 
-def capture_to_model(points):
-    """Capture frame to the model's frame, chosen from the data: up from ankles to shoulders; +X the body's left, so the body faces -Y by construction of the first frame."""
-    return points
-
-
 def facing_frame(lh, rh, ls, rs):
     """Rotation taking capture axes to model axes for one frame's trunk: X along right-to-left hip, Z up the trunk, Y back."""
     x = (lh - rh)

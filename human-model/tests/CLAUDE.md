@@ -8,9 +8,10 @@
 
 ## Files
 
-- `test_body.py`: `hmcore/body.py` and `tools/body_report.py`.
-- `test_drive.py`: `hmcore/morph.py`, `retarget.py` and `retire.py`.
-- `test_editor.py`: the editor's catalog.
+- `__init__.py`: marks the package.
+- `test_body.py`: `hmcore/body.py` and the pure parts of `tools/body_report.py`.
+- `test_drive.py`: `hmcore/activation.py`, `retarget.py`, `tongue.py`, `morph.py` and `retire.py`.
+- `test_editor.py`: the editor's catalog, recipe and tape.
 - `test_fit.py`: `hmcore/fit.py`.
 - `test_jaw_joints.py`: `hmcore/jaw.py` and `joints.py`.
 - `test_layers.py`: `hmcore/layers.py`.

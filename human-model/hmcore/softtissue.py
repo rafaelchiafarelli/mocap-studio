@@ -176,23 +176,6 @@ def smooth(graph, x):
     return 0.5 * x + 0.5 * ((graph > 0).astype(float) @ x) / deg
 
 
-def cotan(v, t):
-    """Cotangent Laplacian and lumped mass."""
-    a, b, c = v[t[:, 0]], v[t[:, 1]], v[t[:, 2]]
-    def cot(p, q, r):
-        x, y = q - p, r - p
-        return (x * y).sum(axis=1) / np.maximum(np.linalg.norm(np.cross(x, y), axis=1), 1e-12)
-    ca, cb, cc = cot(a, b, c), cot(b, c, a), cot(c, a, b)
-    i = np.concatenate([t[:, 1], t[:, 2], t[:, 2], t[:, 0], t[:, 0], t[:, 1]])
-    j = np.concatenate([t[:, 2], t[:, 1], t[:, 0], t[:, 2], t[:, 1], t[:, 0]])
-    w = 0.5 * np.concatenate([ca, ca, cb, cb, cc, cc])
-    w = np.clip(w, 0.0, 5.0)  # negative weights on bad triangles destabilize the solve
-    n = len(v)
-    W = sp.coo_matrix((w, (i, j)), shape=(n, n)).tocsr()
-    L = sp.diags(np.asarray(W.sum(axis=1)).ravel()) - W
-    return L, vertex_areas(v, t)
-
-
 def vertex_areas(v, t):
     area = 0.5 * np.linalg.norm(np.cross(v[t[:, 1]] - v[t[:, 0]], v[t[:, 2]] - v[t[:, 0]]), axis=1)
     out = np.zeros(len(v))
