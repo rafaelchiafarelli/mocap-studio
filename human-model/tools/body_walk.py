@@ -2,7 +2,7 @@
 body with ABOVE_HIP=10 (task muscle-physics/body-walk/1).
     hm.sh --gpu python human-model/tools/body_walk.py LAYERS.npz BONES.npz WALK_DUMP.npz OUT_DIR [NAME=value ...]
 LAYERS.npz is from tools/body_layers.py (on the pushed skin), BONES.npz the build's bones, WALK_DUMP.npz from blender/body_walk_dump.py.
-Tissue values from data/body_tissue.json, how often the volumes are measured from data/simulation.json; NAME=value overrides one, VOLUME_EVERY, or a constant below, for this run.
+Tissue values from data/body_tissue.json, how often the volumes are measured and whether bones are tested against the skin from data/simulation.json; NAME=value overrides one, VOLUME_EVERY, BONE_TEST=1, or a constant below, for this run.
 Writes OUT_DIR/body_walk.npz (for blender/body_walk_bake.py), body_walk_frames.csv and body_walk.json."""
 import csv, json, os, sys, time
 import numpy as np
@@ -29,6 +29,17 @@ SKIN_DENSITY = 1100.0  # kg/m3, the band's
 def measures_volume(frame, last, every):
     """Whether this frame's volumes are summed: every that many frames, and always the last, since the sum over all tetrahedra took two thirds of the walk's loop."""
     return frame % every == 0 or frame == last
+
+
+def bone_summary(rows, walking):
+    """What the bone-through-skin test found, ours and the current model's, for the run's summary."""
+    return {"measured": True, "ours_frames_with_any": sum(r["bone_points_out"] > 0 for r in rows), "ours_max_points": max(r["bone_points_out"] for r in rows),
+            "ours_max_depth_mm": max(r["bone_out_depth_mm"] for r in rows),
+            "ours_bones": sorted({b for r in rows for b in r["bones_out"].split(";") if b}),
+            "current_frames_with_any": sum(r["current_bone_points_out"] > 0 for r in walking),
+            "current_max_points": max(r["current_bone_points_out"] for r in walking),
+            "current_max_depth_mm": max(r["current_bone_out_depth_mm"] for r in walking),
+            "current_bones": sorted({b for r in walking for b in r["current_bones_out"].split(";") if b})}
 
 
 def region(nodes, tets, z_top):
@@ -78,7 +89,9 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
         raise ValueError(f"{TISSUE} must give exactly {', '.join(TISSUE_KEYS)}")
     g.update(tissue)
     g["SUBSTEPS"] = int(g["SUBSTEPS"])
-    g["VOLUME_EVERY"] = int(json.load(open(SIMULATION))["VOLUME_EVERY_FRAMES"])
+    settings = json.load(open(SIMULATION))
+    g["VOLUME_EVERY"] = int(settings["VOLUME_EVERY_FRAMES"])
+    g["BONE_TEST"] = int(settings["BONE_TEST"])
     for o in overrides:
         k, v = o.split("=")
         if k not in g or k.startswith("_") or not isinstance(g[k], (int, float)):
@@ -197,13 +210,16 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
         motion = np.linalg.norm((ours - first[0]) - (cur_now - first[1]), axis=1) * 1000
         v = x[tets]
         det = np.einsum("ij,ij->i", np.cross(v[:, 1] - v[:, 0], v[:, 2] - v[:, 0]), v[:, 3] - v[:, 0])
-        ours_poke = poking(skin_now, f)
+        bone_out = {}
+        if BONE_TEST:
+            ours_poke = poking(skin_now, f)
+            bone_out = {"bone_points_out": sum(v[0] for v in ours_poke.values()), "bone_out_depth_mm": max([v[1] for v in ours_poke.values()], default=0.0),
+                        "bones_out": ";".join(sorted(ours_poke))}
         volumes = {f"{k}_volume": round(s.volume(m) / rest_vol[k], 4) for k, m in label_vol.items()} if measures_volume(f, len(frames) - 1, VOLUME_EVERY) else {}
         row = {"frame": f + 1, "walking": f < n_walk, "ms": round(ms[-1], 2), "inverted_tetrahedra": int((det <= 0).sum()),
-               "bone_points_out": sum(v[0] for v in ours_poke.values()), "bone_out_depth_mm": max([v[1] for v in ours_poke.values()], default=0.0),
-               "bones_out": ";".join(sorted(ours_poke)), "skin_motion_max_mm": round(float(motion.max()), 1),
+               **bone_out, "skin_motion_max_mm": round(float(motion.max()), 1),
                **volumes}
-        if f < n_walk:
+        if BONE_TEST and f < n_walk:
             current = skin_rest.copy()
             current[skin_ids] = current_all[f][skin_ids]
             cur = poking(current, f)
@@ -218,18 +234,12 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
 
     walking = [r for r in rows if r["walking"]]
     zones = sorted({z for r in rows for z in r["zone_motion"]})
-    summary = {"declared": {k: g[k] for k in TISSUE_KEYS + ("ABOVE_HIP", "RAMP", "SETTLE", "HOLD", "CUT_PIN", "CHECK_CLEAR", "SKIN_DENSITY", "VOLUME_EVERY")},
+    summary = {"declared": {k: g[k] for k in TISSUE_KEYS + ("ABOVE_HIP", "RAMP", "SETTLE", "HOLD", "CUT_PIN", "CHECK_CLEAR", "SKIN_DENSITY", "VOLUME_EVERY", "BONE_TEST")},
                "cuts": len(cut_rings),
                "gpu": wp.get_device("cuda:0").name, "tetrahedra": int(len(tets)), "nodes": int(len(nodes)), "driven_nodes": int(len(driven)),
                "bones": names, "frames_walking": n_walk, "ms_per_frame": {"median": round(float(np.median(ms)), 1), "max": round(float(np.max(ms)), 1)},
                "peak_vram_mib": round(wp.get_mempool_used_mem_high("cuda:0") / 2 ** 20, 1),
-               "bone_through_skin": {"ours_frames_with_any": sum(r["bone_points_out"] > 0 for r in rows), "ours_max_points": max(r["bone_points_out"] for r in rows),
-                                     "ours_max_depth_mm": max(r["bone_out_depth_mm"] for r in rows),
-                                     "ours_bones": sorted({b for r in rows for b in r["bones_out"].split(";") if b}),
-                                     "current_frames_with_any": sum(r["current_bone_points_out"] > 0 for r in walking),
-                                     "current_max_points": max(r["current_bone_points_out"] for r in walking),
-                                     "current_max_depth_mm": max(r["current_bone_out_depth_mm"] for r in walking),
-                                     "current_bones": sorted({b for r in walking for b in r["current_bones_out"].split(";") if b})},
+               "bone_through_skin": bone_summary(rows, walking) if BONE_TEST else {"measured": False},
                "inverted_tetrahedra_max": max(r["inverted_tetrahedra"] for r in rows),
                "skin_motion_peak_by_zone_mm": {z: round(max(r["zone_motion"].get(z, 0.0) for r in walking), 1) for z in zones},
                "volume_range": {k: [min(r[f"{k}_volume"] for r in rows if f"{k}_volume" in r), max(r[f"{k}_volume"] for r in rows if f"{k}_volume" in r)] for k in label_vol}}

@@ -85,13 +85,13 @@
         <mxCell id="e13" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s12" target="s13">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="s14" value="&lt;b&gt;14&lt;/b&gt;&lt;br&gt;Procurar osso atravessando a pele" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+        <mxCell id="s14" value="&lt;b&gt;14&lt;/b&gt;&lt;br&gt;Procurar osso atravessando a pele (só se pedido)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
           <mxGeometry x="760" y="410" width="150" height="84" as="geometry" />
         </mxCell>
         <mxCell id="e14" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s13" target="s14">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="s15" value="&lt;b&gt;15&lt;/b&gt;&lt;br&gt;Repetir a procura no modelo atual, para comparar (nos 144 quadros)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+        <mxCell id="s15" value="&lt;b&gt;15&lt;/b&gt;&lt;br&gt;Repetir a procura no modelo atual (só se pedido, nos 144 quadros)" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
           <mxGeometry x="935" y="410" width="150" height="84" as="geometry" />
         </mxCell>
         <mxCell id="e15" value="" style="html=1;rounded=1;endArrow=block;endFill=1;fontSize=11;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="s14" target="s15">

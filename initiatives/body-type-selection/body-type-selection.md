@@ -2,7 +2,7 @@
 
 **Goal:** choose a character's silhouette and biotype by name, and have the whole body follow the choice (Rafael, 2026-11-08). Silhouette and biotype must stay selectable whatever fixes the body receives.
 
-**Status:** to be planned. This file only records the initiative: no epics, tasks or code yet.
+**Status:** to be planned, with every question answered. No epics or tasks yet.
 
 ## What Rafael has asked for
 
@@ -35,7 +35,7 @@ Agreed in the investigation session that closed on 2026-11-08; nothing here is b
 | Cube mesh and tissue solver | values per tissue | the same, with values per region | small |
 | Walk, Blender file, measurements, tape | | stay | none or small |
 
-**One check per character.** When the design is finished, in Blender's check boxes and sliders, the program runs one check that everything is right. At rest, tissue built outward from the bones shouldn't let a bone through, so this is a safeguard. It doesn't cover the walk: no stage of the simulation checks collision, and a bone can come through where the tissue over it gives way, so the walk keeps its own bone test.
+**One check per character.** When the design is finished, in Blender's check boxes and sliders, the program runs one check that everything is right. At rest, tissue built outward from the bones shouldn't let a bone through, so this is a safeguard. It doesn't cover the walk: no stage of the simulation checks collision, and a bone can come through where the tissue over it gives way. The walk's bone test is therefore a setting, off by default so runs are faster, and asked for on one body when Rafael sees a bump (`BONE_TEST=1`).
 
 **Biotype** (Rafael, 2026-11-08) means the somatotypes: ectomorph, mesomorph, endomorph. Only their physical side counts; metabolism and training have no place in a body built once.
 
@@ -103,8 +103,12 @@ Agreed in the investigation session that closed on 2026-11-08; nothing here is b
 - **Muscle:** today one volume per region, sized by the skin (bug `human-model/6`).
 - **Bones:** calculated from the measures, so a pelvis or shoulders can differ by type. A change of fat alone must not change them.
 
-## Questions to answer when planning
+## Sizes, proportions and the bodies to test (Rafael, 2026-11-08)
 
-- **How do real sizes combine with a type?** A pear at 1.60 m and at 1.80 m; grading by size as in sewing (P/M/G).
-- **What each type should measure:** waist-to-hip and shoulder-to-hip ratios from anthropometric data, so that a type can be checked, not just looked at.
-- **Which bodies have been tested.** The bone and skin fixes have only been measured on the neutral woman and man; types far from neutral may reach their limits (`fit.slim_to_skin` stops at 40% of a bone's width).
+**Height and silhouette.** A silhouette is a set of proportions and doesn't depend on height: in ANSUR II, waist over hip correlates with stature at -0.02 in women and -0.01 in men. Widths and girths grow about 0.7 times as fast as height (+10% of height is +6 to 8%, and +21 to 23% of weight), so a tall body isn't a scaled-up short one.
+
+**Each silhouette's proportions** are in `human-model/data/silhouette_ratios.json`, to be edited if need be: ANSUR II's percentiles, with cuts proposed in the session. They are targets, applied from the model's current values. The data is US Army personnel, fitter than the general population.
+
+**Clothing size is a result of the model, never an input.** The body may report which size it would wear. Rafael's table for that, `G:\mocap-studio-downloads\medidas-2024-05.pdf`, is for clothes and must not shape a model.
+
+**The bodies that accept the new path,** eight per sex: the neutral one, the five silhouettes at median height, a short endomorph and a tall ectomorph (the woman at 150 and 176 cm, the man at 162 and 189 cm). So far only the two neutral bodies have gone through the whole chain to the walk. `male_heavy_short` reached bones and skin (bug `human-model/25`), and the other five test people were built before the 2026-11-08 fixes.

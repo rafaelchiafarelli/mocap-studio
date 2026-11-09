@@ -175,6 +175,17 @@ def test_cut_zones_face_away_and_catch_what_lies_past_them():
     assert body_walk.near_cuts(p, zones, 0.0).tolist() == [True, False, True, False]
 
 
+def test_bone_summary_counts_frames_and_keeps_the_deepest():
+    import os, sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
+    import body_walk
+    a = {"bone_points_out": 3, "bone_out_depth_mm": 2.5, "bones_out": "patella_L;tibia_L", "current_bone_points_out": 0, "current_bone_out_depth_mm": 0.0, "current_bones_out": ""}
+    b = {"bone_points_out": 0, "bone_out_depth_mm": 0.0, "bones_out": "", "current_bone_points_out": 7, "current_bone_out_depth_mm": 4.0, "current_bones_out": "rib_1_R"}
+    got = body_walk.bone_summary([a, b], [a, b])
+    assert (got["measured"], got["ours_frames_with_any"], got["ours_max_depth_mm"], got["ours_bones"]) == (True, 1, 2.5, ["patella_L", "tibia_L"])
+    assert (got["current_frames_with_any"], got["current_bones"]) == (1, ["rib_1_R"])
+
+
 def test_volumes_are_measured_every_so_many_frames_and_on_the_last():
     import os, sys
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))

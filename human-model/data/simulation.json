@@ -1,5 +1,6 @@
 {
- "_about": "How finely the body is simulated and how often it is measured, the defaults for every character. Edit to change them; a character whose proportions do badly can override one per run: VOXEL=m on tools/body_layers.py, VOLUME_EVERY=frames on tools/body_walk.py. Chosen by Rafael on 2026-11-08 from the timings in docs/muscle-physics.md.",
+ "_about": "How finely the body is simulated and how much it is measured, the defaults for every character. Edit to change them; one character can override one per run: VOXEL=m on tools/body_layers.py, VOLUME_EVERY=frames and BONE_TEST=1 on tools/body_walk.py. BONE_TEST is off so runs are faster; turn it on for a body that shows a bump. Chosen by Rafael on 2026-11-08 from the timings in docs/muscle-physics.md.",
  "VOXEL_M": 0.005,
- "VOLUME_EVERY_FRAMES": 10
+ "VOLUME_EVERY_FRAMES": 10,
+ "BONE_TEST": 0
 }

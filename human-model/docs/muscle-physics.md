@@ -474,7 +474,7 @@ Those numbers still count joint bending (bug `human-model/14`), so they compare 
     human-model/hm.sh --gpu python human-model/tools/body_walk.py LAYERS.npz BONES.npz DUMP.npz RUN_DIR ABOVE_HIP=10 [NAME=value ...]
     python3 human-model/blender_run.py human-model/blender/body_walk_bake.py RUN_DIR/body_walk.npz LAYERS.npz BONES.npz DUMP.npz RUN_DIR/body_walk.blend RUN_DIR/frames
 
-## Where a walk's time goes, and the two settings
+## Where a walk's time goes, and its settings
 
 Measured on 2026-11-08 (investigation session), the man and the woman side by side, up to the Blender file with both, no rendering. Kept in `G:\mocap-studio-downloads\review\2026-11-08\investigacao_simulacao\comparativo_tempo\`, each variant in its folder. The stages are drawn in [diagrams/](diagrams/).
 
@@ -497,7 +497,8 @@ Measured on 2026-11-08 (investigation session), the man and the woman side by si
 |---|---|---|
 | `VOXEL_M`: the cube's side | 5 mm | `VOXEL=m` on `tools/body_layers.py` |
 | `VOLUME_EVERY_FRAMES`: how often the volumes are summed, and always on the last frame | 10 | `VOLUME_EVERY=frames` on `tools/body_walk.py` |
+| `BONE_TEST`: whether bones are tested against the skin, ours and the current model's | off | `BONE_TEST=1` on `tools/body_walk.py`, for a body that shows a bump |
 
-With these defaults (`c5_padrao_novo_5mm_volumes_10q`) the simulation takes 176 s for the woman and 210 s for the man, side by side.
+With 5 mm, volumes every 10 frames and the bone test on (`c5_padrao_novo_5mm_volumes_10q`), the simulation takes 176 s for the woman and 210 s for the man, side by side. With the bone test off, `bone_through_skin` in `body_walk.json` reads `"measured": false` and the CSV has no bone columns: no result there doesn't mean no bone came through.
 
 **What the sampled volumes miss:** `volume_range` in `body_walk.json` now covers only the measured frames, and the worst moment can fall between them. On the man, the fat's range reads 99.85% to 100.16% against 98.49% to 100.84% measured every frame; its worst is frame 2, the start of the walk. To see the whole range, run with `VOLUME_EVERY=1`. In `body_walk_frames.csv`, the frames not measured have those columns empty.

@@ -191,12 +191,13 @@ Paths must be under the repository (relative), `/mnt/g` or `/tmp`.
 
 ## The body in layers, walking
 
-The chain and its commands are in [human-model.process.md](../human-model.process.md) and [muscle-physics.md](muscle-physics.md). Two settings apply to every character, in `data/simulation.json`, each with an override for one run:
+The chain and its commands are in [human-model.process.md](../human-model.process.md) and [muscle-physics.md](muscle-physics.md). Three settings apply to every character, in `data/simulation.json`, each with an override for one run:
 
 | Setting | Default | For one run |
 |---|---|---|
 | `VOXEL_M`, the side of the simulation's cubes | 0.005 m | `VOXEL=0.01` on `tools/body_layers.py` |
 | `VOLUME_EVERY_FRAMES`, how often a walk's volumes are summed | 10, and always the last frame | `VOLUME_EVERY=1` on `tools/body_walk.py` |
+| `BONE_TEST`, whether bones are tested against the skin | off, 0 | `BONE_TEST=1` on `tools/body_walk.py` |
 
 ## Following a long run
 
