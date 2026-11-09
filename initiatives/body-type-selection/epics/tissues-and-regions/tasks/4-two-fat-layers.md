@@ -20,3 +20,5 @@ Task 3.
 ## Pre-work
 
 None.
+
+**Status:** Done (2026-11-08); the layers' values start the same as the fat's, by eye, until tissue-research brings data.

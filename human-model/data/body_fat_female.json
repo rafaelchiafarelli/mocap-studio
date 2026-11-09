@@ -1,14 +1,12 @@
 {
- "_about": "The woman's fat thickness per zone, and the declared depths that place muscle and the trunk's cavity, for tools/body_layers.py. Set by eye, not measured (initiative tissue-research). Edit to change the defaults; a run can override one as fat.<zone>=mm or structure.<name>=value.",
+ "_about": "The woman's fat thickness per zone, and the declared depths that place muscle and the trunk's cavity, for tools/body_layers.py. Set by eye, not measured (initiative tissue-research). fat_deep_share: the part of the fat that is its deep layer, per zone, by eye; a zone left out has one layer. Edit to change the defaults; a run can override one as fat.<zone>=mm or structure.<name>=value.",
  "fat_mm": {
-  "neck": 8, "chest": 10, "breast": 15, "upper_back": 12,
-  "belly": 25, "flanks": 22, "lower_back": 18, "hips": 30, "buttocks": 30,
-  "thigh_front": 15, "thigh_back": 25, "thigh_inner": 25, "thigh_outer": 22,
-  "knee": 12, "calf_front": 5, "calf_back": 12,
-  "upper_arm_front": 8, "upper_arm_back": 15, "forearm": 6
+  "neck": 8, "chest": 10, "breast_L": 15, "breast_R": 15, "upper_back": 12, "belly": 25, "flanks": 22, "lower_back": 18, "hips": 30, "buttocks_upper_center": 30, "buttocks_upper_side": 30, "buttocks_lower_center": 30, "buttocks_lower_side": 30, "thigh_front": 15, "thigh_back": 25, "thigh_inner": 25, "thigh_outer": 22, "knee": 12, "calf_front": 5, "calf_back": 12, "upper_arm_front": 8, "upper_arm_back": 15, "forearm": 6
  },
+ "fat_deep_share": {"breast_L": 0.4, "breast_R": 0.4, "buttocks_upper_center": 0.5, "buttocks_upper_side": 0.5, "buttocks_lower_center": 0.5, "buttocks_lower_side": 0.5, "belly": 0.3, "flanks": 0.3, "hips": 0.3},
  "structure": {
   "pectoral_mm": 15,
+  "gland_skin_mm": 12,
   "abdominal_wall_mm": 15,
   "cavity_bone_gap_mm": 5,
   "cavity_behind_spine_front_mm": 30,

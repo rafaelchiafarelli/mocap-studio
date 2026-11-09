@@ -193,3 +193,14 @@ def test_volumes_are_measured_every_so_many_frames_and_on_the_last():
     measured = [f for f in range(25) if body_walk.measures_volume(f, 24, 10)]
     assert measured == [0, 10, 20, 24]
     assert all(body_walk.measures_volume(f, 24, 1) for f in range(25))
+
+
+def test_damping_per_node_matches_the_same_damping_for_all():
+    nodes, tets, tet_voxel, vox = _cube(4)
+    c = xpbd.voxel_colours(vox, tet_voxel)
+    a = xpbd.Solver(nodes, tets, c, 1000.0, 20000.0, 0.45, damping=5.0, floor=0.0, device="cpu")
+    b = xpbd.Solver(nodes, tets, c, 1000.0, 20000.0, 0.45, damping=np.full(len(nodes), 5.0), floor=0.0, device="cpu")
+    for s in (a, b):
+        for _ in range(4):
+            s.step(1 / 24, 10)
+    assert np.allclose(a.positions(), b.positions())
