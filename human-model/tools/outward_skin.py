@@ -7,7 +7,7 @@ import numpy as np
 from scipy import ndimage
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import warp as wp
-from hmcore import body, fit, layers, meshgpu, muscle, muscle_bodies, outward, shapes, skeleton
+from hmcore import body, character as ch, fit, layers, meshgpu, muscle, muscle_bodies, outward, shapes, skeleton
 
 N_BODY = 13380  # as in blender/export_blend.py
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -80,6 +80,15 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
     muscles = muscle_bodies.select(json.load(open(os.path.join(build_dir, f"{name}.muscles.json"))), replaced=fan_table["replaces"]) + muscle_bodies.fans(fan_table, resolver)
     muscle = muscle_bodies.solids(muscles, origin, shape, voxel, fields["muscle"]["value"], gluteus_factor) & keep & ~core
     breast = np.zeros(shape, bool)
+    if sex == "female":
+        breast_table, wish = json.load(open(os.path.join(DATA, "breast_shapes.json"))), character.get("breast") or {}
+        base = ch.base_measures("female")
+        wall_inner = core | muscle
+        for side, label in ((1, "breast_L"), (-1, "breast_R")):
+            on_it = ids[zone[ids] == label]
+            apex = skin[on_it[np.argmin(skin[on_it, 1])]]
+            breast |= shapes.breast_volume(apex, side, wall_inner, origin, shape, voxel, fields["bust"]["value"] - fields["underbust"]["value"], base["bust"] - base["underbust"], wish, breast_table)
+        regions_out = shapes.breast_regions(wish, breast_table)
     inner = core | muscle | breast
 
     # The skin stays on the first shape and goes out only where what's inside needs it; the shapes and typed zones change the fat's depth from there
