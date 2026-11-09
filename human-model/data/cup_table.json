@@ -1,0 +1,6 @@
+{
+ "_about": "Cup letters from bust minus underbust, at step_cm per letter (Rafael, 2026-11-08). first_difference_cm is the first letter's difference: 12 to 14 cm for A, European convention, edit if wanted.",
+ "letters": ["A", "B", "C", "D", "E", "F", "G", "H"],
+ "first_difference_cm": 13.0,
+ "step_cm": 2.0
+}

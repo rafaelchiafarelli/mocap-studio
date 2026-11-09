@@ -124,3 +124,34 @@ def test_shoulder_hip_ratio_reaches_the_range():
     s = sheet({"sex": "male", "silhouette": "trapezio"})
     p = RATIOS["ansur_proxies"]["male"]
     assert s["shoulder_width"]["value"] * p["bideltoid_over_biacromial"] / (s["hip"]["value"] * p["hip_breadth_over_hip_girth"]) >= 1.53
+
+
+CUPS = {"letters": ["A", "B", "C", "D"], "first_difference_cm": 13.0, "step_cm": 2.0}
+
+
+def cup_sheet(**c):
+    return ch.resolve({"sex": "female", **c}, BASE, BIOTYPES, RATIOS, cups=CUPS)["fields"]
+
+
+def test_the_cup_comes_from_the_bust_minus_the_underbust():
+    s = cup_sheet(bust_cm=85)  # 85 - 68 = 17: A 13, B 15, C 17
+    assert s["cup"]["value"] == "C"
+
+
+def test_setting_the_cup_holds_the_thorax_and_raises_the_bust():
+    s = cup_sheet(cup="D")
+    assert s["underbust"]["value"] == 68.0 and s["bust"] == {"value": 87.0, "source": "typed"} and s["cup"] == {"value": "D", "source": "typed"}
+
+
+def test_a_changed_underbust_with_the_cup_set_moves_the_bust():
+    assert cup_sheet(cup="D", underbust_cm=72)["bust"]["value"] == 91.0
+
+
+def test_setting_the_bust_recalculates_the_cup():
+    assert cup_sheet(bust_cm=81)["cup"]["value"] == "A"
+    assert cup_sheet(bust_cm=200)["cup"]["value"] == "D"  # past the last letter
+
+
+def test_cup_and_bust_together_are_refused():
+    assert any("cup or the bust" in p for p in ch.problems({"sex": "female", "cup": "B", "bust_cm": 90}))
+    assert any("letter" in p for p in ch.problems({"sex": "female", "cup": "Z"}))
