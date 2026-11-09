@@ -2,7 +2,7 @@
 
 **Role:** what no longer earns a place beside the working code, moved here unchanged on 2026-11-08 so the rest reads better. Rafael deletes the folder when nothing in it is useful any more. Nothing outside this folder imports it.
 
-**Entry points:** none. The scripts in `blender/` imported their neighbours in `human-model/blender/`, so to run one, move it back first.
+**Entry points:** none. These scripts find their neighbours by their own folder, so to run one, move it back to where its path under `scratch/` says (`scratch/tools/` to `tools/`, and so on) first.
 
 **Inputs → Outputs:** none.
 
@@ -13,6 +13,7 @@
 - `blender/tissue_experiment.py`: the one-off test of Blender's Tissue add-on on a skin patch.
 - `blender/retire_trial.py`: the trial that removed the muscle bodies; its result is in `docs/status.md`.
 - `jaw-poc/`: the jaw test on Z-Anatomy. Embryonic, and it may not be used in production: Z-Anatomy stays out of the model. Described in `docs/sources-and-validation.md`.
+- The walking thigh, replaced by the whole body's chain (`tools/body_layers.py`, `tools/body_walk.py`, `blender/body_walk_bake.py`): `thigh_run.sh`, `tools/thigh_layers.py`, `tools/thigh_walk.py`, `blender/thigh_view.py`, `blender/thigh_walk_dump.py`, `blender/thigh_bake.py`, `data/thigh_tissue.json`. The experiment and its results stay described in `docs/muscle-physics.md`; Rafael's `rafa8` values live on in `data/body_tissue.json`.
 - `unused_functions.py`: `ctbones.principal_length`, `retarget.capture_to_model`, `softtissue.cotan` and `tsdata.pick_donors`, called by no code and no test.
 
 ## Touchpoints

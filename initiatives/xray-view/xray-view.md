@@ -13,7 +13,7 @@
 
 - The layers are separate in the data: `bone`, `muscle`, `fat`, `skin` and `cavity` in the body at rest (`human-model/hmcore/body.py:10`).
 - The built model keeps its bones in the collection `HM_bones` (`human-model/blender/assemble.py`, search `HM_bones`).
-- A material can already be made see-through (`human-model/blender/hmblender.py:35`, its `alpha`), and the thigh view uses it for the skin (`human-model/blender/thigh_view.py:21`).
+- A material can already be made see-through (`human-model/blender/hmblender.py:35`, its `alpha`), and the thigh view uses it for the skin (`human-model/scratch/blender/thigh_view.py:21`).
 - The walk's videos show the inside only as a fixed section, the back half with the bones (`walk_inside` in `human-model/blender/body_walk_bake.py`).
 
 ## A cutting plane to move
