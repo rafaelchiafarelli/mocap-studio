@@ -42,11 +42,13 @@
 - `body_walk_dump.py`: every bone's transform from rest and the skin, every frame of a walk file.
 - `body_walk_bake.py`: a walked body, lower or whole, as shape keys per frame, the current skin 80 cm behind it, its bones and the feet (bones and skin, following the rig) animated, and frames for two videos framed on the region. A frames folder of `-` makes the file only. With a nickname, a text over each model, inside its own collection, follows its pelvis through the walk.
 - `body_walk_pair.py`: two walked bodies in one file, without the current model's skin: skin and section of each, a metre apart.
+- `shared_file.py`: the file with every `fast_review.py` run, linked, a strip of its own per run along X; adding and removing a run.
 
 ## Key facts / gotchas
 
 - MakeHuman's body vertices come first and helpers after, so the first 13,380 indices mean the same on every MPFB character: `export_blend.py:8`.
 
+- Never call `bpy.ops.wm.read_factory_settings` here: on this install it makes Blender try to delete the extensions' Python wheels (`portable/extensions/.local/lib/`), and they are in use. `shared_file.py` empties the startup scene by hand instead (trial of task `fast-review/shared-file/1`, 2026-11-08).
 - A changed control property reaches its drivers only after `update_tag` and a frame change: `breath_check.py:12`.
 - The gait data's hip angle is measured against a pelvis tilted about 10° forward; `walk.py` takes `PelvisAngleZ` off it, since the rig's rest pelvis is level. Without it the walk jumped at every step: `walk.py`, search `PelvisAngleZ`.
 - The patella hangs from `hm_patella.<side>`, on the thigh, shaped like the shin and copying its local rotation at `PATELLA_SHARE` (0.5, declared), so it takes half the knee's bend (bug `human-model/19`, fixed): `assemble.py`, search `PATELLA_SHARE`.
