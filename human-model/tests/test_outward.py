@@ -49,3 +49,42 @@ def test_the_muscle_table_writes_old_zones_as_their_new_parts():
     from hmcore import body
     t = muscle_table.per_zone(np.array([0.05, 0.06, 0.02, 0.02]), np.array(["buttocks", "buttocks", "breast", "neck"]))
     assert {t[z] for z in body.GLUTEUS_ZONES} == {55.0} and {t[z] for z in body.BREAST_ZONES} == {20.0} and t["neck"] == 20.0
+
+
+def _rod_body():
+    xyz, h = grid(100, 0.003)
+    r = np.linalg.norm(xyz[..., :2], axis=-1)
+    in_bone = r < 0.02
+    core = in_bone
+    keep = np.ones(in_bone.shape, bool)
+    muscle = (r >= 0.02) & (r < 0.06)
+    return xyz, h, r, in_bone, core, muscle, keep
+
+
+@pytest.mark.parametrize("target", [10.0, 25.0, 40.0])
+def test_the_fat_reaches_the_percentage_within_tolerance(target):
+    xyz, h, r, in_bone, core, muscle, keep = _rod_body()
+    z = xyz[..., 2]
+    thickness = 0.015 + 0.02 * (z - z.min()) / (z.max() - z.min())  # a thickness that varies, as a body's does, so the percentage isn't stuck on whole rings of cells
+    out = outward.fat_to_percent(in_bone, core, muscle, keep, thickness, target, h, 0.0)
+    assert out["reached"] and abs(out["percent"] - target) <= 0.5
+    assert not (out["fat"] & (core | muscle)).any()
+
+
+def test_the_fat_is_outside_the_muscle():
+    xyz, h, r, in_bone, core, muscle, keep = _rod_body()
+    out = outward.fat_to_percent(in_bone, core, muscle, keep, np.full(in_bone.shape, 0.02), 25.0, h, 0.0)
+    assert r[out["fat"]].min() >= 0.059
+
+
+def test_a_percentage_out_of_reach_says_so():
+    xyz, h, r, in_bone, core, muscle, keep = _rod_body()
+    out = outward.fat_to_percent(in_bone, core, muscle, keep, np.full(in_bone.shape, 0.02), 99.0, h, 0.0, hi=1.0)
+    assert not out["reached"]
+
+
+def test_masses_count_the_real_skin():
+    xyz, h, r, in_bone, core, muscle, keep = _rod_body()
+    m = outward.masses_kg(in_bone, core, muscle, np.zeros_like(in_bone), keep, h, 1.0)
+    assert m["skin"] == pytest.approx(1.0 * 0.0015 * 1100)
+    assert outward.fat_percent(m) == 0.0
