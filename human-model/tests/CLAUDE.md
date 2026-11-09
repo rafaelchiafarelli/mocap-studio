@@ -10,6 +10,7 @@
 
 - `__init__.py`: marks the package.
 - `test_body.py`: `hmcore/body.py` and the pure parts of `tools/body_report.py`.
+- `test_breast_skin.py`: `hmcore/breast_skin.py`.
 - `test_bone_targets.py`: `hmcore/bone_targets.py`.
 - `test_character.py`: `hmcore/character.py`; its neutral fixtures are in `fixtures/characters/`.
 - `test_drive.py`: `hmcore/activation.py`, `retarget.py`, `tongue.py`, `morph.py` and `retire.py`.
