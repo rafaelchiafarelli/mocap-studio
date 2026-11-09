@@ -1,9 +1,10 @@
 """The walking body (lower or whole) of tools/body_walk.py as a .blend that plays without simulating, and frames for two videos.
-Args: WALK.npz LAYERS.npz BONES.npz WALK_DUMP.npz OUT.blend FRAMES_DIR
+Args: WALK.npz LAYERS.npz BONES.npz WALK_DUMP.npz OUT.blend FRAMES_DIR [NICKNAME]
 In the file: the simulated skin and, 80 cm behind it, the current model's skin on the same step (collection walk_compare);
 the back half in section with the bones (collection walk_inside). Every frame is a shape key, keyed on at its own frame, as thigh_bake.py does.
-Renders FRAMES_DIR/compare/####.png (from the side, both skins) and FRAMES_DIR/inside/####.png (the section from the front). FRAMES_DIR - makes the file only."""
-import os, sys
+Renders FRAMES_DIR/compare/####.png (from the side, both skins) and FRAMES_DIR/inside/####.png (the section from the front). FRAMES_DIR - makes the file only.
+With NICKNAME, a text above each of the two models (in their own collections, so it switches off with them) follows the pelvis through the walk."""
+import math, os, sys
 import bpy
 import numpy as np
 from mathutils import Matrix
@@ -16,6 +17,8 @@ BESIDE = np.array([0.0, 0.8, 0.0])  # m: the current model's skin, 80 cm behind 
 N_BODY = 13380  # as in export_blend.py
 FOOT_BONES = ("talus", "calcaneus", "navicular", "cuboid", "cuneiform", "metatarsal", "phalanx")
 FOOT_TOP = 0.25  # m: skin below this that isn't simulated is the feet's
+LABEL_ABOVE = 0.18  # m over the head's top
+LABEL_SIZE = 0.14  # m, the letters' height
 
 
 def animated(name, frames, faces, collection, material, smooth=False):
@@ -35,12 +38,25 @@ def animated(name, frames, faces, collection, material, smooth=False):
     return ob
 
 
+def nickname_label(text, collection, track, z, n):
+    """A text facing the viewer, over the model, its X and Y following the pelvis (track) at every frame."""
+    font = bpy.data.curves.new(f"apelido_{collection.name}", "FONT")
+    font.body, font.size, font.align_x = text, LABEL_SIZE, "CENTER"
+    ob = bpy.data.objects.new(font.name, font)
+    collection.objects.link(ob)
+    ob.rotation_euler = (math.pi / 2, 0.0, 0.0)  # the body faces -Y, so a text read from the front stands in XZ
+    for f in range(n):
+        ob.location = (float(track[f][0]), float(track[f][1]), z)
+        ob.keyframe_insert("location", frame=f + 1)
+    return ob
+
+
 def outward(v, f):
     t = v[f]
     return f if np.einsum("ij,ij->i", t[:, 0], np.cross(t[:, 1], t[:, 2])).sum() >= 0 else f[:, [0, 2, 1]]
 
 
-def main(walk_npz, layers_npz, bones_npz, dump_npz, out_blend, frames_dir):
+def main(walk_npz, layers_npz, bones_npz, dump_npz, out_blend, frames_dir, nickname=None):
     W, L, B, D = np.load(walk_npz), np.load(layers_npz), np.load(bones_npz), np.load(dump_npz)
     T, skins, names = W["transforms"], W["skins"], [str(n) for n in W["bone_names"]]
     n, n_walk = len(T), int(W["frames_walking"])
@@ -107,6 +123,10 @@ def main(walk_npz, layers_npz, bones_npz, dump_npz, out_blend, frames_dir):
     far = max(np.ptp(first[:, 2]) / 0.9, 1.0)
     views = {"compare": (np.array([3.0 * far, 0.4, lift]), np.array([0.0, 0.4, lift]), [compare]),
              "inside": (np.array([0.0, -2.0 * far, lift]), np.array([0.0, 0.0, lift]), [inside])}
+    if nickname:
+        top = float(D["skin_rest"][:, 2].max()) + LABEL_ABOVE
+        for c in (compare, inside):
+            nickname_label(nickname, c, track, top, n)
     cam = hb.camera_look("HM_cam", (0, 0, 0), (0, 1, 0), lens=50)
     bpy.ops.wm.save_as_mainfile(filepath=out_blend)
     if frames_dir == "-":  # the file only, no frames
