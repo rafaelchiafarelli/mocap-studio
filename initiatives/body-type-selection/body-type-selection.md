@@ -37,6 +37,20 @@ Agreed in the investigation session that closed on 2026-11-08; nothing here is b
 
 **One check per character.** When the design is finished, in Blender's check boxes and sliders, the program runs one check that everything is right. At rest, tissue built outward from the bones shouldn't let a bone through, so this is a safeguard. It doesn't cover the walk: no stage of the simulation checks collision, and a bone can come through where the tissue over it gives way, so the walk keeps its own bone test.
 
+**Biotype** (Rafael, 2026-11-08) means the somatotypes: ectomorph, mesomorph, endomorph. Only their physical side counts; metabolism and training have no place in a body built once.
+
+| | Ectomorph | Mesomorph | Endomorph |
+|---|---|---|---|
+| Bone thickness | thin | medium | wide |
+| Arms and legs | long | balanced | balanced |
+| Shoulders, waist, hips | narrow shoulders and hips | wide shoulders, thin waist | wide hips and waist |
+| Muscle mass | little | much | tends high |
+| Starting body fat | low | medium | high |
+
+- **A pure type and two others:** the chosen type, plus the other two up to 35% each and 65% together, so the chosen one is always the largest. The rest is the pure type.
+- **Silhouette and biotype are independent.** The biotype says how much and how thick (bones, muscle, tendency to fat); the silhouette says where the volume sits. Where they disagree on proportions, the silhouette wins.
+- **Each step only fills in the next one's starting values, and what is typed always wins.** The fields open with the model's current values (the neutral body, today's fat and tissue tables), not with new numbers by eye; biotype and silhouette change them from that base, and each field shows the result before it is edited.
+
 **Physical values per region** need: the zone of each tetrahedron kept through to the simulation (`hmcore/body.py` knows it per voxel and drops it); an editable table of tissue by zone, with one default per tissue and overrides only where wanted; damping per region (one value today); and smooth changes between zones, as the fat thickness already has. The gluteus and breast zones have to be divided: upper/lower and centre/side for the gluteus, left/right for the breast.
 
 **Order of the choices:**
@@ -91,8 +105,6 @@ Agreed in the investigation session that closed on 2026-11-08; nothing here is b
 
 ## Questions to answer when planning
 
-- **What "biotipo" means here, next to "silhueta":** the somatotypes (ectomorph, mesomorph, endomorph) or something else, and whether the two are chosen independently. Rafael to define.
-- **Does a type set a starting point the sliders can then change,** or does it stay in force?
 - **How do real sizes combine with a type?** A pear at 1.60 m and at 1.80 m; grading by size as in sewing (P/M/G).
 - **What each type should measure:** waist-to-hip and shoulder-to-hip ratios from anthropometric data, so that a type can be checked, not just looked at.
 - **Which bodies have been tested.** The bone and skin fixes have only been measured on the neutral woman and man; types far from neutral may reach their limits (`fit.slim_to_skin` stops at 40% of a bone's width).
