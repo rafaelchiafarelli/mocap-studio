@@ -1,8 +1,8 @@
 {
- "_about": "Each breast shape as multipliers on the fat of breast_L and breast_R (by eye, edit to change). The divided zones are left and right only, so a shape here sets how much the breast holds and how much deep gland it has, not its outline. Adjustments: espacados (0 to 1) thins the fat between the breasts, in the chest zone; pendentes (0 to 1) softens the skin over them, as the fraction that comes off the skin's stiffness; assimetricos is a multiplier per side.",
- "redondos": {"fat": 1.05, "gland_skin_mm": 12},
- "gota": {"fat": 1.0, "gland_skin_mm": 14},
- "conicos": {"fat": 0.95, "gland_skin_mm": 10},
- "tuberosos": {"fat": 0.9, "gland_skin_mm": 8},
- "adjustments": {"espacados_chest_fat_loss": 0.5, "pendentes_skin_softening": 0.5}
+ "_about": "The breast as a volume over the chest (Rafael, 2026-11-09), by eye, edit to change. Each shape is that volume's outline: base_cm the radius of its base at a neutral cup, upper and lower how far the base reaches up and down as shares of it, power how the front closes: 2 is round, lower is more pointed, higher fuller at the front. Its projection comes from bust minus underbust.",
+ "redondos": {"base_cm": 8.0, "upper": 1.0, "lower": 1.0, "power": 2.0},
+ "gota": {"base_cm": 8.0, "upper": 1.25, "lower": 0.85, "power": 2.0},
+ "conicos": {"base_cm": 7.0, "upper": 1.0, "lower": 1.0, "power": 1.3},
+ "tuberosos": {"base_cm": 5.5, "upper": 1.1, "lower": 1.1, "power": 3.0},
+ "adjustments": {"projection_per_cm": 0.35, "espacados_m": 0.03, "pendentes_m": 0.04, "pendentes_skin_softening": 0.5}
 }

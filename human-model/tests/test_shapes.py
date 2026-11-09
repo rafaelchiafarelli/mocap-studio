@@ -1,4 +1,5 @@
 import json, os, sys
+import numpy as np
 import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from hmcore import body, shapes
@@ -33,40 +34,65 @@ def test_only_the_gluteus_zones_change():
 
 
 BREAST = table("breast_shapes.json")
+H, SHAPE = 0.004, (80, 80, 80)
+ORIGIN = np.array([-0.16, -0.16, -0.16])
 
 
-@pytest.mark.parametrize("shape", ["redondos", "gota", "conicos", "tuberosos"])
-def test_every_breast_shape_is_in_the_file(shape):
-    assert set(BREAST[shape]) == {"fat", "gland_skin_mm"}
+def wall():
+    idx = np.indices(SHAPE).reshape(3, -1).T
+    y = ORIGIN[1] + (idx[:, 1] + 0.5) * H
+    return (y >= 0).reshape(SHAPE)
 
 
-def test_the_shape_sets_the_fat_and_the_gland():
-    fat, regions, structure = shapes.breast(ZONES, {"shape": "conicos"}, BREAST)
-    assert fat["breast_L"] == pytest.approx(10 * 0.95) and structure == {"gland_skin_mm": 10} and regions == {}
+def volume(difference=16.0, character=None, side=1, apex=(0.0, 0.0, 0.0)):
+    return shapes.breast_volume(np.array(apex), side, wall(), ORIGIN, SHAPE, H, difference, 16.0, character or {}, BREAST)
 
 
-def test_the_cup_scales_the_breast():
-    fat, _, _ = shapes.breast(ZONES, {"shape": "redondos"}, BREAST, cup_ratio=1.5)
-    assert fat["breast_R"] == pytest.approx(10 * 1.05 * 1.5)
+def extent(mask, axis):
+    idx = np.argwhere(mask)
+    return (idx[:, axis].max() - idx[:, axis].min() + 1) * H
+
+
+def centre(mask, axis):
+    return float(ORIGIN[axis] + (np.argwhere(mask)[:, axis].mean() + 0.5) * H)
+
+
+@pytest.mark.parametrize("name", ["redondos", "gota", "conicos", "tuberosos"])
+def test_every_breast_shape_is_in_the_file(name):
+    assert set(BREAST[name]) == {"base_cm", "upper", "lower", "power"}
+
+
+def test_the_breast_stands_out_from_the_chest_by_the_cup():
+    m = volume(16.0)
+    assert extent(m, 1) == pytest.approx(0.056, abs=2 * H) and not m[:, 40:, :].any()  # in front of the wall only
+    assert extent(volume(24.0), 1) > extent(m, 1) and volume(24.0).sum() > m.sum()
+
+
+def test_gota_reaches_higher_than_it_hangs():
+    m = volume(character={"shape": "gota"})
+    idx = np.argwhere(m)
+    z = ORIGIN[2] + (idx[:, 2] + 0.5) * H
+    assert z.max() > -z.min()
+
+
+def test_conicos_is_more_pointed_than_redondos():
+    assert volume(character={"shape": "conicos"}).sum() < volume(character={"shape": "redondos"}).sum()
+
+
+def test_espacados_moves_it_outward_on_each_side():
+    assert centre(volume(character={"espacados": 1.0}), 0) == pytest.approx(BREAST["adjustments"]["espacados_m"], abs=2 * H)
+    assert centre(volume(character={"espacados": 1.0}, side=-1), 0) == pytest.approx(-BREAST["adjustments"]["espacados_m"], abs=2 * H)
+
+
+def test_pendentes_lowers_it():
+    assert centre(volume(character={"pendentes": 1.0}), 2) < centre(volume(), 2) - 0.02
 
 
 def test_asymmetry_is_per_side():
-    fat, _, _ = shapes.breast(ZONES, {"shape": "gota", "assimetricos": {"L": 1.0, "R": 0.8}}, BREAST)
-    assert fat["breast_L"] == pytest.approx(10.0) and fat["breast_R"] == pytest.approx(8.0)
-    fat2, _, _ = shapes.breast(ZONES, {"shape": "gota", "assimetricos": 0.9}, BREAST)
-    assert fat2["breast_L"] == pytest.approx(9.0) == fat2["breast_R"]
-
-
-def test_spacing_thins_the_chest_between_the_breasts():
-    fat, _, _ = shapes.breast(ZONES, {"shape": "gota", "espacados": 1.0}, BREAST)
-    assert fat["chest"] == pytest.approx(5.0)
+    wish = {"assimetricos": {"L": 1.0, "R": 0.7}}
+    assert volume(character=wish, side=-1).sum() < volume(character=wish, side=1).sum()
 
 
 def test_pendentes_softens_the_skin():
-    _, regions, _ = shapes.breast(ZONES, {"shape": "gota", "pendentes": 1.0}, BREAST)
-    assert regions["skin"]["breast_L"]["young_factor"] == pytest.approx(0.5)
-
-
-def test_no_shape_changes_nothing():
-    fat, regions, structure = shapes.breast(ZONES, {}, BREAST)
-    assert fat == ZONES and regions == {} and structure == {}
+    assert shapes.breast_regions({"pendentes": 1.0}, BREAST)["skin"]["breast_L"]["young_factor"] == pytest.approx(0.5)
+    assert shapes.breast_regions({}, BREAST) == {}
