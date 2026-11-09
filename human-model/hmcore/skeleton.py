@@ -196,8 +196,28 @@ def glenoid_fossa(scapula, head, sign, reach=0.045):
     return scapula[m].mean(axis=0) if m.any() else head + np.array([-sign * 0.025, 0.0, 0.0])
 
 
-def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
-    """Returns {bone name: {"verts", "faces", "parent", "source"}} and the anchor points later steps need (jaw pivot and so on)."""
+def spine_line_y(ind, z):
+    """The rig's spine line at this height: the y of the spine bones' heads, interpolated. Where the spine sits when it isn't read from the back's skin."""
+    names = ("spine", "spine.001", "spine.002", "spine.003", "spine.004", "spine.005", "spine.006")
+    heads = sorted((head_tail(ind, b)[0][2], head_tail(ind, b)[0][1]) for b in names if b in ind["rig"])
+    return float(np.interp(z, [h[0] for h in heads], [h[1] for h in heads]))
+
+
+def trunk_scales(ribs, sternum_v, pelvis, targets):
+    """The trunk's scales from the targets: ribs' width and depth and the pelvis's width, against the bone library's."""
+    return {"sx": targets["ribcage_width_m"] / float(np.ptp(ribs[:, 0])), "sy": targets["ribcage_depth_m"] / max(float(np.ptp(ribs[:, 1])), 1e-6),
+            "s_p": targets["pelvis_width_m"] / float(np.ptp(pelvis[:, 0]))}
+
+
+def pelvis_forward(sacrum, vertebra_l5_y, gap=0.003):
+    """How far forward the pelvis moves so that the sacrum's top meets L5, as the CT has it, keeping gap between them."""
+    top = sacrum[sacrum[:, 2] > np.quantile(sacrum[:, 2], 0.9)]
+    return float(top[:, 1].max() - vertebra_l5_y - gap)
+
+
+def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct, targets=None):
+    """Returns {bone name: {"verts", "faces", "parent", "source"}} and the anchor points later steps need (jaw pivot and so on).
+    With targets (hmcore.bone_targets), the trunk's bones take their sizes from them instead of reading the trunk's skin. The head's bones still follow the skin of the head."""
     skin = ind["skin"]
     depth = fit.SkinDepth(skin, ind["tris"])
     out, anchors = {}, {}
@@ -222,7 +242,7 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
     ct_hips = (hips_ct["left"] + hips_ct["right"]) / 2
     centres = {n: lib[f"vertebrae_{n}"][0].mean(axis=0) for n in VERTEBRAE}
     c1_target = head_map(centres["C1"][None])[0]
-    s_v = (c1_target[2] - hips[2]) / (centres["C1"][2] - ct_hips[2])
+    s_v = (c1_target[2] - hips[2]) / (centres["C1"][2] - ct_hips[2]) if targets is None else targets["trunk_length_m"] / (centres["C1"][2] - ct_hips[2])
     s_block = s_v
     spine_bones = [b for b in ("spine", "spine.001", "spine.002", "spine.003", "spine.004", "spine.005", "spine.006") if b in ind["rig"]]
     bone_low = [(head_tail(ind, b)[0][2], b) for b in spine_bones]
@@ -233,9 +253,12 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
         c = centres[n]
         z_t = hips[2] + s_v * (c[2] - ct_hips[2])
         placed = (v - c) * s_block
-        back = fit.body_profile(skin, z_t, half_width=0.04, band=0.02)
-        tip = placed[np.abs(placed[:, 0]) < 0.012, 1].max() if (np.abs(placed[:, 0]) < 0.012).any() else placed[:, 1].max()
-        y_t = (back[1] - TRUNK_MARGIN["spinous"] - tip) if back else c1_target[1]
+        if targets is None:
+            back = fit.body_profile(skin, z_t, half_width=0.04, band=0.02)
+            tip = placed[np.abs(placed[:, 0]) < 0.012, 1].max() if (np.abs(placed[:, 0]) < 0.012).any() else placed[:, 1].max()
+            y_t = (back[1] - TRUNK_MARGIN["spinous"] - tip) if back else c1_target[1]
+        else:
+            y_t = spine_line_y(ind, z_t)
         shift_y[n] = y_t
         vertebra_t[n] = np.array([0.0, y_t, z_t])
     # smooth the depth curve: a vertebra can't jump relative to its neighbours
@@ -276,19 +299,24 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
 
     # Rib cage: one map for ribs, sternum and cartilage, with each rib carried by its own vertebra's depth.
     ribs = np.vstack([lib[f"rib_{s}_{i}"][0] for s in ("left", "right") for i in range(1, 13)])
-    # Measured low on the chest: higher up the arms join the trunk at the armpit and the width reads wrong.
-    chest_z = vertebra_t["T10"][2]
-    armpit_limit = head_tail(ind, "upper_arm.L")[0][0] - 0.03
-    half = min(fit.body_half_width(skin, chest_z, band=0.02, gap=0.025) - TRUNK_MARGIN["lateral"], armpit_limit)
     x_ref = (ribs[:, 0].min() + ribs[:, 0].max()) / 2
-    src_half = (ribs[:, 0].max() - ribs[:, 0].min()) / 2
-    sx = half / src_half
-    front_z = vertebra_t["T5"][2]
-    front = fit.body_profile(skin, front_z, half_width=0.01)[0] + TRUNK_MARGIN["front"]
     sternum_v, sternum_f = lib["sternum"]
-    src_front = sternum_v[:, 1].min()
-    y_ref_ct = centres["T5"][1]
-    sy = (vertebra_t["T5"][1] - front) / (y_ref_ct - src_front)
+    both_hips = np.vstack([lib["hip_left"][0], lib["hip_right"][0]])
+    if targets is None:
+        # Measured low on the chest: higher up the arms join the trunk at the armpit and the width reads wrong.
+        chest_z = vertebra_t["T10"][2]
+        armpit_limit = head_tail(ind, "upper_arm.L")[0][0] - 0.03
+        half = min(fit.body_half_width(skin, chest_z, band=0.02, gap=0.025) - TRUNK_MARGIN["lateral"], armpit_limit)
+        src_half = (ribs[:, 0].max() - ribs[:, 0].min()) / 2
+        sx = half / src_half
+        front_z = vertebra_t["T5"][2]
+        front = fit.body_profile(skin, front_z, half_width=0.01)[0] + TRUNK_MARGIN["front"]
+        src_front = sternum_v[:, 1].min()
+        y_ref_ct = centres["T5"][1]
+        sy = (vertebra_t["T5"][1] - front) / (y_ref_ct - src_front)
+    else:
+        scales = trunk_scales(ribs, sternum_v, both_hips, targets)
+        sx, sy = scales["sx"], scales["sy"]
 
     def trunk_map(v, level):
         p = np.asarray(v, float) - centres[level]
@@ -307,10 +335,11 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
     # The cage's width comes from the skin at T10, but it is widest lower down, where a man's trunk already narrows, and his ribs 9 to 11 came
     # through his sides (bug human-model/22). Its lower half is narrowed sideways to the skin, only as far as that asks.
     cage = [n for n in out if n.startswith(("rib_", "sternum", "costal"))]
-    placed, least = fit.slim_to_skin([out[n]["verts"] for n in cage], vertebra_t["T5"], vertebra_t["L1"], skin, depth, RIB_TISSUE, reach=0.4, only=np.array([1.0, 0.0, 0.0]))
-    for n, p in zip(cage, placed):
-        out[n]["verts"] = p.astype(np.float32)
-    anchors["slimmed"]["ribs"] = round(least, 3)
+    if targets is None:
+        placed, least = fit.slim_to_skin([out[n]["verts"] for n in cage], vertebra_t["T5"], vertebra_t["L1"], skin, depth, RIB_TISSUE, reach=0.4, only=np.array([1.0, 0.0, 0.0]))
+        for n, p in zip(cage, placed):
+            out[n]["verts"] = p.astype(np.float32)
+        anchors["slimmed"]["ribs"] = round(least, 3)
     for n in cage:
         if n.startswith("rib_"):
             mapped = out[n]["verts"]
@@ -320,9 +349,11 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
     anchors["sternum_top"] = np.array([(st[:, 0].min() + st[:, 0].max()) / 2, *st[np.argmax(st[:, 2]), 1:]])
 
     # Pelvis: its width comes from the hips' skin, so the sockets become the true hip joints and the rig's are moved to them.
-    both_hips = np.vstack([lib["hip_left"][0], lib["hip_right"][0]])
-    crest_half = fit.body_half_width(skin, hips[2] + 0.11, band=0.02, gap=0.04) - PELVIS_MARGIN
-    s_p = 2 * crest_half / (both_hips[:, 0].max() - both_hips[:, 0].min())
+    if targets is None:
+        crest_half = fit.body_half_width(skin, hips[2] + 0.11, band=0.02, gap=0.04) - PELVIS_MARGIN
+        s_p = 2 * crest_half / (both_hips[:, 0].max() - both_hips[:, 0].min())
+    else:
+        s_p = scales["s_p"]
     def pelvis_map(v):
         return (np.asarray(v, float) - ct_hips) * s_p + hips
     for name, label in (("hip_L", "hip_left"), ("hip_R", "hip_right"), ("sacrum", "sacrum")):
@@ -334,9 +365,14 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct):
     # joints go with it. L5 keeps its distance or 3 mm, whichever is less.
     middle = (sockets["L"] + sockets["R"]) / 2
     pelvis_names = ("hip_L", "hip_R", "sacrum")
-    move, before, after, amounts = fit.settle(np.vstack([out[n]["verts"] for n in pelvis_names]), middle, depth, PELVIS_TISSUE,
-                                              [("shift", [0, -1, 0], 0.04), ("turn", [1, 0, 0], 10.0)], exact=True,
-                                              avoid=fit.solids([(out["vertebra_L5"]["verts"], out["vertebra_L5"]["faces"])]), sample=900)
+    if targets is None:
+        move, before, after, amounts = fit.settle(np.vstack([out[n]["verts"] for n in pelvis_names]), middle, depth, PELVIS_TISSUE,
+                                                  [("shift", [0, -1, 0], 0.04), ("turn", [1, 0, 0], 10.0)], exact=True,
+                                                  avoid=fit.solids([(out["vertebra_L5"]["verts"], out["vertebra_L5"]["faces"])]), sample=900)
+    else:
+        # The sacrum meets L5 as the CT has it, and the hip joints go with it; no skin to settle against
+        forward = pelvis_forward(out["sacrum"]["verts"].astype(float), float(out["vertebra_L5"]["verts"].astype(float)[:, 1].max()))
+        move, before, after, amounts = (lambda p: np.asarray(p, float) + np.array([0.0, -forward, 0.0])), 0.0, 0.0, (forward, 0.0)
     for n in pelvis_names:
         out[n]["verts"] = move(out[n]["verts"]).astype(np.float32)
     sockets = {k: move(v[None])[0] for k, v in sockets.items()}

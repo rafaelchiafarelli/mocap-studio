@@ -46,3 +46,27 @@ def test_a_typed_wrist_thickens_the_forearm_only():
 
 def test_the_biotype_scales_thickness():
     assert bt.targets(sheet(biotype={"type": "endomorph"}), base_cm=BASE)["thickness"]["femur"] == pytest.approx(1.1)
+
+
+def test_the_spine_follows_the_rigs_line():
+    import numpy as np
+    from hmcore import skeleton
+    rig = {"spine": {"head": [0, 0.02, 1.0], "tail": [0, 0.03, 1.1]}, "spine.001": {"head": [0, 0.04, 1.2], "tail": [0, 0.05, 1.3]}}
+    ind = {"rig": rig}
+    assert skeleton.spine_line_y(ind, 1.0) == pytest.approx(0.02) and skeleton.spine_line_y(ind, 1.1) == pytest.approx(0.03)
+
+
+def test_the_trunks_scales_come_from_the_targets():
+    import numpy as np
+    from hmcore import skeleton
+    ribs = np.array([[-0.1, 0.0, 0], [0.1, 0.1, 0]])
+    pelvis = np.array([[-0.13, 0, 0], [0.13, 0, 0]])
+    s = skeleton.trunk_scales(ribs, np.zeros((1, 3)), pelvis, {"ribcage_width_m": 0.3, "ribcage_depth_m": 0.15, "pelvis_width_m": 0.26})
+    assert s == {"sx": pytest.approx(1.5), "sy": pytest.approx(1.5), "s_p": pytest.approx(1.0)}
+
+
+def test_the_sacrum_meets_l5():
+    import numpy as np
+    from hmcore import skeleton
+    sacrum = np.array([[0, 0.05, 1.0], [0, 0.02, 1.0], [0, 0.08, 1.2], [0, 0.07, 1.25]])
+    assert skeleton.pelvis_forward(sacrum, 0.02, gap=0.003) == pytest.approx(0.08 - 0.02 - 0.003)
