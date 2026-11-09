@@ -13,11 +13,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 from hmcore import body
 
 # Declared densities, kg/m3: tissue's usual values (general knowledge, not from a source read here). The cavity mixes the lungs' air with the organs
-DENSITY = {"bone": 1500.0, "muscle": 1060.0, "fat": 900.0, "skin": 1100.0, "cavity": 900.0}
+DENSITY = {"bone": 1500.0, "muscle": 1060.0, "fat": 900.0, "skin": 1100.0, "cavity": 900.0, "fat_deep": 900.0, "gland": 1040.0, "viscera": 1040.0}
 REAL_SKIN_MM = 1.5  # what real skin's thickness would be, against the voxels' band: the rest of the band counts as fat in the corrected share
 COLORS = {-1: (235, 235, 235), body.BONE: (235, 225, 195), body.MUSCLE: (165, 40, 35), body.FAT: (245, 205, 85),
-          body.SKIN: (215, 160, 135), body.CAVITY: (115, 145, 205)}
-NAMES_PT = {"bone": "osso", "muscle": "músculo", "fat": "gordura", "skin": "pele (faixa)", "cavity": "cavidade (órgãos)"}
+          body.SKIN: (215, 160, 135), body.CAVITY: (115, 145, 205), body.FAT_DEEP: (225, 175, 70), body.GLAND: (220, 130, 150), body.VISCERA: (150, 110, 190)}
+NAMES_PT = {"bone": "osso", "muscle": "músculo", "fat": "gordura", "skin": "pele (faixa)", "cavity": "cavidade (órgãos)", "fat_deep": "gordura profunda", "gland": "glândula mamária", "viscera": "vísceras"}
 LEVELS = (("bust", "Busto"), ("underbust", "Abaixo do busto"), ("waist", "Cintura"), ("hip", "Quadril"), ("thigh", "Coxa"))
 SCALE = 4  # pixels per voxel
 # Blender's own Inter (SIL Open Font License), for the accents Pillow's built-in font lacks
@@ -77,7 +77,7 @@ def inside_skin(built):
     litres = dict(built["litres"])
     skin_l = built["skin_area_m2"] * REAL_SKIN_MM
     litres["skin"] = round(skin_l, 2)
-    litres["fat"] = round(built["enclosed_litres"] - litres["bone"] - litres["muscle"] - litres["cavity"] - skin_l, 2)
+    litres["fat"] = round(built["enclosed_litres"] - litres["bone"] - litres["muscle"] - litres["cavity"] - litres.get("viscera", 0.0) - skin_l - litres.get("fat_deep", 0.0) - litres.get("gland", 0.0), 2)
     return litres
 
 

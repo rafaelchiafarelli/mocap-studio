@@ -23,3 +23,5 @@ Epic `character-sheet`.
 ## Pre-work
 
 None.
+
+**Status:** Done (2026-11-08); the comparison table is in human-model/docs/skeleton.md.

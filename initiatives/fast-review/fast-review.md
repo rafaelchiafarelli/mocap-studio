@@ -2,7 +2,7 @@
 
 **Goal:** one command that rebuilds the man and the woman and leaves them in one Blender file, with no rendering unless asked (Rafael, 2026-11-08). Today each change takes a chain of steps by hand, and most of the waiting is renders nobody asked for.
 
-**Status:** planned: epics and tasks in [epics/](epics/README.md). Rafael wants it first.
+**Status:** built on branch `fast-review`, carried into `body-type-selection`, not merged into `features`: epics and tasks in [epics/](epics/README.md). The gate is Rafael opening the file.
 
 ## What Rafael asked for
 

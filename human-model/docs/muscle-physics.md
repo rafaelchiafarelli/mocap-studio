@@ -162,7 +162,7 @@ Task 3 of epic `thigh`. The thigh of experiment 2 goes through the neutral woman
 1. `blender/thigh_walk_dump.py` reads, every frame, the femur's transform from rest, and the current skin.
 2. `tools/thigh_walk.py` simulates on the GPU (`hmcore/xpbd.py`):
    - The bone, and both cut ends from each skin ring outward, are carried by the femur.
-   - Each frame the carried nodes move part of the way at every step, so there is no jolt between frames (`xpbd.py:176`).
+   - Each frame the carried nodes move part of the way at every step, so there is no jolt between frames (`xpbd.py:177`).
    - Damping slows only the tissue's motion relative to the femur (`xpbd.py:76`).
    - It measures and writes the table.
 3. `blender/thigh_bake.py` makes the `.blend` and the frames, and `ffmpeg` makes the videos.
@@ -243,14 +243,14 @@ Epic `body-at-rest`: the zero point ("marco zero") for body shapes. The thigh's 
 
 **How it's built** (task 1: `hmcore/body.py`, `tools/body_layers.py`, on the GPU through `hmcore/meshgpu.py`):
 
-1. **Cut.** The head goes where the rig moves the skin mostly with the head's bones, a border that runs under the jaw (`body.py:26`); near each wrist and ankle, skin vertices past the joint's plane are dropped; then the largest piece is kept (`body.py:47`).
-2. **Zones.** Each skin vertex gets a zone from its nearest rig bone (`body.py:103`). On the trunk, the zone also depends on height (against the bottom of the rib cage and the top of the hip bones) and on whether the vertex faces front, back or side. The thicknesses are smoothed over the skin, so they change gradually.
-3. **Fill.** The same 5 mm voxels as the thigh. Inside-or-outside and distances are computed on the GPU, about 4 million points in seconds. Bone meshes are first turned outward (`body.py:193`), because builds made before bug `human-model/11` was fixed have the left leg inside out.
+1. **Cut.** The head goes where the rig moves the skin mostly with the head's bones, a border that runs under the jaw (`body.py:28`); near each wrist and ankle, skin vertices past the joint's plane are dropped; then the largest piece is kept (`body.py:49`).
+2. **Zones.** Each skin vertex gets a zone from its nearest rig bone (`body.py:105`). On the trunk, the zone also depends on height (against the bottom of the rib cage and the top of the hip bones) and on whether the vertex faces front, back or side. The thicknesses are smoothed over the skin, so they change gradually.
+3. **Fill.** The same 5 mm voxels as the thigh. Inside-or-outside and distances are computed on the GPU, about 4 million points in seconds. Bone meshes are first turned outward (`body.py:234`), because builds made before bug `human-model/11` was fixed have the left leg inside out.
 4. **Label.** Bone wins over everything. Within one voxel of the skin is skin. Within the zone's fat thickness is fat.
-   - **Cavity** (`body.py:250`):
+   - **Cavity** (`body.py:221`):
      - in the chest: everything inside the rib cage, beside the spine too, where the lungs reach;
      - lower down: inside the hull of ribs, spine and pelvis, no more than 30 mm behind the spine's front, and deeper than the fat plus a 15 mm abdominal wall.
-   - **Breast** (`body.py:253`): fat down to a 15 mm chest muscle over the ribs.
+   - **Breast** (`body.py:224`): fat down to a 15 mm chest muscle over the ribs.
    - **Muscle:** whatever remains.
 5. **Clean, tetrahedra, tie the skin.** As on the thigh.
 
@@ -502,3 +502,12 @@ Measured on 2026-11-08 (investigation session), the man and the woman side by si
 With 5 mm, volumes every 10 frames and the bone test on (`c5_padrao_novo_5mm_volumes_10q`), the simulation takes 176 s for the woman and 210 s for the man, side by side. With the bone test off, `bone_through_skin` in `body_walk.json` reads `"measured": false` and the CSV has no bone columns: no result there doesn't mean no bone came through.
 
 **What the sampled volumes miss:** `volume_range` in `body_walk.json` now covers only the measured frames, and the worst moment can fall between them. On the man, the fat's range reads 99.85% to 100.16% against 98.49% to 100.84% measured every frame; its worst is frame 2, the start of the walk. To see the whole range, run with `VOLUME_EVERY=1`. In `body_walk_frames.csv`, the frames not measured have those columns empty.
+
+
+## The new path (body-type-selection), and the fit fixes it should make unnecessary
+
+`tools/outward_skin.py` makes the skin the result of bones, muscle and fat. With bones from the sheet (`hmcore/bone_targets.py`, `skeleton.build(targets=...)`), these fixes should stop being needed; none is removed yet (Rafael: today's path stays until the new one beats it):
+
+- `tools/skin_over_bone.py`, the skin pushed over the bones.
+- In `hmcore/skeleton.py`: `settle_superficial`, the slim-to-skin steps for femur, tibia, fibula, larynx, ribs and foot, and the pelvis's `settle`.
+- Bones reading the trunk's skin at all: `fit.body_half_width`, `fit.body_profile` for spine and ribs.

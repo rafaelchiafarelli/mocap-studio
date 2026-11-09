@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(sys.argv[sys.argv.index("--py
 import hmblender as hb
 
 LABELS = ("bone", "muscle", "fat", "skin", "cavity")
-COLORS = {"bone": (0.9, 0.86, 0.75), "muscle": (0.6, 0.12, 0.1), "fat": (0.95, 0.8, 0.35), "skin": (0.85, 0.65, 0.55), "cavity": (0.45, 0.55, 0.8)}
+COLORS = {"bone": (0.9, 0.86, 0.75), "muscle": (0.6, 0.12, 0.1), "fat": (0.95, 0.8, 0.35), "skin": (0.85, 0.65, 0.55), "cavity": (0.45, 0.55, 0.8), "fat_deep": (0.85, 0.65, 0.25), "gland": (0.85, 0.5, 0.58), "viscera": (0.55, 0.4, 0.75)}
 
 
 def compact(verts, faces):
@@ -15,7 +15,7 @@ def compact(verts, faces):
     return verts[used], inv.reshape(-1, 3)
 
 
-ZONES = ("neck", "chest", "breast", "upper_back", "belly", "flanks", "lower_back", "hips", "buttocks",
+ZONES = ("neck", "chest", "breast_L", "breast_R", "upper_back", "belly", "flanks", "lower_back", "hips", "buttocks_upper_center", "buttocks_upper_side", "buttocks_lower_center", "buttocks_lower_side",
          "thigh_front", "thigh_back", "thigh_inner", "thigh_outer", "knee", "calf_front", "calf_back",
          "upper_arm_front", "upper_arm_back", "forearm")  # as hmcore/body.py, which this Blender can't import
 

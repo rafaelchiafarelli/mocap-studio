@@ -2,7 +2,7 @@
 body with ABOVE_HIP=10 (task muscle-physics/body-walk/1).
     hm.sh --gpu python human-model/tools/body_walk.py LAYERS.npz BONES.npz WALK_DUMP.npz OUT_DIR [NAME=value ...]
 LAYERS.npz is from tools/body_layers.py (on the pushed skin), BONES.npz the build's bones, WALK_DUMP.npz from blender/body_walk_dump.py.
-Tissue values from data/body_tissue.json, how often the volumes are measured and whether bones are tested against the skin from data/simulation.json; NAME=value overrides one, VOLUME_EVERY, BONE_TEST=1, or a constant below, for this run.
+Tissue values from data/body_tissue.json, with its REGIONS table of overrides by tissue and zone (REGIONS=file gives another), how often the volumes are measured and whether bones are tested against the skin from data/simulation.json; NAME=value overrides one, VOLUME_EVERY, BONE_TEST=1, or a constant below, for this run.
 Writes OUT_DIR/body_walk.npz (for blender/body_walk_bake.py), body_walk_frames.csv and body_walk.json."""
 import csv, json, os, sys, time
 import numpy as np
@@ -11,11 +11,11 @@ from scipy.sparse.csgraph import connected_components
 from scipy.spatial import cKDTree
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import warp as wp
-from hmcore import body, layers, meshgpu, xpbd
+from hmcore import body, layers, meshgpu, regions as tissue_regions, xpbd
 
 TISSUE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "body_tissue.json")
 SIMULATION = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "simulation.json")
-TISSUE_KEYS = ("SUBSTEPS", "DAMPING", "FAT_YOUNG", "MUSCLE_YOUNG", "SKIN_YOUNG", "FAT_DENSITY", "MUSCLE_DENSITY", "POISSON", "CAVITY_YOUNG", "CAVITY_DENSITY")
+TISSUE_KEYS = ("SUBSTEPS", "DAMPING", "FAT_YOUNG", "MUSCLE_YOUNG", "SKIN_YOUNG", "FAT_DENSITY", "MUSCLE_DENSITY", "POISSON", "CAVITY_YOUNG", "CAVITY_DENSITY", "FAT_DEEP_YOUNG", "FAT_DEEP_DENSITY", "GLAND_YOUNG", "GLAND_DENSITY", "GLAND_DAMPING", "VISCERA_YOUNG", "VISCERA_DENSITY", "VISCERA_POISSON")
 ABOVE_HIP = 0.02  # m above the hip bones' top: where the region is cut at the waist. 10 keeps the whole body
 RAMP = 1.0  # s from the rest pose into the walk's first pose, so the tissue isn't jolted
 SETTLE = 0.5  # s held in the first pose before frame 1
@@ -84,7 +84,9 @@ def moved(M, p):
 
 def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
     g = globals()
-    tissue = {k: v for k, v in json.load(open(TISSUE)).items() if not k.startswith("_")}
+    raw = json.load(open(TISSUE))
+    regions = raw.pop("REGIONS", {})
+    tissue = {k: v for k, v in raw.items() if not k.startswith("_")}
     if set(tissue) != set(TISSUE_KEYS):
         raise ValueError(f"{TISSUE} must give exactly {', '.join(TISSUE_KEYS)}")
     g.update(tissue)
@@ -94,6 +96,9 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
     g["BONE_TEST"] = int(settings["BONE_TEST"])
     for o in overrides:
         k, v = o.split("=")
+        if k == "REGIONS":  # a file with its own table, for this run
+            regions = json.load(open(v))
+            continue
         if k not in g or k.startswith("_") or not isinstance(g[k], (int, float)):
             raise ValueError(f"unknown value {k}")
         g[k] = type(g[k])(float(v))
@@ -107,6 +112,7 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
     keep, used, tets = region(L["nodes"].astype(float), L["tets"], z_top)
     nodes = L["nodes"].astype(float)[used]
     label = L["tet_label"][keep]
+    zone_of_tet = L["tet_zone"][keep] if "tet_zone" in L.files else None  # layers made before the zones were kept have none
 
     # Each node's bone: the nearest bone vertex, among bones reaching below the cut
     # Only bones that hold some of the region's bone voxels: the hands hang below the waist in the rest pose but are outside the region,
@@ -138,15 +144,16 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
     cut = np.flatnonzero(near_cuts(nodes, cut_rings, CUT_PIN * h))
     driven = np.union1d(bone_nodes, cut)
 
-    young = np.choose(label, [MUSCLE_YOUNG, MUSCLE_YOUNG, FAT_YOUNG, SKIN_YOUNG, CAVITY_YOUNG])
-    density = np.choose(label, [MUSCLE_DENSITY, MUSCLE_DENSITY, FAT_DENSITY, SKIN_DENSITY, CAVITY_DENSITY])
     vox = np.floor((nodes[tets[::6]].mean(axis=1) - nodes.min(axis=0)) / h).astype(int)
+    table = tissue_regions.defaults({**g, "SKIN_DENSITY": SKIN_DENSITY}, body.LABELS)
+    values = tissue_regions.per_tet(label, zone_of_tet if zone_of_tet is not None else np.zeros(len(label), np.int16), np.arange(len(tets)) // 6, vox, table, regions, body.LABELS, body.ZONES)
+    young, density = values["young"], values["density"]
     if len(tets) % 6:
         raise ValueError("the region must keep whole voxels")
     colours = xpbd.voxel_colours(vox, np.arange(len(tets)) // 6)
 
     wp.init()
-    s = xpbd.Solver(nodes, tets, colours, density, young, POISSON, damping=DAMPING)
+    s = xpbd.Solver(nodes, tets, colours, density, young, values["poisson"], damping=tissue_regions.node_values(tets, values["damping"], len(nodes)))
     s.drive(driven, nodes[driven], all_rest=nodes, bone=node_bone[driven], all_bone=node_bone, n_bones=len(names))
     dt = 1 / fps
     eye = np.repeat(np.eye(4)[None], len(names), axis=0)
@@ -234,7 +241,7 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
 
     walking = [r for r in rows if r["walking"]]
     zones = sorted({z for r in rows for z in r["zone_motion"]})
-    summary = {"declared": {k: g[k] for k in TISSUE_KEYS + ("ABOVE_HIP", "RAMP", "SETTLE", "HOLD", "CUT_PIN", "CHECK_CLEAR", "SKIN_DENSITY", "VOLUME_EVERY", "BONE_TEST")},
+    summary = {"declared": {k: g[k] for k in TISSUE_KEYS + ("ABOVE_HIP", "RAMP", "SETTLE", "HOLD", "CUT_PIN", "CHECK_CLEAR", "SKIN_DENSITY", "VOLUME_EVERY", "BONE_TEST")}, "regions": regions,
                "cuts": len(cut_rings),
                "gpu": wp.get_device("cuda:0").name, "tetrahedra": int(len(tets)), "nodes": int(len(nodes)), "driven_nodes": int(len(driven)),
                "bones": names, "frames_walking": n_walk, "ms_per_frame": {"median": round(float(np.median(ms)), 1), "max": round(float(np.max(ms)), 1)},

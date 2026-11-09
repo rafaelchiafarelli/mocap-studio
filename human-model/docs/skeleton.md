@@ -74,3 +74,18 @@ Measured on the woman (`blender/walk_check.py`): height changes at most 8 mm a f
 - Facial bones are lumps at CT's 1.5 mm; MPFB's eyes and teeth don't sit exactly in the donor's sockets.
 
 Code: `hmcore/skeleton.py`, `hmcore/jaw.py`, `hmcore/joints.py`, `hmcore/parametric.py`, `hmcore/gait.py`, `blender/assemble.py`, `blender/posing.py`, `blender/walk.py`, `blender/motion_check.py`, `blender/breath_check.py`.
+
+
+## Bones from measures (body-type-selection)
+
+`hmcore/bone_targets.py` turns a resolved sheet into target sizes. On the neutral bodies (2026-11-08, `tools/bone_neutral.py`), the targets come from the bodies' own measures, so they match by construction, within the rounding of the tape's measures:
+
+| | Woman, today | Woman, targets | Man, today | Man, targets |
+|---|---|---|---|---|
+| Biacromial | 33.2 cm | 33.2 cm | 39.4 cm | 39.4 cm |
+| Pelvis width | 25.1 cm | 25.1 cm | 23.9 cm | 23.9 cm |
+| Trunk length | 63.0 cm | 63.0 cm | 65.6 cm | 65.6 cm |
+| Thigh | 37.2 cm | 37.2 cm | 41.8 cm | 41.8 cm |
+| Shin | 37.9 cm | 37.9 cm | 43.6 cm | 43.6 cm |
+| Humerus | 23.2 cm | 23.2 cm | 25.2 cm | 25.2 cm |
+| Forearm | 21.1 cm | 21.1 cm | 26.7 cm | 26.7 cm |

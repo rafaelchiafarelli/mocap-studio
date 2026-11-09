@@ -53,7 +53,7 @@ def test_report_masses_come_from_inside_the_skin():
     import sys, os
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tools"))
     import body_report
-    built = {"litres": {"bone": 3.0, "muscle": 17.0, "fat": 11.0, "skin": 11.0, "cavity": 7.0}, "enclosed_litres": 45.0, "skin_area_m2": 1.2}
+    built = {"litres": {"bone": 3.0, "muscle": 17.0, "fat": 11.0, "skin": 11.0, "cavity": 7.0, "fat_deep": 0.0}, "enclosed_litres": 45.0, "skin_area_m2": 1.2}
     litres = body_report.inside_skin(built)
     assert litres["skin"] == pytest.approx(1.2 * body_report.REAL_SKIN_MM)
     assert litres["fat"] == pytest.approx(45.0 - 3.0 - 17.0 - 7.0 - 1.8)
@@ -82,3 +82,78 @@ def test_near_a_cut_follows_the_cut_skins_border():
     assert len(planes) == 2
     pts = np.array([[0, 0, 1.2], [0, 0, 0.5], [0, 0, -0.3]])
     assert body.near_a_cut(pts, {}, planes).tolist() == [True, False, True]
+
+
+def test_every_tetrahedron_knows_its_voxels_zone():
+    shape = (3, 2, 2)
+    included = np.zeros(12, bool)
+    included[[0, 5, 7]] = True  # three voxels in the flat grid
+    zone_of_included = np.array([4, 7, 2], np.int16)
+    vox = np.array([[0, 0, 0], [1, 0, 1], [1, 1, 1]])  # flat indices 0, 5 and 7, in grid order
+    tet_voxel = np.array([0, 0, 1, 2, 2])
+    assert body.tet_zones(zone_of_included, included, shape, vox, tet_voxel).tolist() == [4, 4, 7, 2, 2]
+
+
+def test_the_buttocks_divide_by_height_and_side():
+    points = np.array([[0.01, 0, 0.9], [0.1, 0, 0.9], [0.01, 0, 0.8], [0.1, 0, 0.8], [0.05, 0, 0.85]])
+    zone = np.array(["buttocks"] * 4 + ["hips"], object)
+    out = body.divide_zones(points, zone)
+    assert out.tolist() == ["buttocks_upper_center", "buttocks_upper_side", "buttocks_lower_center", "buttocks_lower_side", "hips"]
+
+
+def test_the_breast_divides_by_side():
+    assert body.divide_zones(np.array([[0.1, 0, 1.3], [-0.1, 0, 1.3]]), np.array(["breast", "breast"], object)).tolist() == ["breast_L", "breast_R"]
+
+
+@pytest.mark.parametrize("sex,parent_breast,parent_buttocks", [("female", 15, 30), ("male", None, None)])
+def test_the_new_zones_keep_todays_fat(sex, parent_breast, parent_buttocks):
+    import json, os
+    fat = json.load(open(os.path.join(os.path.dirname(__file__), "..", "data", f"body_fat_{sex}.json")))["fat_mm"]
+    assert set(fat) == set(body.ZONES)
+    breast = {fat[z] for z in body.BREAST_ZONES}
+    buttocks = {fat[z] for z in body.GLUTEUS_ZONES}
+    assert len(breast) == 1 and len(buttocks) == 1
+    if parent_breast:
+        assert breast == {parent_breast} and buttocks == {parent_buttocks}
+
+
+def _voxels(n=4):
+    return dict(d_bone=np.full(n, 0.05), inside=np.ones(n, bool), in_bone=np.zeros(n, bool), in_chest=np.zeros(n, bool), in_trunk=np.zeros(n, bool),
+                front_of_spine=np.ones(n, bool), chest_bone=np.zeros(n, bool), breast=np.zeros(n, bool), h=0.005,
+                s={"abdominal_wall_mm": 0.015, "cavity_bone_gap_mm": 0.005, "pectoral_mm": 0.015}, skin_band_voxels=1)
+
+
+def test_fat_splits_in_two_layers_only_where_it_is_thick_enough():
+    d_skin = np.array([0.012, 0.022, 0.012, 0.009])  # m under the skin
+    t_fat = np.array([0.030, 0.030, 0.008, 0.009])   # thick, thick, thin, thin
+    t_superficial = t_fat * 0.5
+    lab = body.label_voxels(d_skin, t_fat, t_superficial, **_voxels())
+    assert lab.tolist() == [body.FAT, body.FAT_DEEP, body.MUSCLE, body.MUSCLE]
+
+
+def test_two_layers_only_change_the_label_not_where_the_fat_ends():
+    d_skin = np.array([0.005, 0.02, 0.025])
+    t_fat = np.full(3, 0.03)
+    a = body.label_voxels(d_skin, t_fat, t_fat, **_voxels(3))
+    b = body.label_voxels(d_skin, t_fat, t_fat * 0.4, **_voxels(3))
+    assert ((a == body.FAT) == ((b == body.FAT) | (b == body.FAT_DEEP))).all()
+
+
+def test_the_gland_is_the_breasts_fat_deep_under_the_skin():
+    v = _voxels(3)
+    v["breast"], v["s"] = np.ones(3, bool), {**v["s"], "gland_skin_mm": 0.012}
+    d_skin = np.array([0.008, 0.02, 0.02])
+    t_fat = np.full(3, 0.03)
+    lab = body.label_voxels(d_skin, t_fat, t_fat, gland=True, **v)
+    assert lab.tolist() == [body.FAT, body.GLAND, body.GLAND]
+    assert body.GLAND not in body.label_voxels(d_skin, t_fat, t_fat, gland=False, **v)  # no gland for the man
+
+
+def test_the_bellys_viscera_are_apart_from_the_chest():
+    v = _voxels(3)
+    v["in_trunk"] = np.ones(3, bool)
+    v["in_chest"] = np.array([True, False, False])
+    d_skin = np.array([0.06, 0.06, 0.01])
+    t_fat = np.full(3, 0.02)
+    lab = body.label_voxels(d_skin, t_fat, t_fat, **v)
+    assert lab.tolist() == [body.CAVITY, body.VISCERA, body.FAT]

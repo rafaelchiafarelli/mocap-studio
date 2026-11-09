@@ -16,3 +16,5 @@ Task 1, and epic `shapes`.
 ## Pre-work
 
 None.
+
+**Status:** Done (2026-11-08): the button runs fast_review.py up to the layers and tools/character_check.py; the check's logic is unit-tested, the button itself isn't exercised, since no body was computed by this session's instruction.

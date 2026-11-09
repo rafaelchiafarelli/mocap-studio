@@ -20,3 +20,5 @@ Epic `character-sheet`.
 ## Pre-work
 
 None.
+
+**Status:** Done (2026-11-08); installed in Blender and confirmed registered. Using it in the interface is left to Rafael.

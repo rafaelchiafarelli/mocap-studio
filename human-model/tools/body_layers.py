@@ -1,5 +1,5 @@
 """The whole woman in layers, at rest (task muscle-physics/body-at-rest/1).
-    hm.sh --gpu python human-model/tools/body_layers.py BUILD_DIR NAME OUT_DIR [fat.<zone>=mm ...] [structure.<name>=value ...] [VOXEL=m] [SKIN=skin_fit.npz]
+    hm.sh --gpu python human-model/tools/body_layers.py BUILD_DIR NAME OUT_DIR [fat.<zone>=mm ...] [structure.<name>=value ...] [VOXEL=m] [SKIN=skin_fit.npz] [FAT_TABLE=fat_table.json]
 SKIN takes the skin from tools/skin_over_bone.py in place of the build's.
 Reads <NAME>.export.npz, .export.json and .bones.npz from BUILD_DIR, the fat per zone from data/body_fat_<sex>.json and the cube's size from data/simulation.json (VOXEL=m overrides it for this run).
 Writes to OUT_DIR, every step numbered: 01_skin_cut.ply, 02_skin_capped.ply, 03_zones.ply, 04_fat_thickness.ply (coloured),
@@ -13,7 +13,7 @@ from hmcore import body, fit, layers, meshgpu
 
 N_BODY = 13380  # MakeHuman's body vertices come first; helpers follow, as in blender/export_blend.py
 DATA =os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
-COLORS = {"bone": (230, 220, 190), "muscle": (155, 30, 25), "fat": (240, 205, 90), "skin": (215, 165, 140), "cavity": (110, 140, 200)}
+COLORS = {"bone": (230, 220, 190), "muscle": (155, 30, 25), "fat": (240, 205, 90), "skin": (215, 165, 140), "cavity": (110, 140, 200), "fat_deep": (225, 175, 70), "gland": (220, 130, 150), "viscera": (150, 110, 190)}
 
 
 def zone_colors(zone_names):
@@ -56,7 +56,7 @@ def measure(r, skin, bones, fat_mm, gpu_mesh, rig):
     closest = sorted(((v["closest_to_skin_mm"], k) for k, v in report.items() if v["closest_to_skin_mm"] is not None))[:10]
 
     grid_lab = r["labels_clean"]
-    under = r["centres"][(grid_lab == body.MUSCLE) | (grid_lab == body.CAVITY) | (grid_lab == body.BONE)]
+    under = r["centres"][(grid_lab == body.MUSCLE) | (grid_lab == body.CAVITY) | (grid_lab == body.VISCERA) | (grid_lab == body.BONE)]
     ids = r["skin_ids"]
     actual = cKDTree(under).query(skin[ids])[0] - r["h"] / 2
     fat = {}
@@ -89,6 +89,11 @@ def main(build_dir, name, out_dir, overrides):
         if k == "SKIN":
             skin_file = val
             continue
+        if k == "FAT_TABLE":  # each zone's fat, from tools/outward_skin.py, in place of the table's
+            table = json.load(open(val))
+            fat_mm.update(table["fat_mm"])
+            structure.update(table.get("structure") or {})
+            continue
         group, _, key = k.partition(".")
         table = {"fat": fat_mm, "structure": structure}.get(group)
         if table is None or key not in table:
@@ -103,7 +108,7 @@ def main(build_dir, name, out_dir, overrides):
 
     wp.init()
     t0 = time.time()
-    r = body.build(skin, tris, meta["bones"], bones, fat_mm, structure, VOXEL, meshgpu.Mesh, groups=meta["groups"])
+    r = body.build(skin, tris, meta["bones"], bones, fat_mm, structure, VOXEL, meshgpu.Mesh, groups=meta["groups"], deep_share=cfg.get("fat_deep_share"), gland=sex == "female")
     seconds = time.time() - t0
     m = measure(r, skin, bones, fat_mm, meshgpu.Mesh, meta["bones"])
 
@@ -125,7 +130,7 @@ def main(build_dir, name, out_dir, overrides):
         layers.write_ply(f"{out_dir}/07_cutaway_{label}.ply", r["nodes"], surfaces[f"cutaway_{label}"])
 
     np.savez_compressed(f"{out_dir}/{name}.body_layers.npz", nodes=r["nodes"].astype(np.float32), tets=r["tets"].astype(np.int32),
-                        tet_label=r["tet_label"].astype(np.int8), skin_ids=ids.astype(np.int32), skin_tet=r["skin_tet"].astype(np.int32),
+                        tet_label=r["tet_label"].astype(np.int8), tet_zone=r["tet_zone"].astype(np.int16), zone_names=np.array(body.ZONES), skin_ids=ids.astype(np.int32), skin_tet=r["skin_tet"].astype(np.int32),
                         skin_bary=r["skin_bary"].astype(np.float32), patch=r["patch"].astype(np.int32), skin=skin.astype(np.float32),
                         zone=np.array([z or "" for z in r["zone"]]), thickness=r["thickness"].astype(np.float32),
                         origin=r["origin"], shape=r["shape"], h=r["h"], labels_clean=r["labels_clean"],

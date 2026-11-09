@@ -22,3 +22,5 @@ None.
 ## Stop and bring to Rafael if
 
 - The rig (the joints MPFB gives) can't follow bones placed this way: the hybrid path needs rethinking.
+
+**Status:** Done (2026-11-08), unit-tested on its pure parts; the comparison on the two neutral bodies, and whether the rig follows, wait for bodies to be computed, by Rafael's instruction.

@@ -1,0 +1,28 @@
+{
+ "_about": "Muscle thickness per zone, mm, from the bones and the trunk's cavity to where the fat starts: the neutral female body in layers (tools/muscle_table.py on female.body_layers.npz). A character's biotype scales it. Edit to change it.",
+ "muscle_mm": {
+  "belly": 8.8,
+  "breast_L": 31.6,
+  "breast_R": 31.6,
+  "buttocks_upper_center": 0.0,
+  "buttocks_upper_side": 0.0,
+  "buttocks_lower_center": 0.0,
+  "buttocks_lower_side": 0.0,
+  "calf_back": 12.6,
+  "calf_front": 14.6,
+  "chest": 1.9,
+  "flanks": 0.0,
+  "forearm": 7.3,
+  "hips": 0.7,
+  "knee": 5.1,
+  "lower_back": 0.0,
+  "neck": 13.8,
+  "thigh_back": 33.3,
+  "thigh_front": 32.7,
+  "thigh_inner": 35.6,
+  "thigh_outer": 17.5,
+  "upper_arm_back": 18.0,
+  "upper_arm_front": 21.0,
+  "upper_back": 8.7
+ }
+}

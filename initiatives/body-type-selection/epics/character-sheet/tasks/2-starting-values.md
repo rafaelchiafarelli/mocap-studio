@@ -22,3 +22,5 @@ Task 1.
 ## Pre-work
 
 None.
+
+**Status:** Done (2026-11-08).

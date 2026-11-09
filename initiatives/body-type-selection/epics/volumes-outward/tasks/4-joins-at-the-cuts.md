@@ -16,3 +16,5 @@ Task 3.
 ## Pre-work
 
 None.
+
+**Status:** Done (2026-11-08), unit-tested; the steps are measured per ring in the run's skin_fit.json. Not measured on the eight bodies yet: that belongs to the run at the end of this session.
