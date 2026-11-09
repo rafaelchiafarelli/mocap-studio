@@ -125,7 +125,7 @@ def main(build_dir, name, out_dir, overrides):
         layers.write_ply(f"{out_dir}/07_cutaway_{label}.ply", r["nodes"], surfaces[f"cutaway_{label}"])
 
     np.savez_compressed(f"{out_dir}/{name}.body_layers.npz", nodes=r["nodes"].astype(np.float32), tets=r["tets"].astype(np.int32),
-                        tet_label=r["tet_label"].astype(np.int8), skin_ids=ids.astype(np.int32), skin_tet=r["skin_tet"].astype(np.int32),
+                        tet_label=r["tet_label"].astype(np.int8), tet_zone=r["tet_zone"].astype(np.int16), zone_names=np.array(body.ZONES), skin_ids=ids.astype(np.int32), skin_tet=r["skin_tet"].astype(np.int32),
                         skin_bary=r["skin_bary"].astype(np.float32), patch=r["patch"].astype(np.int32), skin=skin.astype(np.float32),
                         zone=np.array([z or "" for z in r["zone"]]), thickness=r["thickness"].astype(np.float32),
                         origin=r["origin"], shape=r["shape"], h=r["h"], labels_clean=r["labels_clean"],

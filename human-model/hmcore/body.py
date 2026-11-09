@@ -190,6 +190,13 @@ def island_cleanup(grid_labels, label, into, min_voxels):
     return int(m.sum())
 
 
+def tet_zones(zone_of_included, included, shape, vox, tet_voxel):
+    """The zone index of each tetrahedron: zone_of_included gives one for each included voxel, in grid order (included is the flat mask over the whole grid)."""
+    grid_zone = np.full(int(np.prod(shape)), -1, np.int16)
+    grid_zone[included] = zone_of_included
+    return grid_zone.reshape(shape)[tuple(vox.T)][tet_voxel]
+
+
 def outward(verts, tris):
     """fit.outward. Builds made before bug human-model/11 was fixed have the left leg's bones inside out, and a winding number of -1
     called them outside (body_v2 had no left femur), so every bone is still turned outward before use."""
@@ -262,8 +269,10 @@ def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None):
              "cavity_to_muscle": island_cleanup(clean, CAVITY, MUSCLE, int(structure["min_island_voxels"]))}
     nodes, tets, tet_voxel, vox = layers.tetrahedra(clean >= 0, origin, h)
     tet_label = clean[tuple(vox.T)][tet_voxel]
+    zone_index = {z: i for i, z in enumerate(ZONES)}
+    tet_zone = tet_zones(np.array([zone_index[z] for z in z_of], np.int16), included, shape, vox, tet_voxel)
     skin_tet, skin_bary, skin_score = layers.tie(skin[ids], nodes, tets, tet_voxel, vox, origin, h)
     return dict(patch=patch, skin_ids=ids, capped_verts=closed_v, capped_tris=closed_t, zone=zone, thickness=thick,
                 origin=origin, shape=shape, h=h, centres=centres, included=included, labels_raw=raw, labels_clean=clean.ravel(), moved=moved,
-                nodes=nodes, tets=tets, tet_voxel=tet_voxel, vox=vox, tet_label=tet_label,
+                nodes=nodes, tets=tets, tet_voxel=tet_voxel, vox=vox, tet_label=tet_label, tet_zone=tet_zone,
                 skin_tet=skin_tet, skin_bary=skin_bary, skin_score=skin_score, bone_names=names)

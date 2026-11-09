@@ -82,3 +82,13 @@ def test_near_a_cut_follows_the_cut_skins_border():
     assert len(planes) == 2
     pts = np.array([[0, 0, 1.2], [0, 0, 0.5], [0, 0, -0.3]])
     assert body.near_a_cut(pts, {}, planes).tolist() == [True, False, True]
+
+
+def test_every_tetrahedron_knows_its_voxels_zone():
+    shape = (3, 2, 2)
+    included = np.zeros(12, bool)
+    included[[0, 5, 7]] = True  # three voxels in the flat grid
+    zone_of_included = np.array([4, 7, 2], np.int16)
+    vox = np.array([[0, 0, 0], [1, 0, 1], [1, 1, 1]])  # flat indices 0, 5 and 7, in grid order
+    tet_voxel = np.array([0, 0, 1, 2, 2])
+    assert body.tet_zones(zone_of_included, included, shape, vox, tet_voxel).tolist() == [4, 4, 7, 2, 2]
