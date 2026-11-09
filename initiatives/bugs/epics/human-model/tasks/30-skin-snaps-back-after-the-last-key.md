@@ -4,4 +4,4 @@
 **Where:** `human-model/blender/body_walk_bake.py`, `animated`: the last shape key is keyed back to 0 one frame after its own, leaving only the Basis, which is the first frame. Bones keep their last key. `human-model/blender/shared_file.py` leaves the timeline at Blender's 250.
 **How to reproduce:** play `review\fast_review_todas.blend` past the end of the walk.
 **Impact:** the end of every walk in the shared file. The frame Rafael saw (162) and the one measured (169) differ, unexplained.
-**Status:** Open
+**Status:** Fixed (2026-11-09) — task body-type-selection/muscle-bodies/1
