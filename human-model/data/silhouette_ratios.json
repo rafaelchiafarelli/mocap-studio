@@ -1,0 +1,18 @@
+{
+ "_about": "Each silhouette's target proportions, for initiative body-type-selection; no code reads this yet. Each range is [least, most]; null is open. waist_hip: waist girth over buttock girth. bust_hip: bust girth over buttock girth. shoulder_hip: bideltoid breadth over hip breadth. Cuts proposed from ANSUR II's percentiles (US Army personnel) and agreed by Rafael on 2026-11-08. Edit to change them.",
+ "width_growth_per_height": 0.7,
+ "female": {
+  "ampulheta": {"waist_hip": [null, 0.80], "bust_hip": [0.89, 0.96], "shoulder_hip": [1.23, 1.32]},
+  "pera": {"waist_hip": [0.80, 0.88], "bust_hip": [null, 0.89], "shoulder_hip": [null, 1.23]},
+  "triangulo_invertido": {"waist_hip": [0.80, 0.88], "bust_hip": [0.96, null], "shoulder_hip": [1.32, null]},
+  "retangulo": {"waist_hip": [0.88, null], "bust_hip": [0.89, 0.96], "shoulder_hip": [1.23, 1.32]},
+  "oval": {"waist_hip": [0.95, null], "bust_hip": null, "shoulder_hip": null}
+ },
+ "male": {
+  "trapezio": {"waist_hip": [0.88, 0.92], "shoulder_hip": [1.53, null]},
+  "triangulo_invertido": {"waist_hip": [null, 0.88], "shoulder_hip": [1.53, null]},
+  "retangulo": {"waist_hip": [0.92, 0.96], "shoulder_hip": [1.43, 1.53]},
+  "triangulo": {"waist_hip": [0.88, 0.96], "shoulder_hip": [null, 1.43]},
+  "oval": {"waist_hip": [1.02, null], "shoulder_hip": null}
+ }
+}

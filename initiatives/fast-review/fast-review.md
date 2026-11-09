@@ -20,7 +20,7 @@
 
 The table is in `human-model/docs/muscle-physics.md`, section "Where a walk's time goes". With the new defaults (5 mm, volumes every 10 frames), a simulation takes 3 to 3.5 minutes instead of 8.5.
 
-The bone test stays on: it costs about 40 s. A "safe rule" that would replace it is left for later (Rafael, 2026-11-08).
+The bone test is off by default, to generate faster, and is asked for on one body when a bump shows (`BONE_TEST=1`, Rafael, 2026-11-08). A "safe rule" that would replace it is left for later.
 
 ## To work out when planning
 

@@ -257,7 +257,7 @@
         <mxCell id="c9" value="&lt;b&gt;↻ 168 quadros · 144 andando + 24 parado no fim&lt;/b&gt;" style="rounded=1;arcSize=1;whiteSpace=wrap;html=1;fontSize=11;align=left;verticalAlign=top;spacingLeft=6;fillColor=none;strokeColor=#888888;dashed=1;" vertex="1" parent="1">
           <mxGeometry x="86" y="118" width="1084" height="728" as="geometry" />
         </mxCell>
-        <mxCell id="c10" value="&lt;b&gt;↻ só nos 144 quadros andando&lt;/b&gt;" style="rounded=1;arcSize=1;whiteSpace=wrap;html=1;fontSize=11;align=left;verticalAlign=top;spacingLeft=6;fillColor=none;strokeColor=#888888;dashed=1;" vertex="1" parent="1">
+        <mxCell id="c10" value="&lt;b&gt;↻ se pedido, nos 144 quadros andando&lt;/b&gt;" style="rounded=1;arcSize=1;whiteSpace=wrap;html=1;fontSize=11;align=left;verticalAlign=top;spacingLeft=6;fillColor=none;strokeColor=#888888;dashed=1;" vertex="1" parent="1">
           <mxGeometry x="100" y="684" width="1056" height="98" as="geometry" />
         </mxCell>
         <mxCell id="c11" value="&lt;b&gt;15&lt;/b&gt;" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;fillColor=#333333;strokeColor=#333333;fontColor=#ffffff;" vertex="1" parent="1">
@@ -317,7 +317,7 @@
         <mxCell id="c26" value="Soma o volume de cada tecido em todos os tetraedros." style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fontSize=11;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
           <mxGeometry x="140" y="542" width="300" height="46" as="geometry" />
         </mxCell>
-        <mxCell id="c27" value="procura osso atravessando a pele deste quadro (página C · etapa 14)" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
+        <mxCell id="c27" value="se pedido: procura osso atravessando a pele deste quadro (página C · etapa 14)" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=bottom;fontSize=11;" vertex="1" parent="1">
           <mxGeometry x="302" y="622" width="316" height="38" as="geometry" />
         </mxCell>
         <mxCell id="c28" value="" style="html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#d79b00;" edge="1" parent="1">
@@ -486,7 +486,7 @@
         <mxCell id="c1" value="&lt;b style='font-size:18px'&gt;C · etapa 14 · osso atravessando a pele&lt;/b&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
           <mxGeometry x="40" y="14" width="770" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="c2" value="&lt;font color='#555555'&gt;Só mede: nada daqui volta para o cálculo do movimento.&lt;/font&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+        <mxCell id="c2" value="&lt;font color='#555555'&gt;Só roda quando pedido. Só mede: nada daqui volta para o cálculo do movimento.&lt;/font&gt;" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
           <mxGeometry x="40" y="46" width="770" height="24" as="geometry" />
         </mxCell>
         <mxCell id="c3" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#999999;" edge="1" parent="1">
