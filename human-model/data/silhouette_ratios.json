@@ -1,6 +1,7 @@
 {
- "_about": "Each silhouette's target proportions, for initiative body-type-selection; no code reads this yet. Each range is [least, most]; null is open. waist_hip: waist girth over buttock girth. bust_hip: bust girth over buttock girth. shoulder_hip: bideltoid breadth over hip breadth. Cuts proposed from ANSUR II's percentiles (US Army personnel) and agreed by Rafael on 2026-11-08. Edit to change them.",
+ "_about": "Each silhouette's target proportions, for initiative body-type-selection; read by hmcore/character.py. Each range is [least, most]; null is open. waist_hip: waist girth over buttock girth. bust_hip: bust girth over buttock girth. shoulder_hip: bideltoid breadth over hip breadth. Cuts proposed from ANSUR II's percentiles (US Army personnel) and agreed by Rafael on 2026-11-08. Edit to change them.",
  "width_growth_per_height": 0.7,
+ "ansur_proxies": {"_about": "ANSUR II means, computed 2026-11-08 from models/ansur-ii: bideltoid breadth over biacromial breadth, and hip breadth over buttock girth. They turn the tape's shoulder width and hip girth into the two breadths shoulder_hip is defined on.", "female": {"bideltoid_over_biacromial": 1.233, "hip_breadth_over_hip_girth": 0.347}, "male": {"bideltoid_over_biacromial": 1.228, "hip_breadth_over_hip_girth": 0.339}},
  "female": {
   "ampulheta": {"waist_hip": [null, 0.80], "bust_hip": [0.89, 0.96], "shoulder_hip": [1.23, 1.32]},
   "pera": {"waist_hip": [0.80, 0.88], "bust_hip": [null, 0.89], "shoulder_hip": [null, 1.23]},
