@@ -145,3 +145,16 @@ def test_a_turned_over_triangle_is_counted():
     assert outward.folded(v, v * np.array([1, 1, 1]), tris) == 0
     flipped = v * np.array([-1, 1, 1])
     assert outward.folded(v, flipped, tris) == 1
+
+
+def test_the_skins_move_fades_out_at_the_rings():
+    ring = np.array([[0.1, 0, 0.0], [-0.1, 0, 0.0], [0, 0.1, 0.0], [0, -0.1, 0.0]])
+    points = np.array([[0.1, 0, 0.0], [0.1, 0, 0.025], [0.1, 0, 0.05], [0.1, 0, 0.2]])
+    fade = outward.ring_fade(points, [ring], reach=0.05)
+    assert fade[0] == 0 and 0 < fade[1] < 1 and fade[2] == 1 and fade[3] == 1
+
+
+def test_a_step_at_the_rings_is_measured():
+    before = np.array([[0, 0, 0], [1, 0, 0], [2, 0, 0]], float)
+    after = before + np.array([[0, 0, 0.002], [0, 0, 0.0], [0, 0, 0.5]])
+    assert outward.ring_steps(before, after, [np.array([0, 1])]) == [2.0]

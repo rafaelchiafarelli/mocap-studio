@@ -104,3 +104,18 @@ def folded(before, after, tris):
     nb = np.cross(before[tris[:, 1]] - before[tris[:, 0]], before[tris[:, 2]] - before[tris[:, 0]])
     na = np.cross(after[tris[:, 1]] - after[tris[:, 0]], after[tris[:, 2]] - after[tris[:, 0]])
     return int((np.einsum("ij,ij->i", nb, na) < 0).sum())
+
+
+def ring_fade(points, rings, reach):
+    """1 far from the cut rings, 0 at them, fading smoothly over reach metres: multiplied into the skin's move, so it blends into the head's, hands' and feet's without a step. rings: arrays of points."""
+    d = np.full(len(points), np.inf)
+    for ring in rings:
+        from scipy.spatial import cKDTree
+        d = np.minimum(d, cKDTree(ring).query(points)[0])
+    t = np.clip(d / reach, 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+def ring_steps(before, after, rings):
+    """The most each cut ring's points moved, mm: the size of the step left at each join."""
+    return [round(float(np.linalg.norm(after[r] - before[r], axis=1).max()) * 1000, 2) for r in rings]

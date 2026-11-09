@@ -12,6 +12,7 @@ N_BODY = 13380  # as in blender/export_blend.py
 HERE = os.path.dirname(os.path.abspath(__file__))
 MARGIN = 0.08  # m around the first shape: how far the new surface may reach
 MOST_MOVE = 0.08  # m, the most a skin point moves
+RING_REACH = 0.05  # m over which the move fades out to the cut rings
 
 
 def past_cuts(point, planes, reach=0.35):
@@ -85,7 +86,9 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
     disp = np.zeros(skin.shape)
     disp[ids] = moved - skin[ids]
     disp = np.column_stack([body.smooth_on_surface(disp[:, k], patch, len(skin), iters) for k in range(3)])
-    new[ids] = skin[ids] + disp[ids]
+    rings = layers.boundary_loops(patch)
+    fade = outward.ring_fade(skin[ids], [skin[r] for r in rings], RING_REACH)
+    new[ids] = skin[ids] + disp[ids] * fade[:, None]
     full = e["verts"].astype(np.float32).copy()
     full[:N_BODY] = new
     push = np.linalg.norm(new - skin, axis=1)
@@ -94,7 +97,7 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
         json.dump({"fat_mm": {z: round(v * result["scale"], 2) for z, v in fat_mm.items()}, "scale": round(result["scale"], 3)}, f, indent=1)
     report = {"name": name, "voxel_m": voxel, "target_percent": target, "percent": round(result["percent"], 2), "reached_within_0_5": bool(result["reached"]), "fat_scale": round(result["scale"], 3),
               "muscle_scale": fields["muscle"]["value"], "skin_points_moved": int(len(ids)), "largest_move_mm": round(float(push.max()) * 1000, 1), "mean_move_mm": round(float(push[ids].mean()) * 1000, 1),
-              "triangles_turned_over": outward.folded(skin, new, patch), "triangles": int(len(patch)), "regions_bones": len(region)}
+              "ring_steps_mm": outward.ring_steps(skin, new, rings), "triangles_turned_over": outward.folded(skin, new, patch), "triangles": int(len(patch)), "regions_bones": len(region)}
     with open(os.path.join(out_dir, f"{name}.skin_fit.json"), "w") as f:
         json.dump(report, f, indent=1)
     print(json.dumps(report, indent=1))
