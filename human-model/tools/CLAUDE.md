@@ -15,7 +15,7 @@
 - `build_bones.py`: the fitted skeleton of one individual.
 - `bone_neutral.py`: what a build's bones and rig measure in metres, for `data/bone_proportions.json` and the table in `docs/skeleton.md`.
 - `character_check.py`: one check on a character's body at rest, as a short report; warns and doesn't block (WSL, no Docker).
-- `outward_skin.py`: the bones, the trunk's cavity and the muscles attached to the bones as grids, the first shape's skin moved out only where they need it, the fat as what's left and reported; writes `skin_fit.npz`, `fat_table.json` and `tissue.npz` for `body_layers.py` (`hm.sh --gpu`).
+- `outward_skin.py`: the woman's skin first grows with the breast (`hmcore/breast_skin.py`, the projection solved so the tape reads the sheet's bust unless a fader gives it); then the bones, the trunk's cavity and the muscles attached to the bones as grids, and the skin moved out only where they need it; the fat is what's left, and reported; writes `skin_fit.npz`, `fat_table.json` and `tissue.npz` for `body_layers.py` (`hm.sh --gpu`).
 - `spec.py`: adds the jaw table and limits to a skeleton's metadata.
 - `build_muscles.py`, `build_fields.py`: muscle list and skin fields of one individual.
 - `solve_take.py`: a take's muscle activations, from shapes and from landmarks.

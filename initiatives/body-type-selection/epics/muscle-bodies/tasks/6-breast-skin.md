@@ -19,3 +19,5 @@ Epic `muscle-bodies`, tasks 2 and 4.
 ## Pre-work
 
 None.
+
+**Status:** Partly done (2026-11-09): the skin grows with the breast, checked in stills and by Rafael's faders; the verdict is his, and the walked body has not yet been regenerated with the last two fixes.
