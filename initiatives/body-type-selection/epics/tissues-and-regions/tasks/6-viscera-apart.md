@@ -25,3 +25,5 @@ None.
 ## Stop and bring to Rafael if
 
 - It only holds its volume at a cost in steps that slows the whole body noticeably.
+
+**Status:** Done (2026-11-08), label and values; the measured part (the viscera's volume through a walk, whether they need more steps per frame) is not done, since no body was computed in this session, by Rafael's instruction.

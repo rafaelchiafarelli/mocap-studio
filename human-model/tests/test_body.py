@@ -147,3 +147,13 @@ def test_the_gland_is_the_breasts_fat_deep_under_the_skin():
     lab = body.label_voxels(d_skin, t_fat, t_fat, gland=True, **v)
     assert lab.tolist() == [body.FAT, body.GLAND, body.GLAND]
     assert body.GLAND not in body.label_voxels(d_skin, t_fat, t_fat, gland=False, **v)  # no gland for the man
+
+
+def test_the_bellys_viscera_are_apart_from_the_chest():
+    v = _voxels(3)
+    v["in_trunk"] = np.ones(3, bool)
+    v["in_chest"] = np.array([True, False, False])
+    d_skin = np.array([0.06, 0.06, 0.01])
+    t_fat = np.full(3, 0.02)
+    lab = body.label_voxels(d_skin, t_fat, t_fat, **v)
+    assert lab.tolist() == [body.CAVITY, body.VISCERA, body.FAT]
