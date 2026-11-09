@@ -99,7 +99,7 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
     extra = np.zeros(len(skin))
     extra[ids] = [depth[v] * (fat_mm[zone[v]] / max(base_fat_mm[zone[v]], 1e-6) - 1) + (typed_fat[zone[v]] / 1000 - depth[v] if zone[v] in typed_fat else 0.0) for v in ids]
     move = np.zeros(len(skin))
-    move[ids] = outward.push_needed(skin[ids], inner_sdf, origin, voxel) + extra[ids]
+    move[ids] = outward.push_needed_on_surface(skin, patch, inner_sdf, origin, voxel)[ids] + extra[ids]
     move = body.smooth_on_surface(move, patch, len(skin), iters)
     normals = outward.vertex_normals(skin, patch)
     rings = layers.boundary_loops(patch)
@@ -107,7 +107,7 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
     new = skin.copy()
     new[ids] = skin[ids] + normals[ids] * (move[ids] * fade)[:, None]
     # Smoothing takes the skin back in over each bump, so whatever is still short goes out once more
-    still = outward.push_needed(new[ids], inner_sdf, origin, voxel)
+    still = outward.push_needed_on_surface(new, patch, inner_sdf, origin, voxel)[ids]
     new[ids] += outward.vertex_normals(new, patch)[ids] * (still * fade)[:, None]
 
     full = e["verts"].astype(np.float32).copy()

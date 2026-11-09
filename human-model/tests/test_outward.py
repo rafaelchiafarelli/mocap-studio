@@ -115,3 +115,16 @@ def test_the_skin_goes_out_only_where_something_needs_it():
     points = np.array([[0.08, 0, 0], [0.2, 0, 0]])
     need = outward.push_needed(points, sdf, origin, h)
     assert need[0] == pytest.approx(0.04, abs=1.5 * h) and need[1] == 0.0
+
+
+def test_a_bone_between_the_vertices_is_seen():
+    h = 0.005
+    a = (np.arange(60) + 0.5) * h - 0.15
+    xyz = np.stack(np.meshgrid(a, a, a, indexing="ij"), axis=-1)
+    origin = np.full(3, -0.15)
+    ridge = (np.abs(xyz[..., 0]) < 0.01) & (np.abs(xyz[..., 1]) < 0.1) & (xyz[..., 2] < 0.02) & (xyz[..., 2] > -0.05)  # under the plate's middle
+    sdf = outward.signed_distance(ridge, h)
+    points = np.array([[-0.05, -0.05, 0], [0.05, -0.05, 0], [0.05, 0.05, 0], [-0.05, 0.05, 0]], float)
+    tris = np.array([[0, 1, 2], [0, 2, 3]])
+    assert (outward.push_needed(points, sdf, origin, h) == 0).all()
+    assert outward.push_needed_on_surface(points, tris, sdf, origin, h).min() > 0.01
