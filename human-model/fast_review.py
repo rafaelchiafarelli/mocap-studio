@@ -5,6 +5,7 @@ Stages, in order: build, tape, skin, layers, walk, dump, simulate, file. A NAME=
 structure.<name> to layers; depth.<prefix> and MAX_PUSH_MM to skin; the tissue values, VOLUME_EVERY and BONE_TEST to simulate); one that no
 stage knows stops the run before it starts. Results go to review/<today>/fast_review/<nickname>/<sex>/, with run.json and a log per stage.
 A nickname already used that day is refused, so nothing is overwritten.
+--render also makes the two videos of blender/body_walk_bake.py for each body, into its folder; off unless asked.
 --from STAGE --base EARLIER starts at STAGE and reads the stages before it from the earlier run, not copied; run.json records where each part came from, through chains of reuse, and a base run that lacks a needed stage's output is refused before anything runs."""
 import argparse, concurrent.futures, datetime, glob, json, os, re, subprocess, sys, time
 
@@ -16,6 +17,8 @@ PAIR_NAME = "mulher_e_homem.blend"
 LABELS = {"female": "mulher", "male": "homem"}
 STAGES = ("build", "tape", "skin", "layers", "walk", "dump", "simulate", "file")
 SIMULATE_SETTINGS = ("VOLUME_EVERY", "BONE_TEST")
+VIDEO_FPS = "24"  # as blender/walk.py's FPS
+VIDEOS = ("compare", "inside")  # body_walk_bake.py's two views
 WALK_CYCLES, WALK_STOP_STEPS = "4", "2"  # the 2 are the steps of the slow stop, as in docs/muscle-physics.md
 
 
@@ -88,7 +91,7 @@ def outputs(stage, folder, name):
             "file": {"body_blend": f"{folder}/body_walk.blend"}}[stage]
 
 
-def commands(stage, folder, name, sex, recipe, made, routed, here=HERE):
+def commands(stage, folder, name, sex, recipe, made, routed, here=HERE, render=False):
     """The commands of one stage. made: the outputs of the stages before it, as outputs() names them."""
     blender = [sys.executable, f"{here}/blender_run.py"]
     gpu = [f"{here}/hm.sh", "--gpu", "python"]
@@ -109,7 +112,10 @@ def commands(stage, folder, name, sex, recipe, made, routed, here=HERE):
     if stage == "simulate":
         return [[*gpu, f"{tools}/body_walk.py", made["layers"], made["bones"], made["dump"], f"{folder}/simulate", "ABOVE_HIP=10", *extra]]
     if stage == "file":
-        return [[*blender, f"{here}/blender/body_walk_bake.py", made["walked"], made["layers"], made["bones"], made["dump"], f"{folder}/body_walk.blend", "-"]]
+        bake = [*blender, f"{here}/blender/body_walk_bake.py", made["walked"], made["layers"], made["bones"], made["dump"], f"{folder}/body_walk.blend", f"{folder}/frames" if render else "-"]
+        if not render:
+            return [bake]
+        return [bake, *[["ffmpeg", "-y", "-framerate", VIDEO_FPS, "-i", f"{folder}/frames/{v}/%04d.png", "-c:v", "libx264", "-pix_fmt", "yuv420p", f"{folder}/{v}.mp4"] for v in VIDEOS]]
     raise ValueError(stage)
 
 
@@ -168,7 +174,7 @@ def run_stage(argv, log, cwd=HERE):
         return subprocess.call(argv, stdout=fh, stderr=subprocess.STDOUT, cwd=cwd)
 
 
-def run_body(nickname, sex, recipe, overrides, folder, execute=run_stage, reused=None):
+def run_body(nickname, sex, recipe, overrides, folder, execute=run_stage, reused=None, render=False):
     """Runs every stage of one body in order, past the ones in reused ({stage: entry} of an earlier run). Writes run.json after each. Raises StageFailed at the first that fails."""
     name = _json(recipe)["name"]
     routed = route(overrides, known_values(sex))
@@ -190,7 +196,7 @@ def run_body(nickname, sex, recipe, overrides, folder, execute=run_stage, reused
         record["stages"][stage] = entry
         save_record(folder, record)
         t0 = time.time()
-        for argv in commands(stage, folder, name, sex, recipe, made, routed):
+        for argv in commands(stage, folder, name, sex, recipe, made, routed, render=render):
             code = execute(argv, log)
             if code != 0:
                 entry.update(status="failed", seconds=round(time.time() - t0, 1), exit_code=code)
@@ -199,6 +205,8 @@ def run_body(nickname, sex, recipe, overrides, folder, execute=run_stage, reused
                 raise StageFailed(stage, log)
         entry.update(status="done", seconds=round(time.time() - t0, 1))
         made.update(entry["output"])
+        if render and stage == "file":
+            entry["output"].update({v: f"{folder}/{v}.mp4" for v in VIDEOS})
         save_record(folder, record)
     record["status"] = "done"
     save_record(folder, record)
@@ -211,14 +219,14 @@ def pair_command(run, here=HERE):
             f"{run}/male/body_walk.blend", f"{run}/{PAIR_NAME}", LABELS["female"], LABELS["male"]]
 
 
-def run_both(nickname, overrides, run, recipes, execute=run_stage, reused=None):
+def run_both(nickname, overrides, run, recipes, execute=run_stage, reused=None, render=False):
     """Both bodies side by side, each only waiting for its own previous stage. Returns (record, failures: {sex: StageFailed})."""
     t0 = time.time()
     record = {"nickname": nickname, "commit": commit(), "overrides": list(overrides), "status": "running", "bodies": {}}
     save_record(run, record)
     failures = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(BODIES)) as pool:
-        running = {sex: pool.submit(run_body, nickname, sex, recipes[sex], overrides, f"{run}/{sex}", execute, (reused or {}).get(sex)) for sex in BODIES}
+        running = {sex: pool.submit(run_body, nickname, sex, recipes[sex], overrides, f"{run}/{sex}", execute, (reused or {}).get(sex), render) for sex in BODIES}
     for sex, future in running.items():
         try:
             future.result()
@@ -247,6 +255,7 @@ def main(argv=None):
     ap.add_argument("--body", choices=BODIES)
     ap.add_argument("--from", dest="start", choices=STAGES, default=STAGES[0], help="the stage to start from; the ones before it are read from --base")
     ap.add_argument("--base", help="the earlier run's nickname, with --from")
+    ap.add_argument("--render", action="store_true", help="also make the two videos of each body")
     ap.add_argument("overrides", nargs="*", metavar="NAME=value")
     a = ap.parse_args(argv)
     day = datetime.date.today().isoformat()
@@ -268,12 +277,12 @@ def main(argv=None):
     recipes = {sex: os.path.join(DATA, "recipes", f"{sex}.json") for sex in bodies}
     if a.body:
         try:
-            run_body(a.nickname, a.body, recipes[a.body], a.overrides, f"{run}/{a.body}", reused=reused.get(a.body))
+            run_body(a.nickname, a.body, recipes[a.body], a.overrides, f"{run}/{a.body}", reused=reused.get(a.body), render=a.render)
         except StageFailed as e:
             sys.exit(str(e))
         print("done:", f"{run}/{a.body}")
         return
-    _, failures = run_both(a.nickname, a.overrides, run, recipes, reused=reused)
+    _, failures = run_both(a.nickname, a.overrides, run, recipes, reused=reused, render=a.render)
     if failures:
         sys.exit("\n".join(f"{sex}: {e}" for sex, e in failures.items()))
     print("done:", f"{run}/{PAIR_NAME}")

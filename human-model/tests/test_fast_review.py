@@ -175,3 +175,12 @@ def test_an_override_for_a_skipped_stage_is_refused():
     with pytest.raises(fr.Refused, match="VOXEL"):
         fr.check_start({"layers": ["VOXEL=0.01"]}, "simulate")
     fr.check_start({"simulate": ["FAT_YOUNG=3000"]}, "simulate")
+
+
+def test_videos_only_when_asked():
+    made = {"walked": "w", "layers": "l", "bones": "b", "dump": "d"}
+    plain = fr.commands("file", "/f", "n", "female", "r", made, {}, here="/h")
+    assert len(plain) == 1 and plain[0][-1] == "-"
+    asked = fr.commands("file", "/f", "n", "female", "r", made, {}, here="/h", render=True)
+    assert asked[0][-1] == "/f/frames" and [c[0] for c in asked[1:]] == ["ffmpeg", "ffmpeg"]
+    assert asked[1][-1] == "/f/compare.mp4" and asked[2][-1] == "/f/inside.mp4" and "/f/frames/inside/%04d.png" in asked[2]
