@@ -488,6 +488,7 @@ Measured on 2026-11-08 (investigation session), the man and the woman side by si
 
 - **Inside the man's loop at `c0`:** the physics 33 s, the bone test 36 s (ours and the current model's), everything else 369 s. Of that, about 300 s was summing each tissue's volume over all the tetrahedra, every frame (`c4` against `c0`). Physics, preparation and writing the file together are under a minute.
 - **The bone test and the volumes only measure.** `c0`, `c1` and `c4` give identical skin motion and inverted tetrahedra.
+- **Nothing in the solver checks collision** (`Solver._substeps` in `hmcore/xpbd.py`: the bones' positions, gravity, the tetrahedra, velocities). A bone stays under the skin only because of the tissue mesh between them, so where that tissue gives way a bone can come through; the bone test is what finds it.
 - **10 mm changes the motion** by up to 29% (the woman's breast, 19.6 to 13.9 mm). The skin band is one voxel thick, so at 10 mm the skin is twice as thick and any zone with less than 10 mm of fat loses it (the woman's calf front, forearm, neck and upper-arm front). Bones through the man's skin fall from 40 frames and 2.7 mm to 29 and 0.9, which that thicker skin may explain.
 
 **The defaults** (Rafael, 2026-11-08), in `data/simulation.json`, with an override per run for a character whose proportions do badly:

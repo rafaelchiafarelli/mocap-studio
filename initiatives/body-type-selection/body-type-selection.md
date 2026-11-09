@@ -18,9 +18,26 @@ Silhouettes he named:
 - **Female:** ampulheta, triângulo/pêra, triângulo invertido, retângulo, oval.
 - **Male:** trapézio, triângulo invertido, retângulo, triângulo, oval.
 
-## Specification under study (Rafael, 2026-11-08)
+## Specification and redesign (Rafael, 2026-11-08)
 
-From an investigation session; nothing here is built. It would change the order in which a body is made, so it needs a redesign agreed before tasks are written.
+Agreed in the investigation session that closed on 2026-11-08; nothing here is built yet. It changes the order in which a body is made.
+
+**The redesign.** Today: skin, then bones fitted inside it, then layers filled inward. Agreed: measures, bones, muscle, fat, and the skin as the result. The path is the hybrid one, in stages: the current sliders give a first shape from the measures, the layers set the skin's final position, and today's path stays until the new one beats it, with a body to judge at each stage.
+
+| Part | Today | New order | Impact |
+|---|---|---|---|
+| Input | sliders in a recipe | silhouette, biotype, height, body fat, measures, shapes, cup | new |
+| Bones | fitted inside the skin | calculated from the measures, once, when the character's design is finished; the CT shapes stay | large |
+| Muscle | sized by the skin | sized by the biotype, before the fat | large |
+| Fat | grows inward from the skin | grows outward from the muscle, in two layers, up to the body-fat percentage | large |
+| Skin | comes first | the result of the layers, on the same 13,380 points and the same rig | the hardest: head, hands and feet still have to join it at the neck, wrists and ankles |
+| Fit fixes (skin push, slimmed bones, narrowed ribs and feet) | needed | most should stop being needed | go away |
+| Cube mesh and tissue solver | values per tissue | the same, with values per region | small |
+| Walk, Blender file, measurements, tape | | stay | none or small |
+
+**One check per character.** When the design is finished, in Blender's check boxes and sliders, the program runs one check that everything is right. At rest, tissue built outward from the bones shouldn't let a bone through, so this is a safeguard. It doesn't cover the walk: no stage of the simulation checks collision, and a bone can come through where the tissue over it gives way, so the walk keeps its own bone test.
+
+**Physical values per region** need: the zone of each tetrahedron kept through to the simulation (`hmcore/body.py` knows it per voxel and drops it); an editable table of tissue by zone, with one default per tissue and overrides only where wanted; damping per region (one value today); and smooth changes between zones, as the fat thickness already has. The gluteus and breast zones have to be divided: upper/lower and centre/side for the gluteus, left/right for the breast.
 
 **Order of the choices:**
 
@@ -34,16 +51,15 @@ From an investigation session; nothing here is built. It would change the order 
 **Tissues:**
 
 - **Two fat layers,** more marked in some regions, the gluteus and the breast above all.
-- **Mammary gland** as its own tissue (proposed in the session, not yet confirmed).
-- **Viscera:** the belly gets its own tissue, separate from the chest, in the woman and the man, kept computationally simple.
+- **Mammary gland** as its own tissue.
+- **Viscera:** the belly gets its own tissue, separate from the chest, in the woman and the man, kept computationally simple: other values on the same tetrahedra, at no extra cost per step. Keeping it nearly incompressible may need more steps per frame, which is to be tested.
 
 **Gluteus shape,** chosen by name:
 
 - **Quadrado/retangular:** hip, waist and side of the thigh of similar width; a straight side line, little projection.
 - **Redondo:** balanced, symmetric volume with defined curves throughout.
-- **Coração/pêra invertida:** narrow near the waist, full at the base, a marked curve.
+- **Coração, also called A, pêra invertida or trapezoidal (one shape):** narrow near the waist, fuller and wider at the base and hips.
 - **Em V/triângulo invertido:** wider above, narrower at the base; less lower fat or loss of muscle support.
-- **Em A/trapezoidal:** narrow above, wider in the lower buttocks and hips.
 
 **Breast shape:**
 
@@ -57,7 +73,7 @@ From an investigation session; nothing here is built. It would change the order 
 - **Busto:** horizontally at the fullest part, usually at the nipples.
 - **Copa/taça, two-way:** its letter comes from bust minus sub-busto, at 2 cm per letter. Setting the cup holds the thorax and raises the bust; setting the bust recalculates the cup.
 
-**Still open:** whether waist and hip are typed in or follow from silhouette and body fat (a proposal: they follow, with fine adjustment by the pattern-making sheet).
+**Waist and hip** follow from silhouette and body fat, with fine adjustment by the pattern-making sheet.
 
 ## What exists today
 
@@ -71,7 +87,7 @@ From an investigation session; nothing here is built. It would change the order 
 - **The outer shape:** which sliders, by how much, per type and sex.
 - **Fat per zone:** a table per type, or a rule from the type (initiative `tissue-research` asks where the data comes from).
 - **Muscle:** today one volume per region, sized by the skin (bug `human-model/6`).
-- **Bones, if at all:** a pelvis or shoulders that differ by type, or only the soft tissue.
+- **Bones:** calculated from the measures, so a pelvis or shoulders can differ by type. A change of fat alone must not change them.
 
 ## Questions to answer when planning
 
