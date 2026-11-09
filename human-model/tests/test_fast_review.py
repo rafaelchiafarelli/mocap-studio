@@ -90,3 +90,38 @@ def test_status_shows_recent_runs(tmp_path):
     lines = hm_status.fast_review_lines(str(tmp_path / "*" / "run.json"), time.time(), 1)
     assert len(lines) == 1 and "first/female" in lines[0] and "1/2" in lines[0] and "tape" in lines[0]
     assert hm_status.fast_review_lines(str(tmp_path / "*" / "run.json"), time.time() + 7200, 1) == []
+
+
+def recipes(tmp_path):
+    out = {}
+    for sex in fr.BODIES:
+        f = tmp_path / f"{sex}.json"
+        f.write_text(json.dumps({"name": sex}))
+        out[sex] = str(f)
+    return out
+
+
+def test_both_bodies_end_in_one_pair_file(tmp_path):
+    run = str(tmp_path / "run")
+    calls = []
+    record, failures = fr.run_both("first", [], run, recipes(tmp_path), execute=lambda argv, log: calls.append(argv) or 0)
+    assert not failures and record["status"] == "done"
+    pair = [c for c in calls if any("body_walk_pair.py" in x for x in c)]
+    assert len(pair) == 1 and f"{run}/female/body_walk.blend" in pair[0] and f"{run}/male/body_walk.blend" in pair[0] and f"{run}/mulher_e_homem.blend" in pair[0]
+    written = json.load(open(f"{run}/run.json"))
+    assert set(written["bodies"]) == set(fr.BODIES) and "seconds" in written
+
+
+def test_if_one_body_fails_the_other_finishes_and_no_pair_is_made(tmp_path):
+    run = str(tmp_path / "run")
+    calls = []
+
+    def execute(argv, log):
+        calls.append(argv)
+        return 1 if "/male/" in " ".join(argv) and "body_layers.py" in " ".join(argv) else 0
+
+    record, failures = fr.run_both("first", [], run, recipes(tmp_path), execute=execute)
+    assert set(failures) == {"male"} and failures["male"].stage == "layers" and failures["male"].log.endswith("male/logs/layers.log")
+    assert record["status"] == "failed" and record["bodies"]["female"]["status"] == "done"
+    assert not [c for c in calls if any("body_walk_pair.py" in x for x in c)]
+    assert any("/female/body_walk.blend" in x for c in calls for x in c)  # the woman went all the way

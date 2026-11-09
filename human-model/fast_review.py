@@ -1,14 +1,18 @@
 """One command from a recipe to a walked body in a Blender file, with no rendering, from WSL:
-    python3 human-model/fast_review.py NICKNAME --body female|male [NAME=value ...]
+    python3 human-model/fast_review.py NICKNAME [--body female|male] [NAME=value ...]
+With no --body, the woman and the man side by side, then both in <nickname>/mulher_e_homem.blend. If one fails the other finishes, the pair file isn't made, and the command says which stage failed and where its log is.
 Stages, in order: build, tape, skin, layers, walk, dump, simulate, file. A NAME=value goes to the stage that knows it (VOXEL, fat.<zone> and
 structure.<name> to layers; depth.<prefix> and MAX_PUSH_MM to skin; the tissue values, VOLUME_EVERY and BONE_TEST to simulate); one that no
 stage knows stops the run before it starts. Results go to review/<today>/fast_review/<nickname>/<sex>/, with run.json and a log per stage.
 A nickname already used that day is refused, so nothing is overwritten."""
-import argparse, datetime, json, os, re, subprocess, sys, time
+import argparse, concurrent.futures, datetime, json, os, re, subprocess, sys, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REVIEW = "/mnt/g/mocap-studio-downloads/review"
 DATA = os.path.join(HERE, "data")
+BODIES = ("female", "male")
+PAIR_NAME = "mulher_e_homem.blend"
+LABELS = {"female": "mulher", "male": "homem"}
 STAGES = ("build", "tape", "skin", "layers", "walk", "dump", "simulate", "file")
 SIMULATE_SETTINGS = ("VOLUME_EVERY", "BONE_TEST")
 WALK_CYCLES, WALK_STOP_STEPS = "4", "2"  # the 2 are the steps of the slow stop, as in docs/muscle-physics.md
@@ -163,25 +167,70 @@ def run_body(nickname, sex, recipe, overrides, folder, execute=run_stage):
     return record
 
 
+def pair_command(run, here=HERE):
+    """body_walk_pair.py on the two bodies' files: the woman's skin and section, then the man's."""
+    return [sys.executable, f"{here}/blender_run.py", "--blend", f"{run}/female/body_walk.blend", f"{here}/blender/body_walk_pair.py",
+            f"{run}/male/body_walk.blend", f"{run}/{PAIR_NAME}", LABELS["female"], LABELS["male"]]
+
+
+def run_both(nickname, overrides, run, recipes, execute=run_stage):
+    """Both bodies side by side, each only waiting for its own previous stage. Returns (record, failures: {sex: StageFailed})."""
+    t0 = time.time()
+    record = {"nickname": nickname, "commit": commit(), "overrides": list(overrides), "status": "running", "bodies": {}}
+    save_record(run, record)
+    failures = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(BODIES)) as pool:
+        running = {sex: pool.submit(run_body, nickname, sex, recipes[sex], overrides, f"{run}/{sex}", execute) for sex in BODIES}
+    for sex, future in running.items():
+        try:
+            future.result()
+            record["bodies"][sex] = {"status": "done", "folder": f"{run}/{sex}"}
+        except StageFailed as e:
+            failures[sex] = e
+            record["bodies"][sex] = {"status": "failed", "stage": e.stage, "log": e.log, "folder": f"{run}/{sex}"}
+    if failures:
+        record["status"] = "failed"
+    else:
+        os.makedirs(f"{run}/logs", exist_ok=True)
+        log = f"{run}/logs/pair.log"
+        if execute(pair_command(run), log) != 0:
+            failures["pair"] = StageFailed("pair", log)
+            record.update(status="failed", pair={"status": "failed", "log": log})
+        else:
+            record.update(status="done", pair={"status": "done", "output": f"{run}/{PAIR_NAME}"})
+    record["seconds"] = round(time.time() - t0, 1)
+    save_record(run, record)
+    return record, failures
+
+
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="From a recipe to a walked body in a Blender file, no rendering")
+    ap = argparse.ArgumentParser(description="From recipes to walked bodies in a Blender file, no rendering")
     ap.add_argument("nickname")
-    ap.add_argument("--body", choices=("female", "male"), required=True)
+    ap.add_argument("--body", choices=BODIES)
     ap.add_argument("overrides", nargs="*", metavar="NAME=value")
     a = ap.parse_args(argv)
     day = datetime.date.today().isoformat()
+    bodies = (a.body,) if a.body else BODIES
     try:
         check_nickname(a.nickname)
-        route(a.overrides, known_values(a.body))
+        for sex in bodies:
+            route(a.overrides, known_values(sex))
         refuse_used(REVIEW, day, a.nickname)
     except Refused as e:
         sys.exit(str(e))
-    folder = os.path.join(run_folder(REVIEW, day, a.nickname), a.body)
-    try:
-        run_body(a.nickname, a.body, os.path.join(DATA, "recipes", f"{a.body}.json"), a.overrides, folder)
-    except StageFailed as e:
-        sys.exit(str(e))
-    print("done:", folder)
+    run = run_folder(REVIEW, day, a.nickname)
+    recipes = {sex: os.path.join(DATA, "recipes", f"{sex}.json") for sex in bodies}
+    if a.body:
+        try:
+            run_body(a.nickname, a.body, recipes[a.body], a.overrides, f"{run}/{a.body}")
+        except StageFailed as e:
+            sys.exit(str(e))
+        print("done:", f"{run}/{a.body}")
+        return
+    _, failures = run_both(a.nickname, a.overrides, run, recipes)
+    if failures:
+        sys.exit("\n".join(f"{sex}: {e}" for sex, e in failures.items()))
+    print("done:", f"{run}/{PAIR_NAME}")
 
 
 if __name__ == "__main__":

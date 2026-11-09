@@ -2,14 +2,14 @@
 
 **Role:** code and tools that build the human model, in this repository for now, not a separate one (Rafael, 2026-11-03). Start with [docs/README.md](docs/README.md).
 
-**Entry points:** `build_model.py RECIPE OUT_DIR` from WSL builds one individual; `fast_review.py NICKNAME --body female|male [NAME=value ...]` takes one to a walked body in a Blender file; `hm.sh pytest` runs the tests in Docker, `hm.sh --gpu` the GPU image with the GPU; `install_editor.py` installs the Blender editor.
+**Entry points:** `build_model.py RECIPE OUT_DIR` from WSL builds one individual; `fast_review.py NICKNAME [--body female|male] [NAME=value ...]` takes one body, or by default both side by side, to walked bodies in one Blender file; `hm.sh pytest` runs the tests in Docker, `hm.sh --gpu` the GPU image with the GPU; `install_editor.py` installs the Blender editor.
 
 **Inputs → Outputs:** a recipe (`data/recipes/`) and the sources on `G:\\mocap-studio-downloads\\models\\` → `<name>.blend` with skin, rig, bones, muscles and their skin fields. The stages are in [human-model.process.md](human-model.process.md).
 
 ## Files
 
 - `build_model.py`: the stages in order.
-- `fast_review.py`: one command from a recipe to a walked body in a Blender file, no rendering; its stages, what each override reaches, `run.json` and the logs are in its docstring.
+- `fast_review.py`: one command from the recipes to walked bodies in a Blender file, each body on its own thread, no rendering; its stages, what each override reaches, `run.json` and the logs are in its docstring.
 - `blender_run.py`: runs a script in Windows Blender from WSL, auto-run off.
 - `install_editor.py`: packs `hm_editor/` and installs it in Windows Blender.
 - `setup_gpu_host.sh`: run once with `sudo` in WSL; installs the NVIDIA Container Toolkit so Docker can use the GPU, and checks it from a container. Changes the host, not the image.
