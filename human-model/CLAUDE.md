@@ -9,7 +9,7 @@
 ## Files
 
 - `build_model.py`: the stages in order.
-- `fast_review.py`: one command from the recipes to walked bodies in a Blender file, each body on its own thread, no rendering; its stages, what each override reaches, `run.json` and the logs are in its docstring.
+- `fast_review.py`: one command from the recipes, or the character files (`--character`, the new path), to walked bodies in a Blender file, each body on its own thread, no rendering; its stages, what each override reaches, `run.json` and the logs are in its docstring.
 - `blender_run.py`: runs a script in Windows Blender from WSL, auto-run off.
 - `install_editor.py`: packs `hm_editor/` and installs it in Windows Blender.
 - `setup_gpu_host.sh`: run once with `sudo` in WSL; installs the NVIDIA Container Toolkit so Docker can use the GPU, and checks it from a container. Changes the host, not the image.

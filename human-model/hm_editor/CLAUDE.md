@@ -14,6 +14,8 @@
 - `tape.py`: the pattern-making measures, their paths on the body, which sliders drive each (`DRIVERS`) and the one-control solver. No `bpy`.
 - `human.py`: the MPFB human: create, remove, sliders, macros, stature by measuring, holding typed measures (`fit_measures`), drawing the tape, and reading a recipe back from a body or a built skin.
 - `builder.py`: `build_model.py` in WSL as a background process, read through its log. No `bpy`.
+- `character_panel.py`: the panel "Ficha do personagem": the character's silhouette, biotype, distances and shapes, the resolved sheet with where each value came from, saving the character file, and the button that checks it (`fast_review.py --to layers --check` in WSL).
+- `sheet.py`: that panel's pure part, and `character_module`, which loads `hmcore/character.py` from the repository in `install.json`. No `bpy`.
 - `blender_manifest.toml`: the extension's metadata.
 
 `install.json` isn't in git: `install_editor.py` writes it into the package with the WSL distribution and repository.
@@ -37,6 +39,8 @@
 - `ACROMION_SHARE`, `NECK_BASE_RATIO`, `NECK_RATIO` and `UNDER_BREAST_DROP` are declared, set by eye on the neutral woman's tape lines and, for the shoulder, by ANSUR II's breadth for the neutral bodies' height.
 - The panel's Portuguese labels are on purpose, in `tape.MEASURES`: they're the trade's terms, as Rafael uses them.
 - Typed measures are held only when typed or on **Reaplicar medidas**. Moving another slider doesn't re-fit, so a slider can still be dragged freely.
+
+- The panel "Ficha do personagem" reads `hmcore/character.py` from the repository through WSL's network path, cached once: the repository must exist on that WSL distribution.
 
 ## Touchpoints
 
