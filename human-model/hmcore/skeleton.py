@@ -196,6 +196,12 @@ def glenoid_fossa(scapula, head, sign, reach=0.045):
     return scapula[m].mean(axis=0) if m.any() else head + np.array([-sign * 0.025, 0.0, 0.0])
 
 
+def along(head, tail, length):
+    """The point this far from head, towards tail: where a bone of this length ends along the rig's own direction."""
+    head, tail = np.asarray(head, float), np.asarray(tail, float)
+    return head + (tail - head) / np.linalg.norm(tail - head) * length
+
+
 def spine_line_y(ind, z):
     """The rig's spine line at this height: the y of the spine bones' heads, interpolated. Where the spine sits when it isn't read from the back's skin."""
     names = ("spine", "spine.001", "spine.002", "spine.003", "spine.004", "spine.005", "spine.006")
@@ -381,13 +387,18 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct, targets=None):
     anchors["rig_edits"] = {f"thigh.{k}": v.tolist() for k, v in sockets.items()}
 
     # Shoulder girdle and upper arm
-    raises = {side: girdle_raise(ind, lib, side, trunk_map) for side in ("L", "R")}
+    # With targets the skin is the result, so the joint isn't raised to the skin; width comes from the biacromial target instead
+    raises = {side: girdle_raise(ind, lib, side, trunk_map) for side in ("L", "R")} if targets is None else {"L": 0.0, "R": 0.0}
     raise_z = float(np.mean(list(raises.values())))  # both sides alike: the CT donor's shoulders weren't level, and the rig's are
     anchors["shoulder_raise_mm"] = {"each": {k: round(v * 1000, 1) for k, v in raises.items()}, "applied": round(raise_z * 1000, 1)}
+    arm_joints = {}
     for side in ("L", "R"):
         s = SIDE[side]
         sign = 1 if side == "L" else -1
         shoulder = head_tail(ind, f"upper_arm.{side}")[0]
+        if targets is not None:
+            shoulder = shoulder.copy()
+            shoulder[0] = sign * (targets["biacromial_m"] / 2 - targets["acromion_beyond_joint_m"])
         scap_v, scap_f = lib[f"scapula_{s}"]
         hum_v, hum_f = lib[f"humerus_{s}"]
         ends = end_centres(hum_v)
@@ -408,6 +419,13 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct, targets=None):
         ua_h, ua_t = head_tail(ind, f"upper_arm.{side}")
         ua_h = shoulder  # the raised joint
         fa_h, fa_t = head_tail(ind, f"forearm.{side}")
+        if targets is not None:
+            ua_t = along(ua_h, ua_t, targets["humerus_m"])
+            wrist_new = along(ua_t, fa_t, targets["forearm_m"])
+            arm_joints[side] = (ua_t, wrist_new, wrist_new - fa_t)
+            fa_h, fa_t = ua_t, wrist_new
+            anchors["rig_edits"][f"forearm.{side}"] = ua_t.tolist()
+            anchors["rig_edits"][f"hand.{side}"] = wrist_new.tolist()
         hinge = np.cross(ua_t - ua_h, fa_t - fa_h)
         if np.linalg.norm(hinge) < 1e-6:
             hinge = np.array([0, -1.0, 0])
@@ -430,6 +448,11 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct, targets=None):
         knee = head_tail(ind, f"thigh.{side}")[1]
         hip = sockets[side]
         ankle = head_tail(ind, f"shin.{side}")[1]
+        if targets is not None:
+            knee = along(hip, knee, targets["thigh_m"])
+            ankle = along(knee, ankle, targets["shin_m"])
+            anchors["rig_edits"][f"shin.{side}"] = knee.tolist()
+            anchors["rig_edits"][f"foot.{side}"] = ankle.tolist()
         a_h, a_k, a_a = leg_anchors[f"hip_{side}"], leg_anchors[f"knee_{side}"], leg_anchors[f"ankle_{side}"]
         v, f = legs[f"Femur{side}"]
         put(f"femur_{side}", fit.segment_fit(v, a_h, a_k, hip, knee), f, f"thigh.{side}", "bmf")
@@ -444,26 +467,30 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct, targets=None):
                 continue
             put(f"{name[:-1].lower()}_{side}", foot_map(name, v), f, f"toe.{side}" if "Phalanx" in name else f"foot.{side}", "bmf")
         # The foot's width from the skin too: centred on the talus, the heel and forefoot still came through its sides. Sideways only, and to 70% at most, or the foot loses its shape.
-        foot = [n for n in out if n.endswith(f"_{side}") and n[:-2].startswith(("talus", "calcaneus", "navicular", "cuboid")) or n.endswith(f"_{side}") and any(k in n for k in ("cuneiform", "metatarsal"))]
-        toe = head_tail(ind, f"foot.{side}")[1]
-        along = (toe - ankle) / np.linalg.norm(toe - ankle)
-        sideways = np.cross(along, [0.0, 0.0, 1.0])
-        placed, least = fit.slim_to_skin([out[n]["verts"] for n in foot], ankle, toe, skin, depth, FOOT_TISSUE, start=-10.0, least=0.7, only=sideways / np.linalg.norm(sideways))
-        for n, p in zip(foot, placed):
-            out[n]["verts"] = p.astype(np.float32)
-        anchors["slimmed"][f"foot_{side}"] = round(least, 3)
-        # MPFB's knee and ankle are thinner than these bones (bug human-model/20): narrowed where the skin leaves them too little tissue.
-        for names, top, bottom, need, key in ((("femur", "patella"), hip, knee, KNEE_TISSUE, "knee"), (("tibia", "fibula"), knee, ankle, SETTLE_TISSUE, "ankle")):
-            placed, least = fit.slim_to_skin([out[f"{n}_{side}"]["verts"] for n in names], top, bottom, skin, depth, need)
-            for n, p in zip(names, placed):
-                out[f"{n}_{side}"]["verts"] = p.astype(np.float32)
-            anchors["slimmed"][f"{key}_{side}"] = round(least, 3)
+        if targets is None:
+            foot = [n for n in out if n.endswith(f"_{side}") and n[:-2].startswith(("talus", "calcaneus", "navicular", "cuboid")) or n.endswith(f"_{side}") and any(k in n for k in ("cuneiform", "metatarsal"))]
+            toe = head_tail(ind, f"foot.{side}")[1]
+            way = (toe - ankle) / np.linalg.norm(toe - ankle)
+            sideways = np.cross(way, [0.0, 0.0, 1.0])
+            placed, least = fit.slim_to_skin([out[n]["verts"] for n in foot], ankle, toe, skin, depth, FOOT_TISSUE, start=-10.0, least=0.7, only=sideways / np.linalg.norm(sideways))
+            for n, p in zip(foot, placed):
+                out[n]["verts"] = p.astype(np.float32)
+            anchors["slimmed"][f"foot_{side}"] = round(least, 3)
+            # MPFB's knee and ankle are thinner than these bones (bug human-model/20): narrowed where the skin leaves them too little tissue.
+            for names, top, bottom, need, key in ((("femur", "patella"), hip, knee, KNEE_TISSUE, "knee"), (("tibia", "fibula"), knee, ankle, SETTLE_TISSUE, "ankle")):
+                placed, least = fit.slim_to_skin([out[f"{n}_{side}"]["verts"] for n in names], top, bottom, skin, depth, need)
+                for n, p in zip(names, placed):
+                    out[f"{n}_{side}"]["verts"] = p.astype(np.float32)
+                anchors["slimmed"][f"{key}_{side}"] = round(least, 3)
         fib = out[f"fibula_{side}"]["verts"]
         anchors[f"fibula_head_{side}"] = fib[fib[:, 2] > np.quantile(fib[:, 2], 0.97)].mean(axis=0)
 
     # Forearm and hand: Rajagopal.
     for side, (arm, elbow, wrist) in (("R", arm_r), ("L", arm_l)):
         fa_h, fa_t = head_tail(ind, f"forearm.{side}")
+        delta = np.zeros(3)
+        if targets is not None:
+            fa_h, fa_t, delta = arm_joints[side]
         thumb = head_tail(ind, f"palm.01.{side}")[1] - head_tail(ind, f"palm.04.{side}")[1]
         suffix = "rv" if side == "R" else "lv"
         radial = arm[f"radius_{suffix}"][0].mean(axis=0) - arm[f"ulna_{suffix}"][0].mean(axis=0)
@@ -473,8 +500,8 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct, targets=None):
             put(f"{n}_{side}", fit.segment_fit(v, elbow, wrist, fa_h, fa_t, rotation=R), f, f"forearm.{side}", "rajagopal")
         mid = arm[f"middle_distal_{suffix}s"][0].mean(axis=0)
         idx, lit = arm[f"metacarpal2_{suffix}s"][0].mean(axis=0), arm[f"metacarpal5_{suffix}s"][0].mean(axis=0)
-        hand_h = head_tail(ind, f"hand.{side}")[0]
-        rig_mid = head_tail(ind, f"f_middle.03.{side}")[1]
+        hand_h = head_tail(ind, f"hand.{side}")[0] + delta
+        rig_mid = head_tail(ind, f"f_middle.03.{side}")[1] + delta
         R_h = fit.frame_rotation(mid - wrist, idx - lit, rig_mid - hand_h, thumb)
         s_h = np.linalg.norm(rig_mid - hand_h) / np.linalg.norm(mid - wrist)
         hand_map = lambda p: (np.asarray(p, float) - wrist) * s_h @ R_h.T + hand_h
@@ -486,14 +513,14 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct, targets=None):
             if stem in HAND_RIG:
                 rig_bone = f"{HAND_RIG[stem]}.{side}"
                 a, b = end_centres(placed)
-                h, t = head_tail(ind, rig_bone)
+                h, t = (x + delta for x in head_tail(ind, rig_bone))
                 near, far = (a, b) if np.linalg.norm(a - h) < np.linalg.norm(b - h) else (b, a)
-                ring = fit.ring_centre(skin, h, t, 0.03)
-                shift = ring - (h + t) / 2 if ring is not None else 0.0
+                ring = fit.ring_centre(skin, h - delta, t - delta, 0.03)  # the hand's skin stays where the rig was
+                shift = ring - (h + t - 2 * delta) / 2 if ring is not None else 0.0
                 put(f"{stem}_{side}", fit.segment_fit(placed, near, far, h + shift, t + shift, radial_power=1.0), f, rig_bone, "rajagopal")
             else:
                 put(f"{stem}_{side}", placed, f, f"hand.{side}", "rajagopal")
-    anchors["settled"] = settle_superficial(out, anchors, depth)
+    anchors["settled"] = settle_superficial(out, anchors, depth) if targets is None else {}  # with targets the skin is the result, so there's nothing to settle against
     return out, anchors
 
 
