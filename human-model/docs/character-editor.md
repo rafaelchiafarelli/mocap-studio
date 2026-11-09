@@ -19,7 +19,17 @@ The recipe is the character. You go from one form to the other with **Build full
 
 Open `G:\mocap-studio-downloads\apps\blender\5.2.2\blender-5.2.2-windows-x64\blender.exe`. This is the only Blender with MPFB and the add-on installed.
 
-## Make a character, step by step
+## Make a character from the sheet
+
+The tab opens on **Ficha do personagem**, in stages, so only what reaches the generated body is on screen.
+
+1. **Etapa 1, escolhas:** sex, name, silhouette, biotype, height, body fat, the pattern-making measures, gluteus, breast shape, underbust, bust and cup. **Fechar escolhas** checks the sheet, makes the body in the scene and keeps a named copy in `G:\mocap-studio-downloads\review\<date>\fichas\`.
+2. **Etapa 2, ajustes finos:** the choices are locked, and the breast faders, the biotype's other two parts and the bone parameters open. **Gerar o corpo completo** takes about 10 minutes.
+3. **Reabrir escolhas** goes back. Fine adjustments stay and take priority over the shapes: the panel warns, and **Zerar ajustes finos** clears them.
+
+Tick **Modo antigo (faders soltos)** at the top for MPFB's loose sliders and the steps below. **The sheet's generation doesn't read them**: they belong to the old path of recipe and **Build full model**.
+
+## Make a character, step by step (old mode)
 
 1. **Tab Human > New male** or **New female.** A neutral person appears in about three seconds. In a Blender file that has never been saved, the startup cube is removed.
 2. **Name it** in the `Name` field, for example your character's name. It names the folder and files.
