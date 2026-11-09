@@ -20,13 +20,9 @@
 - `contraction_check.py`: frontalis and zygomaticus, measured.
 - `export_blend.py`: exports a character that already exists as a `.blend`, in `export_human.py`'s format.
 - `add_fields.py`: adds muscle fields to such a file.
-- `smile_compare.py`: its current smile against the muscle smile.
-- `binding_compare.py`, `scipy_free_nearest.py`: Surface Deform and Mesh Deform against the direct field.
-- `tissue_experiment.py`: Tissue on a skin patch.
 - `speed_measure.py`: frames per second by layer.
 - `dump_take.py`, `key_take.py`, `render_take.py`: read a take's shapes, key a variant, render it.
 - `body_drive.py`: keys capture onto the rig by bone direction.
-- `retire_trial.py`: removes the muscle bodies and measures the skin.
 - `feature_sheet.py`: renders what each morph target does.
 - `macro_sweep.py`: measures the skin per macro slider.
 - `recipe_from_file.py`: reads an MPFB human back into a recipe.
@@ -59,7 +55,7 @@
 - The patella hangs from `hm_patella.<side>`, on the thigh, shaped like the shin and copying its local rotation at `PATELLA_SHARE` (0.5, declared), so it takes half the knee's bend (bug `human-model/19`, fixed): `assemble.py`, search `PATELLA_SHARE`.
 - Joint limits are stored as the `hm_limit_deg` bone property. Hip, knee and ankle also get a Limit Rotation at the mean plus `LIMIT_MARGIN_DEG` (10°); shoulder and elbow don't, since their bones lie skewed to the limits' axis (bug `human-model/3`): `assemble.py`, search `hm_limit_deg`.
 - Muscles have their own armature: on the main rig, a bone following a skin vertex would be a dependency cycle: `hmmuscles.py:1`.
-- Nothing depends on the muscle bodies: skin moves through shape keys and bones. See `retire_trial.py`.
+- Nothing depends on the muscle bodies: skin moves through shape keys and bones. Measured by `scratch/blender/retire_trial.py`.
 - MPFB's Rigify metarig deforms the skin; the generated control rig isn't used. Its `DEF-*` weights have to be merged into metarig bones, or vertices stay behind: `assemble.py:36`.
 
 ## Touchpoints

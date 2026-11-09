@@ -142,7 +142,7 @@ to be replaced. The tests run in `blender/motion_check.py`, except where a row n
 **Proof of concept on Z-Anatomy, jaw only.** Review files are in
 `G:\mocap-studio-downloads\review\2026-11-02\` (`z_anatomy_mandibula_vinculos.blend`,
 `z_anatomy_mandibula_comparacao.png`). Scripts:
-[`jaw-poc/`](../jaw-poc/README.md).
+[`scratch/jaw-poc/`](../scratch/jaw-poc/README.md).
 
 - **Works:** 26 parts of 13 muscle types were bound automatically from Z-Anatomy's
   origin and insertion patches, and the other 224 by proximity to bone. They now

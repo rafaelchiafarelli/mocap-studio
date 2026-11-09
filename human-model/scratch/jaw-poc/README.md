@@ -1,7 +1,7 @@
 # Jaw proof of concept on Z-Anatomy (2026-11-02)
 
 The test behind "What we already know" in
-[the sources page](../docs/sources-and-validation.md). **Embryonic, and these
+[the sources page](../../docs/sources-and-validation.md). **Embryonic, and these
 copies weren't run again.** The `.blend` files and images stay in
 `G:\mocap-studio-downloads\review\2026-11-02\`, because they're large.
 

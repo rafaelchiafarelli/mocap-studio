@@ -53,14 +53,6 @@ def touches_scan_edge(mask, margin=1):
     return bool((idx.min(axis=0) < margin).any() or (idx.max(axis=0) >= np.array(mask.shape) - margin).any())
 
 
-def principal_length(verts):
-    """Extent along the main axis, for long bones."""
-    v = verts - verts.mean(axis=0)
-    axis = np.linalg.svd(v[:: max(1, len(v) // 5000)], full_matrices=False)[2][0]
-    d = v @ axis
-    return float(d.max() - d.min())
-
-
 def split_mandible(skull):
     """The dataset's skull label holds the mandible too. Erosion leaves two seeds (the mandible's body and the cranium), and a watershed on the distance map grows them back until they meet at the thin contact points.
     Returns (cranium mask, mandible mask); the mandible is None when no seed appears."""

@@ -140,7 +140,6 @@ Runs Windows Blender in the background with auto-run off. Arguments starting wit
 | `breath_check.py` | Yes | `OUT.json` | Chest expansion |
 | `contraction_check.py` | Yes | `OUT.json` | Frontalis and zygomaticus, measured |
 | `speed_measure.py` | Yes, a walk file | `OUT.json` | Frames per second by layer |
-| `retire_trial.py` | Yes, a walk file | `OUT.json` | Removes muscle bodies, measures the skin |
 | `recipe_from_file.py` | Yes | `BODY_OBJECT NAME SEX OUT.json` | Reads a human back into a recipe |
 | `walk_clearance.py` | Yes, a walk file | `OUT.json [STEP]` | Skin against bones while walking, and how much the nipple moves in the rib cage's frame |
 | `tape_check.py` | No | `OUT.json STILLS_DIR\|- RECIPE.json ...` | Measures people with the editor's tape; a folder also gets stills with its lines |
@@ -149,8 +148,6 @@ Runs Windows Blender in the background with auto-run off. Arguments starting wit
 | `body_drive.py` | Yes | `MOTION.json OUT.blend` | Keys capture onto the rig |
 | `feature_sheet.py` | No | `RECIPE OUT_DIR LIST.json [head\|body]` | Renders what each target does |
 | `macro_sweep.py` | No | `OUT.json` | Real sizes per macro slider |
-| `binding_compare.py` | Yes | `OUT.json` | Surface and Mesh Deform against the field |
-| `tissue_experiment.py` | Yes | `ADDON.zip PREFIX` | Tissue on a skin patch |
 
 Examples:
 
