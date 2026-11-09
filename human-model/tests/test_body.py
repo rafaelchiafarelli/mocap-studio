@@ -137,3 +137,13 @@ def test_two_layers_only_change_the_label_not_where_the_fat_ends():
     a = body.label_voxels(d_skin, t_fat, t_fat, **_voxels(3))
     b = body.label_voxels(d_skin, t_fat, t_fat * 0.4, **_voxels(3))
     assert ((a == body.FAT) == ((b == body.FAT) | (b == body.FAT_DEEP))).all()
+
+
+def test_the_gland_is_the_breasts_fat_deep_under_the_skin():
+    v = _voxels(3)
+    v["breast"], v["s"] = np.ones(3, bool), {**v["s"], "gland_skin_mm": 0.012}
+    d_skin = np.array([0.008, 0.02, 0.02])
+    t_fat = np.full(3, 0.03)
+    lab = body.label_voxels(d_skin, t_fat, t_fat, gland=True, **v)
+    assert lab.tolist() == [body.FAT, body.GLAND, body.GLAND]
+    assert body.GLAND not in body.label_voxels(d_skin, t_fat, t_fat, gland=False, **v)  # no gland for the man

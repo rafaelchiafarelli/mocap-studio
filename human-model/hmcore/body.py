@@ -6,8 +6,8 @@ from scipy import ndimage
 from scipy.spatial import ConvexHull
 from . import fit, layers
 
-BONE, MUSCLE, FAT, SKIN, CAVITY, FAT_DEEP = 0, 1, 2, 3, 4, 5
-LABELS = ("bone", "muscle", "fat", "skin", "cavity", "fat_deep")
+BONE, MUSCLE, FAT, SKIN, CAVITY, FAT_DEEP, GLAND = 0, 1, 2, 3, 4, 5, 6
+LABELS = ("bone", "muscle", "fat", "skin", "cavity", "fat_deep", "gland")
 GLUTEUS_ZONES = ("buttocks_upper_center", "buttocks_upper_side", "buttocks_lower_center", "buttocks_lower_side")
 BREAST_ZONES = ("breast_L", "breast_R")
 ZONES = ("neck", "chest", *BREAST_ZONES, "upper_back", "belly", "flanks", "lower_back", "hips", *GLUTEUS_ZONES,
@@ -214,7 +214,7 @@ def tet_zones(zone_of_included, included, shape, vox, tet_voxel):
     return grid_zone.reshape(shape)[tuple(vox.T)][tet_voxel]
 
 
-def label_voxels(d_skin, t_fat, t_superficial, d_bone, inside, in_bone, in_chest, in_trunk, front_of_spine, chest_bone, breast, h, s, skin_band_voxels):
+def label_voxels(d_skin, t_fat, t_superficial, d_bone, inside, in_bone, in_chest, in_trunk, front_of_spine, chest_bone, breast, h, s, skin_band_voxels, gland=False):
     """A tissue label per voxel from what build measured. t_superficial is where the fat's outer layer ends; where the fat is under two cubes thick it stays one layer, so a thin layer isn't split into bands narrower than the mesh can show."""
     lab = np.full(len(d_skin), MUSCLE, np.int8)
     deep = d_skin > t_fat + s["abdominal_wall_mm"]
@@ -224,6 +224,8 @@ def label_voxels(d_skin, t_fat, t_superficial, d_bone, inside, in_bone, in_chest
     lab[breast & ~in_chest & (~chest_bone | (d_bone > s["pectoral_mm"]))] = FAT
     lab[(d_skin < t_fat) & (lab != CAVITY)] = FAT
     lab[(lab == FAT) & (d_skin >= t_superficial) & (t_fat >= 2 * h)] = FAT_DEEP
+    if gland:  # the woman only: the breast's fat deeper than gland_skin_mm under the skin becomes gland
+        lab[breast & np.isin(lab, (FAT, FAT_DEEP)) & (d_skin >= s["gland_skin_mm"])] = GLAND
     lab[(d_skin < skin_band_voxels * h) | ~inside] = SKIN
     lab[in_bone] = BONE
     return lab
@@ -235,9 +237,9 @@ def outward(verts, tris):
     return fit.outward(verts, tris)
 
 
-def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None, deep_share=None):
+def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None, deep_share=None, gland=False):
     """Everything for the body. bones: {name: (verts, tris)}. fat_mm: {zone: mm}. structure: declared depths in mm and smoothing.
-    gpu_mesh: meshgpu.Mesh, passed in so this module imports without Warp. groups: the rig's vertex groups, for the head's cut. deep_share: {zone: part of the fat that is its deep layer}.
+    gpu_mesh: meshgpu.Mesh, passed in so this module imports without Warp. groups: the rig's vertex groups, for the head's cut. deep_share: {zone: part of the fat that is its deep layer}. gland: label the mammary gland (the woman only).
     Returns a dict of arrays, every intermediate kept."""
     patch = cut_skin(skin, tris, rig, groups)
     ids = np.unique(patch)
@@ -288,13 +290,14 @@ def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None, d
     chest_bone = np.isin(near_bone, CHEST_BONES)
 
     s = {k: v / 1000 for k, v in structure.items() if k.endswith("_mm")}
-    lab = label_voxels(d_skin, t_fat, t_superficial, d_bone, inside[included], in_bone, in_chest, in_trunk, front_of_spine, chest_bone, np.isin(z_of, BREAST_ZONES), h, s, structure["skin_band_voxels"])
+    lab = label_voxels(d_skin, t_fat, t_superficial, d_bone, inside[included], in_bone, in_chest, in_trunk, front_of_spine, chest_bone, np.isin(z_of, BREAST_ZONES), h, s, structure["skin_band_voxels"], gland=gland)
     raw = np.full(int(np.prod(shape)), -1, np.int8)
     raw[included] = lab
 
     clean = raw.copy().reshape(shape)
     moved = {"muscle_to_fat": island_cleanup(clean, MUSCLE, FAT, int(structure["min_island_voxels"])),
              "deep_fat_to_fat": island_cleanup(clean, FAT_DEEP, FAT, int(structure["min_island_voxels"])),
+             "gland_to_fat": island_cleanup(clean, GLAND, FAT, int(structure["min_island_voxels"])),
              "cavity_to_muscle": island_cleanup(clean, CAVITY, MUSCLE, int(structure["min_island_voxels"]))}
     nodes, tets, tet_voxel, vox = layers.tetrahedra(clean >= 0, origin, h)
     tet_label = clean[tuple(vox.T)][tet_voxel]

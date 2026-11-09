@@ -15,7 +15,7 @@ from hmcore import body, layers, meshgpu, regions as tissue_regions, xpbd
 
 TISSUE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "body_tissue.json")
 SIMULATION = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "simulation.json")
-TISSUE_KEYS = ("SUBSTEPS", "DAMPING", "FAT_YOUNG", "MUSCLE_YOUNG", "SKIN_YOUNG", "FAT_DENSITY", "MUSCLE_DENSITY", "POISSON", "CAVITY_YOUNG", "CAVITY_DENSITY", "FAT_DEEP_YOUNG", "FAT_DEEP_DENSITY")
+TISSUE_KEYS = ("SUBSTEPS", "DAMPING", "FAT_YOUNG", "MUSCLE_YOUNG", "SKIN_YOUNG", "FAT_DENSITY", "MUSCLE_DENSITY", "POISSON", "CAVITY_YOUNG", "CAVITY_DENSITY", "FAT_DEEP_YOUNG", "FAT_DEEP_DENSITY", "GLAND_YOUNG", "GLAND_DENSITY", "GLAND_DAMPING")
 ABOVE_HIP = 0.02  # m above the hip bones' top: where the region is cut at the waist. 10 keeps the whole body
 RAMP = 1.0  # s from the rest pose into the walk's first pose, so the tissue isn't jolted
 SETTLE = 0.5  # s held in the first pose before frame 1

@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(sys.argv[sys.argv.index("--py
 import hmblender as hb
 
 LABELS = ("bone", "muscle", "fat", "skin", "cavity")
-COLORS = {"bone": (0.9, 0.86, 0.75), "muscle": (0.6, 0.12, 0.1), "fat": (0.95, 0.8, 0.35), "skin": (0.85, 0.65, 0.55), "cavity": (0.45, 0.55, 0.8), "fat_deep": (0.85, 0.65, 0.25)}
+COLORS = {"bone": (0.9, 0.86, 0.75), "muscle": (0.6, 0.12, 0.1), "fat": (0.95, 0.8, 0.35), "skin": (0.85, 0.65, 0.55), "cavity": (0.45, 0.55, 0.8), "fat_deep": (0.85, 0.65, 0.25), "gland": (0.85, 0.5, 0.58)}
 
 
 def compact(verts, faces):
