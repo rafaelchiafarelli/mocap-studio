@@ -436,6 +436,8 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct, targets=None):
         R = fit.frame_rotation(far - head, wide, ua_t - ua_h, np.cross(hinge, ua_t - ua_h))
         # from the head's centre, so the head turns in place at the joint; from the end's centre, 19 mm off, it came through the shoulder
         put(f"humerus_{side}", fit.segment_fit(hum_v, head, far, ua_h, ua_t, rotation=R), hum_f, f"upper_arm.{side}", "ct")
+        if targets is not None:
+            out[f"humerus_{side}"]["verts"] = fit.thicken(out[f"humerus_{side}"]["verts"], ua_h, ua_t, targets["thickness"]["humerus"]).astype(np.float32)
         clav_v, clav_f = lib[f"clavicula_{s}"]
         c_ends = sorted(end_centres(clav_v), key=lambda e: abs(e[0]))
         target_m = anchors["sternum_top"] + np.array([sign * 0.022, 0.0, 0.0])
@@ -456,11 +458,15 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct, targets=None):
         a_h, a_k, a_a = leg_anchors[f"hip_{side}"], leg_anchors[f"knee_{side}"], leg_anchors[f"ankle_{side}"]
         v, f = legs[f"Femur{side}"]
         put(f"femur_{side}", fit.segment_fit(v, a_h, a_k, hip, knee), f, f"thigh.{side}", "bmf")
+        if targets is not None:
+            out[f"femur_{side}"]["verts"] = fit.thicken(out[f"femur_{side}"]["verts"], hip, knee, targets["thickness"]["femur"]).astype(np.float32)
         v, f = legs[f"Patella{side}"]
         put(f"patella_{side}", fit.segment_fit(v, a_h, a_k, hip, knee), f, f"hm_patella.{side}", "bmf")
         for bone in ("Tibia", "Fibula"):
             v, f = legs[f"{bone}{side}"]
             put(f"{bone.lower()}_{side}", fit.segment_fit(v, a_k, a_a, knee, ankle), f, f"shin.{side}", "bmf")
+            if targets is not None:
+                out[f"{bone.lower()}_{side}"]["verts"] = fit.thicken(out[f"{bone.lower()}_{side}"]["verts"], knee, ankle, targets["thickness"]["tibia"]).astype(np.float32)
         foot_map = fit_foot(ind, legs, side, ankle)
         for name, (v, f) in legs.items():
             if not name.endswith(side) or not any(k in name for k in FOOT_PARTS):
@@ -498,6 +504,8 @@ def build(ind, lib, legs, leg_anchors, arm_r, arm_l, hips_ct, targets=None):
         for n in ("ulna", "radius"):
             v, f = arm[f"{n}_{suffix}"]
             put(f"{n}_{side}", fit.segment_fit(v, elbow, wrist, fa_h, fa_t, rotation=R), f, f"forearm.{side}", "rajagopal")
+            if targets is not None:
+                out[f"{n}_{side}"]["verts"] = fit.thicken(out[f"{n}_{side}"]["verts"], fa_h, fa_t, targets["thickness"]["forearm"]).astype(np.float32)
         mid = arm[f"middle_distal_{suffix}s"][0].mean(axis=0)
         idx, lit = arm[f"metacarpal2_{suffix}s"][0].mean(axis=0), arm[f"metacarpal5_{suffix}s"][0].mean(axis=0)
         hand_h = head_tail(ind, f"hand.{side}")[0] + delta

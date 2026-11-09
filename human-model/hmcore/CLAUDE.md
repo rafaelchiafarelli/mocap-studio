@@ -15,7 +15,7 @@
 - `ctbones.py`: labels to meshes in the model's frame; `split_mandible`.
 - `sources.py`: `.vtp`, `.osim` and BMF `.mat` readers.
 - `bonelib.py`: the bone library of one sex.
-- `fit.py`: placing a bone: segment and box maps, winding number, skin profiles, `outward` winding; `SkinDepth`, signed depth under the skin on the CPU, `solids`, the same over several closed meshes, `settle`, the smallest rigid move that leaves a bone under enough tissue, and `slim_to_skin`, which narrows bones height by height where the skin around them is too thin (with `largest_scale`).
+- `fit.py`: placing a bone: segment and box maps, winding number, skin profiles, `outward` winding; `SkinDepth`, signed depth under the skin on the CPU, `solids`, the same over several closed meshes, `settle`, the smallest rigid move that leaves a bone under enough tissue, `slim_to_skin`, which narrows bones height by height where the skin around them is too thin (with `largest_scale`), and `thicken`, which scales a bone across its axis only.
 - `skeleton.py`: fits the whole skeleton to one individual; it narrows the femur's lower half, patella, tibia, fibula and larynx to the skin around them, and `settle_superficial` then moves the scapulae, clavicles and fibulae under the skin. With `targets` (`bone_targets`), the trunk, girdle and limbs take sizes from them instead of the skin; head, hands and feet still follow the skin there.
 - `parametric.py`: hyoid and larynx, which no allowed mesh covers.
 - `jaw.py`: jaw opening as rotation, then sliding.

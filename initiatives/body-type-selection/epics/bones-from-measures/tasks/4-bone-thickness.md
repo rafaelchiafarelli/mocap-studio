@@ -16,3 +16,5 @@ Task 3.
 ## Pre-work
 
 None.
+
+**Status:** Done (2026-11-08), unit-tested on the thickening; humerus and femur on the three pure types wait for bodies to be computed, by Rafael's instruction.
