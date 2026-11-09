@@ -10,6 +10,10 @@ hardware**, and measure whether the cameras are the bottleneck. Cameras sit
 behind an interface (`CameraSource`, a registry per source kind) so other
 image sources can be added later without touching the rest.
 
+## Latest (2026-11-09)
+
+The human model's work is on branch `body-type-selection` of this repository, not merged. Read its state in `initiatives/body-type-selection/body-type-selection.md`, section "Where it stands", first.
+
 ## Where things stand (2026-11-03)
 
 - **Faces are the major open problem** and a requirement. Rafael is reconsidering the

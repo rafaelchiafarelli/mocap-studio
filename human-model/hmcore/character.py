@@ -11,6 +11,7 @@ MOST_OF_ONE_OTHER, MOST_OF_BOTH_OTHERS = 0.35, 0.65  # Rafael, 2026-11-08: the c
 GLUTEUS_SHAPES = ("quadrado", "redondo", "coracao", "em_v")  # coração is also A, pêra invertida and trapezoidal: one shape
 BREAST_SHAPES = ("redondos", "gota", "conicos", "tuberosos")  # exclusive
 BREAST_ADJUSTMENTS = ("espacados", "assimetricos", "pendentes")  # independent, combined with any shape
+BREAST_FADERS = ("projection_cm", "base_cm", "upper", "lower", "power")  # override the shape's outline, from the panel's faders
 ZONE_NAMES = ("neck", "chest", "breast_L", "breast_R", "upper_back", "belly", "flanks", "lower_back", "hips", "buttocks_upper_center", "buttocks_upper_side", "buttocks_lower_center", "buttocks_lower_side",
               "thigh_front", "thigh_back", "thigh_inner", "thigh_outer", "knee", "calf_front", "calf_back",
               "upper_arm_front", "upper_arm_back", "forearm")  # hmcore.body.ZONES; a test keeps them in step, since that module needs numpy
@@ -56,8 +57,11 @@ def _breast_problems(b):
     out = []
     if b.get("shape") is not None and b["shape"] not in BREAST_SHAPES:
         out.append(f"breast.shape must be one of {', '.join(BREAST_SHAPES)}")
-    for k in set(b) - {"shape", *BREAST_ADJUSTMENTS}:
+    for k in set(b) - {"shape", *BREAST_ADJUSTMENTS, *BREAST_FADERS}:
         out.append(f"breast.{k} isn't a shape or an adjustment")
+    for k in BREAST_FADERS:
+        if k in b and (not _number(b[k]) or b[k] <= 0):
+            out.append(f"breast.{k} must be a positive number")
     for k in BREAST_ADJUSTMENTS:
         if k in b and not _number(b[k]) and not (k == "assimetricos" and isinstance(b[k], dict) and set(b[k]) <= {"L", "R"} and all(_number(v) for v in b[k].values())):
             out.append(f"breast.{k} must be a number" + (" or {L, R}" if k == "assimetricos" else ""))

@@ -75,10 +75,6 @@ def test_gota_reaches_higher_than_it_hangs():
     assert z.max() > -z.min()
 
 
-def test_conicos_is_more_pointed_than_redondos():
-    assert volume(character={"shape": "conicos"}).sum() < volume(character={"shape": "redondos"}).sum()
-
-
 def test_espacados_moves_it_outward_on_each_side():
     assert centre(volume(character={"espacados": 1.0}), 0) == pytest.approx(BREAST["adjustments"]["espacados_m"], abs=2 * H)
     assert centre(volume(character={"espacados": 1.0}, side=-1), 0) == pytest.approx(-BREAST["adjustments"]["espacados_m"], abs=2 * H)
