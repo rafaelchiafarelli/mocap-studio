@@ -42,6 +42,7 @@
 - `body_walk_dump.py`: every bone's transform from rest and the skin, every frame of a walk file.
 - `body_walk_bake.py`: a walked body, lower or whole, as shape keys per frame, the current skin 80 cm behind it, its bones and the feet (bones and skin, following the rig) animated, and frames for two videos framed on the region. A frames folder of `-` makes the file only. With a nickname, a text over each model, inside its own collection, follows its pelvis through the walk.
 - `body_walk_pair.py`: two walked bodies in one file, without the current model's skin: skin and section of each, a metre apart.
+- `character_shape.py`: a neutral human moved to a character's measures by the editor's sliders; the recipe of that first shape.
 - `shared_file.py`: the file with every `fast_review.py` run, linked, a strip of its own per run along X; adding and removing a run.
 
 ## Key facts / gotchas
