@@ -1,12 +1,12 @@
 """The skin as the result of the layers, on the same 13,380 points and the same rig (epic volumes-outward): bones, then muscle by zone, then fat up to the sheet's percentage, and the skin moved onto what results.
     hm.sh --gpu python human-model/tools/outward_skin.py BUILD_DIR NAME SHEET.json OUT_DIR [VOXEL=m]
 SHEET.json is {"resolved": hmcore.character.resolve's result, "character": the character file}. Reads the build's skin, bones and rig; the muscle and fat tables from data/.
-Writes OUT_DIR/<NAME>.skin_fit.npz (the new body, for tools/body_layers.py, as skin_over_bone.py's), <NAME>.fat_table.json (each zone's fat after reaching the percentage, for body_layers.py's FAT_TABLE=) and <NAME>.skin_fit.json (the report)."""
+Writes OUT_DIR/<NAME>.skin_fit.npz (the new body, for tools/body_layers.py, as skin_over_bone.py's), <NAME>.fat_table.json (each zone's fat after reaching the percentage, for body_layers.py's FAT_TABLE=), <NAME>.regions.json (per-region tissue values, for body_walk.py's REGIONS=) and <NAME>.skin_fit.json (the report)."""
 import json, os, sys
 import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import warp as wp
-from hmcore import body, fit, layers, meshgpu, outward
+from hmcore import body, character as ch, fit, layers, meshgpu, outward, shapes
 
 N_BODY = 13380  # as in blender/export_blend.py
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -45,6 +45,14 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
         if "fat_mm" in values:
             fat_mm[zone] = values["fat_mm"]
     muscle_mm = json.load(open(os.path.join(HERE, "..", "data", f"muscle_mm_{sex}.json")))["muscle_mm"]
+    data = os.path.join(HERE, "..", "data")
+    if character.get("gluteus"):
+        fat_mm, muscle_mm = shapes.gluteus(fat_mm, muscle_mm, character["gluteus"]["shape"], json.load(open(os.path.join(data, "gluteus_shapes.json"))))
+    regions_out, structure_out = {}, {}
+    if sex == "female":
+        base = ch.base_measures("female")
+        cup_ratio = (fields["bust"]["value"] - fields["underbust"]["value"]) / (base["bust"] - base["underbust"])
+        fat_mm, regions_out, structure_out = shapes.breast(fat_mm, character.get("breast") or {}, json.load(open(os.path.join(data, "breast_shapes.json"))), cup_ratio)
     e = np.load(os.path.join(build_dir, f"{name}.export.npz"))
     skin = e["verts"].astype(float)[:N_BODY]
     tris = fit.triangles(e["starts"], e["sizes"], e["loops"])
@@ -94,7 +102,14 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
     push = np.linalg.norm(new - skin, axis=1)
     np.savez_compressed(os.path.join(out_dir, f"{name}.skin_fit.npz"), verts=full, push=push.astype(np.float32), patch=patch.astype(np.int32))
     with open(os.path.join(out_dir, f"{name}.fat_table.json"), "w") as f:
-        json.dump({"fat_mm": {z: round(v * result["scale"], 2) for z, v in fat_mm.items()}, "scale": round(result["scale"], 3)}, f, indent=1)
+        json.dump({"fat_mm": {z: round(v * result["scale"], 2) for z, v in fat_mm.items()}, "scale": round(result["scale"], 3), "structure": structure_out, "regions": regions_out}, f, indent=1)
+    keys = {"young_pa": "young", "poisson": "poisson", "density": "density", "damping": "damping"}
+    for zone, values in (character.get("regions") or {}).items():
+        typed = {keys[k]: v for k, v in values.items() if k in keys}
+        if typed:
+            regions_out.setdefault("fat", {}).setdefault(zone, {}).update(typed)
+    with open(os.path.join(out_dir, f"{name}.regions.json"), "w") as f:
+        json.dump(regions_out, f, indent=1)
     report = {"name": name, "voxel_m": voxel, "target_percent": target, "percent": round(result["percent"], 2), "reached_within_0_5": bool(result["reached"]), "fat_scale": round(result["scale"], 3),
               "muscle_scale": fields["muscle"]["value"], "skin_points_moved": int(len(ids)), "largest_move_mm": round(float(push.max()) * 1000, 1), "mean_move_mm": round(float(push[ids].mean()) * 1000, 1),
               "ring_steps_mm": outward.ring_steps(skin, new, rings), "triangles_turned_over": outward.folded(skin, new, patch), "triangles": int(len(patch)), "regions_bones": len(region)}

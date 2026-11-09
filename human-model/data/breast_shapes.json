@@ -1,0 +1,8 @@
+{
+ "_about": "Each breast shape as multipliers on the fat of breast_L and breast_R (by eye, edit to change). The divided zones are left and right only, so a shape here sets how much the breast holds and how much deep gland it has, not its outline. Adjustments: espacados (0 to 1) thins the fat between the breasts, in the chest zone; pendentes (0 to 1) softens the skin over them, as the fraction that comes off the skin's stiffness; assimetricos is a multiplier per side.",
+ "redondos": {"fat": 1.05, "gland_skin_mm": 12},
+ "gota": {"fat": 1.0, "gland_skin_mm": 14},
+ "conicos": {"fat": 0.95, "gland_skin_mm": 10},
+ "tuberosos": {"fat": 0.9, "gland_skin_mm": 8},
+ "adjustments": {"espacados_chest_fat_loss": 0.5, "pendentes_skin_softening": 0.5}
+}

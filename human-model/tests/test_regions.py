@@ -57,3 +57,9 @@ def test_an_override_reaches_its_full_value_in_a_thin_layer():
     zone = np.zeros(len(voxel), int)
     v = regions.per_tet(label, zone, voxel, ij, table(), {"fat": {"a": {"damping": 40.0}}}, LABELS, ZONES)["damping"]
     assert v == pytest.approx(40.0)
+
+
+def test_a_factor_scales_the_tissues_own_stiffness():
+    label, zone, voxel, vox = line()
+    v = regions.per_tet(label, zone, voxel, vox, table(), {"fat": {"b": {"young_factor": 0.5}}}, LABELS, ZONES)
+    assert v["young"][voxel == 9] == pytest.approx(2000.0)

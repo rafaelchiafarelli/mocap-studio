@@ -16,3 +16,5 @@ Epic `volumes-outward`.
 ## Pre-work
 
 None.
+
+**Status:** Done (2026-11-08), as multipliers on left and right breast zones; since the zones don't divide a breast further, the shapes set how much each holds and how deep the gland starts, not its outline (recorded in data/breast_shapes.json).
