@@ -20,10 +20,12 @@
 
 The table is in `human-model/docs/muscle-physics.md`, section "Where a walk's time goes". With the new defaults (5 mm, volumes every 10 frames), a simulation takes 3 to 3.5 minutes instead of 8.5.
 
+The bone test stays on: it costs about 40 s. A "safe rule" that would replace it is left for later (Rafael, 2026-11-08).
+
 ## To work out when planning
 
-- **Run the two bodies side by side.** The machine has room (28 threads, and two simulations at once used about 400 MB of the GPU's memory). Bones take about 11 minutes per body; whether two at once slow each other isn't measured. Each stage only needs the one before it, for its own body.
-- **Skip what didn't change:** a change to the tissue values needs only the simulation and the file, not the bones. To decide: name the stage and the earlier run to reuse (recommended), or detect it. Rafael hasn't chosen.
-- **Where results go,** with names that say what they are, since every attempt is kept. Rafael (2026-11-08) asked for every run in one Blender file, each with its nickname, given on the command line, as text floating over the model. The proposal: each run keeps its own file (855 MB) and the shared file links to them. Whether links play the walk, and how much memory they take, is to be tested with two runs first. The walk moves about 6 m along Y, so runs sit side by side along X.
+- **Run the two bodies side by side.** The machine has room (28 threads, and two simulations at once used about 400 MB of the GPU's memory). Bones take about 11 minutes per body and, in the redesign (`body-type-selection`), are calculated once, when the character's design is finished, so they aren't part of a usual round. Each stage only needs the one before it, for its own body.
+- **Skip what didn't change:** a change to the tissue values needs only the simulation and the file, not the bones. Decided (Rafael, 2026-11-08): the command is told the stage to start from and the earlier run to reuse; it doesn't detect changes, and the run notes where each part came from.
+- **Where results go,** with names that say what they are, since every attempt is kept. Rafael (2026-11-08) asked for every run in one Blender file, each with its nickname, given on the command line, as text floating over the model. Decided (2026-11-08): each run keeps its own file (855 MB) and the shared file links to them. Whether links play the walk, and how much memory they take, is to be tested with two runs first; if they don't work, the runs are copied in. The walk moves about 6 m along Y, so runs sit side by side along X.
 - **The simulation's stages will change** if the body's construction is redesigned (`body-type-selection`), so the front of the chain must be replaceable.
 - **Moving the section:** the inner view is a fixed half today. A plane to drag belongs to initiative `xray-view`.
