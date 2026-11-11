@@ -1,17 +1,23 @@
 """Judges whether photos and videos of a real person are good reference for the human model, and prints why, in Portuguese.
 
-Photos are judged for the body's shape at rest, videos for its motion while walking. Each check gives ok, atenção or ruim:
-any ruim makes the file RUIM, any atenção makes it ACEITÁVEL, otherwise it is BOA. A folder also says which views are missing.
+Photos are judged for the body's shape at rest, videos for its motion while walking. A video is split into stretches, each a continuous
+run with the whole body in the picture and no camera cut, and each stretch is judged apart; long videos list their best stretches with
+start and end. Each check gives ok, atenção or ruim: any ruim makes the photo or stretch RUIM, any atenção ACEITÁVEL, otherwise BOA.
+The summary also says which views are missing.
 
-    human-model/hm.sh --ref python human-model/tools/check_reference.py "G:\\referencias" [more files or folders ...]
+    human-model/hm.sh --ref python human-model/tools/check_reference.py "G:\\referencias" [more files or folders ...] [--todos] [--csv FILE]
+
+--todos lists every stretch of a long video, not only the best ones. --csv writes every stretch to a table, for tools/cut_stretches.py.
 
 Windows paths work, in quotes. Files must be on G: or C:. Every limit below is declared by judgement, not measured against results.
 """
 from __future__ import annotations
 
+import csv
 import os
 import re
 import sys
+from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -33,13 +39,17 @@ UNREADABLE_EXT = {".heic", ".heif", ".avif", ".cr2", ".cr3", ".nef", ".arw", ".d
 PHOTO_BODY_PX = (1500, 800)  # body height in pixels: ok from the first, atenção from the second, ruim below
 VIDEO_BODY_PX = (1000, 500)
 VIDEO_FPS = (59.0, 23.0)  # ok from the first; below the second, ruim. Under 60 and 24 because cameras record at 59.94 and 23.976
-VIDEO_SECONDS = (6.0, 2.0)
-ANALYSED_SECONDS = 30.0  # only the start of a longer video is read
-POSE_HZ = 15.0  # how many frames per second go through the pose model and the other per-frame checks
-WHOLE_BODY_SHARE = (0.8, 0.5)  # share of the video's frames with the whole body in the picture
+VIDEO_SECONDS = (6.0, 2.0)  # a stretch's length: ok from the first; shorter than the second it isn't listed
+POSE_HZ = 10.0  # how many frames per second go through the pose model and the other per-frame checks
+MAX_GAP_S = 0.5  # longer than this without the whole body ends a stretch
+PERSON_JUMP = 0.25  # hips jumping by this share of the body's height, plus one body height per second of gap, means another person
+PERSON_SIZE = (0.7, 1.4)  # the body's height against the last sample's, outside which it is another person
+CUT_DISTANCE = 0.3  # colour-histogram distance between two frames, from which a jump can be a camera cut
+CUT_RATIO = 4.0  # and how many times above the recent frames' distance it must be
+BEST_STRETCHES = 15  # how many stretches a long video lists
 STEPS = 4  # steps wanted in a walking video
 WALK_TRAVEL = (0.5, 0.15)  # under both, the person didn't walk: hips across the picture, and change of apparent size, each over the body's height
-CAMERA_SPEED = (0.5, 5.0)  # the background's motion, in % of the body's height per second: ok, atenção, ruim above
+CAMERA_SPEED = (0.5, 5.0)  # the background's motion, in % of the body's height per second: ok, then shaking, then moving
 BITS_PER_PIXEL = (0.08, 0.03)  # below the first the compression may erase skin detail; below the second it has
 DUPLICATE_SHARE = 0.25  # share of repeated frames that means the real frame rate is lower than the file says
 CLIPPED = (0.05, 0.15)  # share of the body burnt white; crushed black warns above the second
@@ -61,6 +71,9 @@ class Report:
     use: str  # "forma" or "movimento"
     view: str = "?"
     checks: list = field(default_factory=list)
+    start: float | None = None  # a video's stretch, in seconds
+    end: float | None = None
+    body_px: int = 0
 
     def add(self, level: str, name: str, text: str):
         self.checks.append((level, name, text))
@@ -326,151 +339,225 @@ def camera_motion(prev_gray, gray, prev_mask, h_body) -> float | None:
     return float(np.linalg.norm(np.median((moved - pts)[good].reshape(-1, 2), axis=0)) / h_body * 100)
 
 
-def judge_video(path: Path, pose, face) -> Report:
+@dataclass
+class Stretch:
+    """What was seen in a continuous run with the whole body in the picture."""
+    times: list = field(default_factory=list)
+    body: list = field(default_factory=list)
+    sharp: list = field(default_factory=list)
+    skin: list = field(default_factory=list)
+    texture: list = field(default_factory=list)
+    views: list = field(default_factory=list)
+    ankle: list = field(default_factory=list)
+    hip_x: list = field(default_factory=list)
+    speeds: list = field(default_factory=list)
+    prev: tuple | None = None  # grey frame, mask and time of the last sample
+
+
+@dataclass
+class FileFacts:
+    """What holds for the whole video file."""
+    fps: float
+    true_fps: float
+    repeated: float
+    irregular: float
+    declared: float
+    bits_per_pixel: float | None
+
+
+def stamp(seconds: float) -> str:
+    return f"{int(seconds // 60):02d}:{seconds % 60:04.1f}"
+
+
+def add_sample(st: Stretch, t: float, bgr, p: Person, face):
+    st.times.append(t)
+    st.body.append(body_height(p))
+    st.sharp.append(sharpness(bgr, p))
+    if len(st.sharp) % 5 == 1:
+        st.skin.append(skin_share(bgr, p))
+        tex = skin_texture(bgr, p)
+        if tex is not None:
+            st.texture.append(tex)
+        st.views.append(view_of(p, bgr, face))
+    st.ankle.append(float(np.linalg.norm(p.world[AN_L] - p.world[AN_R])))
+    st.hip_x.append(float(p.lm[[HIP_L, HIP_R], 0].mean()))
+    s = min(1.0, 640 / max(bgr.shape[:2]))
+    gray = cv2.cvtColor(cv2.resize(bgr, None, fx=s, fy=s, interpolation=cv2.INTER_AREA), cv2.COLOR_BGR2GRAY)
+    small_mask = cv2.resize(p.mask.astype(np.uint8), (gray.shape[1], gray.shape[0]), interpolation=cv2.INTER_NEAREST) > 0
+    if st.prev is not None:
+        moved = camera_motion(st.prev[0], gray, st.prev[1], st.body[-1] * s)
+        if moved is not None:
+            st.speeds.append(moved / max(t - st.prev[2], 1e-3))
+    st.prev = (gray, small_mask, t)
+
+
+def same_person(st: Stretch, p: Person, t: float, last: float) -> bool:
+    """Models replace each other without a camera cut: a stretch ends if the body jumps or changes size from one sample to the next."""
+    px = body_height(p)
+    hip = float(p.lm[[HIP_L, HIP_R], 0].mean())
+    return abs(hip - st.hip_x[-1]) <= (PERSON_JUMP + (t - last)) * px and PERSON_SIZE[0] <= px / st.body[-1] <= PERSON_SIZE[1]
+
+
+def add_frame_rate_checks(r: Report, f: FileFacts):
+    level = graded(f.true_fps, VIDEO_FPS)
+    note = {OK: "suficiente para ver o impacto do passo", WARN: "serve para o balanço; o impacto do passo não aparece", BAD: "pouco para qualquer medida de movimento"}[level]
+    text = f"{f.fps:.0f} quadros por segundo: {note}"
+    if f.repeated > DUPLICATE_SHARE:
+        text = f"o arquivo diz {f.fps:.0f}, mas {f.repeated:.0%} dos quadros são repetidos, então são cerca de {f.true_fps:.0f}: {note}"
+    r.add(level, "quadros por segundo", text)
+    if f.irregular > 0.05:
+        r.add(WARN, "ritmo dos quadros", f"{f.irregular:.0%} dos intervalos fora do ritmo: quadros perdidos ou taxa variável")
+
+
+def judge_stretch(path: Path, st: Stretch, facts: FileFacts) -> Report:
+    r = Report(path, "movimento", start=st.times[0], end=st.times[-1])
+    add_frame_rate_checks(r, facts)
+    duration = r.end - r.start
+    r.add(graded(duration, VIDEO_SECONDS), "duração", f"{duration:.1f} s com o corpo inteiro")
+    px = int(np.median(st.body))
+    r.body_px = px
+    r.add(graded(px, VIDEO_BODY_PX), "resolução", f"o corpo ocupa {px} pixels de altura (ideal: {VIDEO_BODY_PX[0]} ou mais)")
+    check_sharpness(r, float(np.median(st.sharp)), "; inclui o borrão de movimento")
+
+    if len(st.speeds) >= 3:
+        speed = float(np.median(st.speeds))
+        level = graded(speed, CAMERA_SPEED, higher_is_better=False)
+        note = {OK: "parada", WARN: "tremendo um pouco", BAD: "em movimento: bom para olhar, ruim para medir"}[level]
+        r.add(OK if level == OK else WARN, "câmera", f"{note} (fundo anda {speed:.1f}% da altura do corpo por segundo)")
+    else:
+        r.add(WARN, "câmera", "o fundo não tem detalhes suficientes para saber se a câmera ficou parada")
+
+    steps = count_steps(np.array(st.times), np.array(st.ankle))
+    across = float(np.percentile(st.hip_x, 95) - np.percentile(st.hip_x, 5)) / px
+    closer = float(np.percentile(st.body, 95) - np.percentile(st.body, 5)) / px
+    camera_still = len(st.speeds) >= 3 and float(np.median(st.speeds)) <= CAMERA_SPEED[1]  # a camera following the walk keeps the body in the same place
+    if camera_still and across < WALK_TRAVEL[0] and closer < WALK_TRAVEL[1]:
+        r.add(WARN, "caminhada", f"a pessoa quase não sai do lugar: não parece caminhada, a não ser em esteira ({steps} oscilações dos pés)")
+    else:
+        r.add(OK if steps >= STEPS else WARN, "caminhada", f"cerca de {steps} passos detectados (ideal: {STEPS} ou mais)")
+
+    if facts.bits_per_pixel is not None:
+        level = graded(facts.bits_per_pixel, BITS_PER_PIXEL)
+        note = {OK: "boa", WARN: "alta: pode apagar detalhes da pele", BAD: "muito alta: detalhes da pele perdidos"}[level]
+        r.add(level, "compressão", f"{facts.bits_per_pixel:.2f} bits por pixel: {note}")
+
+    check_skin(r, float(np.median(st.skin)) if st.skin else 0.0)
+    if st.texture:
+        value = float(np.median(st.texture))
+        if value < SKIN_TEXTURE:
+            r.add(WARN, "marcas na pele", f"{value:.1f} pontos rastreáveis por área: pele lisa, o rastreamento pode escorregar")
+        else:
+            r.add(OK, "marcas na pele", f"{value:.1f} pontos rastreáveis por área")
+    if st.views:
+        r.view = max(set(st.views), key=st.views.count)
+    return r
+
+
+def read_error(path: Path, text: str) -> list[Report]:
     r = Report(path, "movimento")
+    r.add(BAD, "leitura", text)
+    return [r]
+
+
+def judge_video(path: Path, pose, face) -> list[Report]:
+    """One report per stretch, in the video's order."""
     cap = cv2.VideoCapture(str(path))
     if not cap.isOpened():
-        r.add(BAD, "leitura", "não consegui abrir este vídeo")
-        return r
+        return read_error(path, "não consegui abrir este vídeo")
     declared = cap.get(cv2.CAP_PROP_FPS)
     total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     every = max(1, int(round((declared or 30.0) / POSE_HZ)))
+    if declared and total / declared > 120:
+        print(f"{path.name}: {total / declared / 60:.0f} min de vídeo, leva alguns minutos...", file=sys.stderr)
 
-    stamps, repeats, compared = [], 0, 0
-    sharp, skin, texture, views, body, whole_flags, why_not = [], [], [], [], [], [], {}
-    pose_t, ankle, hip_x = [], [], []
-    speeds = []
-    prev_tiny, prev = None, None
+    stamps, repeats, compared, cuts, people, why_not = [], 0, 0, 0, 0, {}
+    stretches: list[Stretch] = []
+    current, last_whole = None, None
+    prev_tiny, prev_hist, pending, recent = None, None, None, deque(maxlen=30)
     index, shape = -1, None
-    while True:
-        if not cap.grab():
-            break
+
+    def close():
+        nonlocal current
+        if current is not None and current.times:
+            stretches.append(current)
+        current = None
+
+    while cap.grab():
         index += 1
         t = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
-        if t > ANALYSED_SECONDS:
-            break
         stamps.append(t)
         ok, bgr = cap.retrieve()
         if not ok:
             continue
         shape = bgr.shape
-        tiny = cv2.cvtColor(cv2.resize(bgr, (160, 90), interpolation=cv2.INTER_AREA), cv2.COLOR_BGR2GRAY)
+        small = cv2.resize(bgr, (160, 90), interpolation=cv2.INTER_AREA)
+        tiny = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
         if prev_tiny is not None:
             compared += 1
             repeats += int(np.mean(cv2.absdiff(tiny, prev_tiny)) < 0.05)
         prev_tiny = tiny
+        hist = cv2.calcHist([cv2.cvtColor(small, cv2.COLOR_BGR2HSV)], [0, 1], None, [32, 16], [0, 180, 0, 256])
+        cv2.normalize(hist, hist)
+        if pending is not None:
+            # A camera flash is one bright frame and the picture comes back: only a jump that stays is a cut.
+            if cv2.compareHist(pending, hist, cv2.HISTCMP_BHATTACHARYYA) >= CUT_DISTANCE / 2:
+                cuts += 1
+                close()
+                last_whole = None
+                pose.reset()
+            pending = None
+        elif prev_hist is not None:
+            jump = cv2.compareHist(prev_hist, hist, cv2.HISTCMP_BHATTACHARYYA)
+            if jump > CUT_DISTANCE and jump > CUT_RATIO * (np.mean(recent) if recent else 0.02):
+                pending, prev_hist = prev_hist, hist
+                continue
+            recent.append(jump)
+        prev_hist = hist
         if index % every:
             continue
         p = find_person(pose, bgr)
-        if p is None:
-            whole_flags.append(False)
-            why_not["a pessoa some"] = why_not.get("a pessoa some", 0) + 1
-            prev = None
-            continue
-        whole, why = whole_body_in_frame(p, bgr.shape)
-        whole_flags.append(whole)
-        if not whole:
+        whole, why = whole_body_in_frame(p, bgr.shape) if p is not None else (False, "a pessoa some")
+        if whole:
+            if current is not None and (t - last_whole > MAX_GAP_S or not same_person(current, p, t, last_whole)):
+                if t - last_whole <= MAX_GAP_S:
+                    people += 1
+                close()
+            if current is None:
+                current = Stretch()
+            add_sample(current, t, bgr, p, face)
+            last_whole = t
+        else:
             why_not[why] = why_not.get(why, 0) + 1
-            prev = None
-            continue
-        body.append(body_height(p))
-        sharp.append(sharpness(bgr, p))
-        if len(sharp) % 5 == 1:
-            skin.append(skin_share(bgr, p))
-            tex = skin_texture(bgr, p)
-            if tex is not None:
-                texture.append(tex)
-            views.append(view_of(p, bgr, face))
-        pose_t.append(t)
-        ankle.append(float(np.linalg.norm(p.world[AN_L] - p.world[AN_R])))
-        hip_x.append(float(p.lm[[HIP_L, HIP_R], 0].mean()))
-        s = min(1.0, 640 / max(bgr.shape[:2]))
-        gray = cv2.cvtColor(cv2.resize(bgr, None, fx=s, fy=s, interpolation=cv2.INTER_AREA), cv2.COLOR_BGR2GRAY)
-        small_mask = cv2.resize(p.mask.astype(np.uint8), (gray.shape[1], gray.shape[0]), interpolation=cv2.INTER_NEAREST) > 0
-        if prev is not None:
-            moved = camera_motion(prev[0], gray, prev[1], body[-1] * s)
-            if moved is not None:
-                speeds.append(moved / max(t - prev[2], 1e-3))
-        prev = (gray, small_mask, t)
+            if current is not None:
+                current.prev = None
+                if t - last_whole > MAX_GAP_S:
+                    close()
+    close()
     cap.release()
 
     if len(stamps) < 2 or shape is None:
-        r.add(BAD, "leitura", "o vídeo não tem quadros que eu consiga ler")
-        return r
-    stamps = np.array(stamps)
-    gaps = np.diff(stamps)
+        return read_error(path, "o vídeo não tem quadros que eu consiga ler")
+    gaps = np.diff(np.array(stamps))
     gaps = gaps[gaps > 0]
     if gaps.size == 0:
-        r.add(BAD, "leitura", "o vídeo não informa o tempo dos quadros")
-        return r
+        return read_error(path, "o vídeo não informa o tempo dos quadros")
     fps = 1.0 / float(np.median(gaps))
-    duration = float(stamps[-1] - stamps[0])
-    irregular = float(np.mean(np.abs(gaps - np.median(gaps)) > 0.5 * np.median(gaps)))
     repeated = repeats / compared if compared else 0.0
-    true_fps = fps * (1 - repeated) if repeated > DUPLICATE_SHARE else fps  # a few equal frames are a still moment, not a lower rate
-
-    level = graded(true_fps, VIDEO_FPS)
-    note = {OK: "suficiente para ver o impacto do passo", WARN: "serve para o balanço; o impacto do passo não aparece", BAD: "pouco para qualquer medida de movimento"}[level]
-    text = f"{fps:.0f} quadros por segundo: {note}"
-    if repeated > DUPLICATE_SHARE:
-        text = f"o arquivo diz {fps:.0f}, mas {repeated:.0%} dos quadros são repetidos, então são cerca de {true_fps:.0f}: {note}"
-    r.add(level, "quadros por segundo", text)
-    if irregular > 0.05:
-        r.add(WARN, "ritmo dos quadros", f"{irregular:.0%} dos intervalos fora do ritmo: quadros perdidos ou taxa variável")
-    if declared and declared < VIDEO_FPS[0] and level != BAD:
-        r.add(OK, "câmera lenta", "se foi gravado em câmera lenta e exportado nessa taxa, o real é maior: isto eu não consigo ver")
-
-    r.add(graded(duration, VIDEO_SECONDS), "duração", f"{duration:.1f} s analisados" + (f" (de {total / declared:.0f} s)" if declared and total / declared > ANALYSED_SECONDS else ""))
-
-    if not any(whole_flags):
-        why = max(why_not, key=why_not.get) if why_not else "o corpo não aparece inteiro"
-        r.add(BAD, "corpo inteiro", f"em nenhum quadro: {why}")
-        return r
-    share = float(np.mean(whole_flags))
-    level = graded(share, WHOLE_BODY_SHARE)
-    text = f"em {share:.0%} dos quadros"
-    if share < 1 and why_not:
-        text += f"; nos outros, {max(why_not, key=why_not.get)}"
-    r.add(level, "corpo inteiro", text)
-
-    px = int(np.median(body))
-    r.add(graded(px, VIDEO_BODY_PX), "resolução", f"o corpo ocupa {px} pixels de altura (ideal: {VIDEO_BODY_PX[0]} ou mais; gravar com o celular em pé ajuda)")
-    check_sharpness(r, float(np.median(sharp)), "; inclui o borrão de movimento")
-
-    if len(speeds) >= 3:
-        speed = float(np.median(speeds))
-        level = graded(speed, CAMERA_SPEED, higher_is_better=False)
-        note = {OK: "parada", WARN: "tremendo um pouco: atrapalha medir milímetros", BAD: "se movendo: não dá para separar o corpo da câmera"}[level]
-        r.add(level, "câmera", f"{note} (fundo anda {speed:.1f}% da altura do corpo por segundo)")
-    else:
-        r.add(WARN, "câmera", "o fundo não tem detalhes suficientes para saber se a câmera ficou parada")
-
-    steps = count_steps(np.array(pose_t), np.array(ankle))
-    across = float(np.percentile(hip_x, 95) - np.percentile(hip_x, 5)) / px
-    closer = float(np.percentile(body, 95) - np.percentile(body, 5)) / px
-    if across < WALK_TRAVEL[0] and closer < WALK_TRAVEL[1]:
-        r.add(WARN, "caminhada", f"a pessoa quase não sai do lugar: não parece caminhada, a não ser em esteira ({steps} oscilações dos pés)")
-    else:
-        r.add(OK if steps >= STEPS else WARN, "caminhada", f"cerca de {steps} passos detectados (ideal: {STEPS} ou mais)")
-
-    size = path.stat().st_size * 8
     h, w = shape[:2]
-    if declared and total and total / declared > 0:
-        bpp = size / (total * w * h)
-        level = graded(bpp, BITS_PER_PIXEL)
-        note = {OK: "boa", WARN: "alta: pode apagar detalhes da pele", BAD: "muito alta: detalhes da pele perdidos"}[level]
-        r.add(level, "compressão", f"{bpp:.2f} bits por pixel: {note}")
+    facts = FileFacts(fps, fps * (1 - repeated) if repeated > DUPLICATE_SHARE else fps, repeated,  # a few equal frames are a still moment, not a lower rate
+                      float(np.mean(np.abs(gaps - np.median(gaps)) > 0.5 * np.median(gaps))), declared,
+                      path.stat().st_size * 8 / (total * w * h) if total else None)
 
-    check_skin(r, float(np.median(skin)) if skin else 0.0)
-    if texture:
-        value = float(np.median(texture))
-        if value < SKIN_TEXTURE:
-            r.add(WARN, "marcas na pele", f"{value:.1f} pontos rastreáveis por área: pele lisa, o rastreamento pode escorregar")
-        else:
-            r.add(OK, "marcas na pele", f"{value:.1f} pontos rastreáveis por área")
-    if views:
-        r.view = max(set(views), key=views.count)
-    return r
+    kept = [st for st in stretches if st.times[-1] - st.times[0] >= VIDEO_SECONDS[1]]
+    if not kept:
+        r = Report(path, "movimento")
+        add_frame_rate_checks(r, facts)
+        why = max(why_not, key=why_not.get) if why_not else "o corpo não aparece inteiro"
+        r.add(BAD, "corpo inteiro", f"nenhum trecho de {VIDEO_SECONDS[1]:.0f} s ou mais com o corpo inteiro; o mais comum: {why}")
+        return [r]
+    reports = [judge_stretch(path, st, facts) for st in kept]
+    print(f"\n{path.name}: {stamp(stamps[-1])} de vídeo, {cuts + 1} tomada(s), {people} troca(s) de pessoa sem corte, {len(reports)} trecho(s) com o corpo inteiro ({len(stretches) - len(kept)} curtos demais, descartados)")
+    return reports
 
 
 def expand(args) -> list[Path]:
@@ -486,10 +573,29 @@ def expand(args) -> list[Path]:
     return files
 
 
+def title(r: Report) -> str:
+    return r.path.name if r.start is None else f"{r.path.name} {stamp(r.start)} a {stamp(r.end)}"
+
+
 def print_report(r: Report):
-    print(f"\n{r.path.name}: {r.verdict}  (para {r.use}; vista: {r.view})")
+    print(f"\n{title(r)}: {r.verdict}  (para {r.use}; vista: {r.view})")
     for level, name, text in sorted(r.checks, key=lambda c: (BAD, WARN, OK).index(c[0])):
         print(f"  [{level:7}] {name}: {text}")
+
+
+def rank(r: Report):
+    """Fewest problems first, then the longest stretch with the largest body."""
+    levels = [c[0] for c in r.checks]
+    return (levels.count(BAD), levels.count(WARN), -(r.end - r.start) * min(1.0, r.body_px / VIDEO_BODY_PX[0]))
+
+
+def print_stretches(reports: list[Report], show_all: bool):
+    ordered = sorted(reports, key=rank)
+    print(f"  Trechos, do melhor para o pior ({'todos' if show_all or len(ordered) <= BEST_STRETCHES else f'os {BEST_STRETCHES} melhores de {len(ordered)}'}):")
+    for r in ordered if show_all else ordered[:BEST_STRETCHES]:
+        problems = ", ".join(c[1] for c in r.checks if c[0] != OK) or "nenhum aviso"
+        print(f"  {stamp(r.start)} a {stamp(r.end)}  {r.verdict:9}  {r.end - r.start:5.1f} s  {r.view:7}  corpo {r.body_px:4d} px  {problems}")
+    print_report(ordered[0])
 
 
 def print_summary(reports: list[Report]):
@@ -497,7 +603,7 @@ def print_summary(reports: list[Report]):
     photos = {r.view for r in usable if r.use == "forma"}
     videos = {r.view for r in usable if r.use == "movimento"}
     print("\nResumo")
-    print(f"  {sum(r.verdict == 'BOA' for r in reports)} boa(s), {sum(r.verdict == 'ACEITÁVEL' for r in reports)} aceitável(is), {sum(r.verdict == 'RUIM' for r in reports)} ruim(ns).")
+    print(f"  Fotos e trechos: {sum(r.verdict == 'BOA' for r in reports)} bom/boa(s), {sum(r.verdict == 'ACEITÁVEL' for r in reports)} aceitável(is), {sum(r.verdict == 'RUIM' for r in reports)} ruim(ns).")
     missing = [v for v in ("frente", "lado", "costas") if v not in photos]
     print("  Fotos: as três vistas estão cobertas." if not missing else f"  Fotos: faltam {', '.join(missing)}.")
     missing = [v for v in ("lado", "costas") if v not in videos]
@@ -506,6 +612,15 @@ def print_summary(reports: list[Report]):
 
 
 def main(args) -> int:
+    show_all = "--todos" in args
+    args = [a for a in args if a != "--todos"]
+    table, writer = None, None
+    if "--csv" in args:
+        at = args.index("--csv")
+        table = open(wsl_path(args[at + 1]), "w", newline="", encoding="utf-8")
+        writer = csv.writer(table)
+        writer.writerow(["video", "start_s", "end_s", "verdict", "view", "body_px", "warnings"])
+        args = args[:at] + args[at + 2:]
     if not args:
         print(__doc__)
         return 2
@@ -518,17 +633,29 @@ def main(args) -> int:
             mp_face.FaceDetection(model_selection=0, min_detection_confidence=0.5) as face:
         for path in files:
             suffix = path.suffix.lower()
+            if suffix in VIDEO_EXT:
+                with mp_pose.Pose(static_image_mode=False, model_complexity=1, enable_segmentation=True, smooth_segmentation=True) as video_pose:
+                    found = judge_video(path, video_pose, face)
+                if found[0].start is not None:
+                    print_stretches(found, show_all)
+                    if writer:
+                        for r in found:
+                            writer.writerow([r.path, f"{r.start:.3f}", f"{r.end:.3f}", r.verdict, r.view, r.body_px, "; ".join(c[1] for c in r.checks if c[0] != OK)])
+                        table.flush()
+                else:
+                    print_report(found[0])
+                reports += found
+                continue
             if suffix in PHOTO_EXT:
                 r = judge_photo(path, photo_pose, face)
-            elif suffix in VIDEO_EXT:
-                with mp_pose.Pose(static_image_mode=False, model_complexity=1, enable_segmentation=True, smooth_segmentation=True) as video_pose:
-                    r = judge_video(path, video_pose, face)
             else:
                 r = Report(path, "forma")
                 r.add(BAD, "formato", f"não leio {suffix}: exporte como JPG ou PNG" if suffix in UNREADABLE_EXT else f"formato {suffix} desconhecido")
             print_report(r)
             reports.append(r)
     print_summary(reports)
+    if table:
+        table.close()
     return 0
 
 
