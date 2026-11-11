@@ -1,6 +1,6 @@
 """Arms as damped triple pendulums with collision (Rafael, 2026-11-11). Run with --blend on a walking body. Args: out.blend out.json
 Each arm hangs from the shoulder, which the walking trunk carries: shoulder, elbow and wrist are joints, the upper arm, forearm and closed hand are weights. Gravity pulls them down and each joint is damped,
-so the arm settles pointing down and swings only from the trunk's motion; the wrist also has a light passive stiffness towards straight. The arm collides with the trunk and legs: it may press 5 mm into the skin (which tools/skin_waves.py dents), and friction slows
+so the arm settles pointing down and swings only from the trunk's motion; the wrist also has a light passive stiffness towards straight. The forearm turns about its length so the palm faces the thigh. The arm collides with the trunk and legs: it may press 5 mm into the skin (which tools/skin_waves.py dents), and friction slows
 it along the skin. Joints: the elbow doesn't bend backwards or past ELBOW_MOST_DEG, the wrist bends at most WRIST_MOST_DEG. Position-based dynamics with Verlet steps; the result is keyed on the rig."""
 import json, math, os, sys
 import bpy
@@ -18,7 +18,7 @@ scene = bpy.context.scene
 fps = scene.render.fps / scene.render.fps_base
 BODY_KG = 58.0  # declared
 SHARE = {"upper": 0.028, "fore": 0.016, "hand": 0.006}  # of body mass, the usual segment tables (Dempster, as quoted in Winter's Biomechanics; from memory, not checked against the source)
-DAMPING = {"shoulder": 2.5, "elbow": 4.0, "wrist": 6.0}  # per second, on each joint's relative motion: by eye
+DAMPING = {"shoulder": 3.75, "elbow": 6.0, "wrist": 9.0}  # per second, on each joint's relative motion: by eye, raised 50% by Rafael (2026-11-11)
 FRICTION = 0.4  # share of the sliding along the skin taken out at each contact step: by eye
 GIVE_M = 0.005  # the skin gives this much (Rafael: 5 mm at most)
 RADIUS = {"upper": 0.045, "fore": 0.035, "hand": 0.04}
@@ -48,6 +48,27 @@ def chain(side):
     return np.array([world(up.head), world(fo.head), world(ha.head), world(fist)])
 
 
+palm_local = {}  # each hand's palm normal in its bone's own axes, from the nails: the palm faces away from them
+
+
+def face_palm_in(side):
+    """Turns the forearm about its own length so the palm faces the thigh, as a hanging arm's does; the hand follows. Returns the turn in degrees."""
+    fo, ha = rig.pose.bones[f"forearm.{side}"], rig.pose.bones[f"hand.{side}"]
+    bpy.context.view_layer.update()
+    axis = np.array(fo.matrix.to_3x3().col[1])
+    axis /= np.linalg.norm(axis)
+    palm = np.array(ha.matrix.to_3x3()) @ palm_local[side]
+    inward = np.array(W.inverted().to_3x3()) @ np.array([-1.0 if side == "L" else 1.0, 0.0, 0.0])
+    p_, d_ = palm - np.dot(palm, axis) * axis, inward - np.dot(inward, axis) * axis
+    if np.linalg.norm(p_) < 1e-6 or np.linalg.norm(d_) < 1e-6:
+        return 0.0
+    turn = math.atan2(float(np.dot(axis, np.cross(p_, d_))), float(np.dot(p_, d_)))
+    M = fo.matrix.copy()
+    head = M.to_translation()
+    fo.matrix = Matrix.Translation(head) @ Matrix.Rotation(turn, 4, Vector(axis)) @ Matrix.Translation(-head) @ M
+    return math.degrees(turn)
+
+
 def fist_curl():
     """Closes both hands into fists, keyed once. Each finger bone's curl direction is the one that moves its fingertip away from its nail:
     MPFB's skin has a fingernails group, so the palm side is never guessed from the rest pose."""
@@ -65,6 +86,10 @@ def fist_curl():
             axis = np.array(W @ tip.tail) - np.array(W @ tip.head)
             axis /= np.linalg.norm(axis)
             towards_nail = (nail - tip_point) - np.dot(nail - tip_point, axis) * axis
+            if finger == "f_middle":
+                palm_world = -towards_nail / np.linalg.norm(towards_nail)
+                rest_rot = np.array(rig.data.bones[f"hand.{s}"].matrix_local.to_3x3())
+                palm_local[s] = rest_rot.T @ (np.array(W.inverted().to_3x3()) @ palm_world)
             for i in (1, 2, 3):
                 pb = rig.pose.bones[f"{finger}.0{i}.{s}"]
                 pb.rotation_mode = "QUATERNION"
@@ -216,7 +241,10 @@ for f in range(first, last + 1):
             pb = rig.pose.bones[f"{name}.{s}"]
             target = p[j] if name != "hand" else p[2] + (p[3] - p[2]) / 0.55
             aim(pb, target)
-            pb.keyframe_insert("rotation_quaternion", frame=f)
+        report[s].setdefault("palm_turn_deg", []).append(face_palm_in(s))
+        aim(rig.pose.bones[f"hand.{s}"], p[2] + (p[3] - p[2]) / 0.55)
+        for name in ("upper_arm", "forearm", "hand"):
+            rig.pose.bones[f"{name}.{s}"].keyframe_insert("rotation_quaternion", frame=f)
         u1, u2 = p[1] - p[0], p[2] - p[1]
         if "trace" in a and s == "L" and f % 6 == 1:
             print("trace", f, np.round(p, 3).tolist())
@@ -225,6 +253,6 @@ for f in range(first, last + 1):
 pm.set_display(body, True)
 scene.frame_set(first)
 bpy.ops.wm.save_as_mainfile(filepath=a[0])
-summary = {s: {"contact_steps": r["contacts"], "deepest_inside_a_step_mm": r["deepest_mm"], "swing_range_deg": [min(r["swing_deg"]), max(r["swing_deg"])], "elbow_range_deg": [min(r["elbow_deg"]), max(r["elbow_deg"])], "deepest_left_after_frame_mm": r.get("left_mm", 0.0), "frames_left_inside": r.get("frames_left", 0)} for s, r in report.items()}
+summary = {s: {"contact_steps": r["contacts"], "deepest_inside_a_step_mm": r["deepest_mm"], "swing_range_deg": [min(r["swing_deg"]), max(r["swing_deg"])], "elbow_range_deg": [min(r["elbow_deg"]), max(r["elbow_deg"])], "deepest_left_after_frame_mm": r.get("left_mm", 0.0), "frames_left_inside": r.get("frames_left", 0), "palm_turn_range_deg": [min(r["palm_turn_deg"]), max(r["palm_turn_deg"])]} for s, r in report.items()}
 json.dump({"arms": summary, "masses_kg": mass[1:].tolist()}, open(a[1], "w"), indent=1)
 print(json.dumps(summary))
