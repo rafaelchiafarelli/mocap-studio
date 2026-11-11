@@ -6,8 +6,8 @@ from scipy import ndimage
 from scipy.spatial import ConvexHull
 from . import fit, layers
 
-BONE, MUSCLE, FAT, SKIN, CAVITY, FAT_DEEP, GLAND, VISCERA = 0, 1, 2, 3, 4, 5, 6, 7
-LABELS = ("bone", "muscle", "fat", "skin", "cavity", "fat_deep", "gland", "viscera")
+BONE, MUSCLE, FAT, SKIN, CAVITY, FAT_DEEP, GLAND, VISCERA, BALLOON = 0, 1, 2, 3, 4, 5, 6, 7, 8
+LABELS = ("bone", "muscle", "fat", "skin", "cavity", "fat_deep", "gland", "viscera", "balloon")
 GLUTEUS_ZONES = ("buttocks_upper_center", "buttocks_upper_side", "buttocks_lower_center", "buttocks_lower_side")
 BREAST_ZONES = ("breast_L", "breast_R")
 ZONES = ("neck", "chest", *BREAST_ZONES, "upper_back", "belly", "flanks", "lower_back", "hips", *GLUTEUS_ZONES,
@@ -233,6 +233,22 @@ def label_voxels(d_skin, t_fat, t_superficial, d_bone, inside, in_bone, in_chest
     return lab
 
 
+def place_balloons(labels, centres, breast, h, cc, spheres):
+    """One sealed spherical balloon per breast (Rafael, 2026-11-09), between the skin and the pectoral: on each side (x > 0, x < 0) the fat cubes nearest that side's centre become BALLOON, as many as make cc, so its volume is exact to one cube. spheres: {"L": centre, "R": centre}. labels, centres and breast are over the whole grid, flat; labels is changed in place. Returns {side: {cc, radius_cm, farthest_cm}}: the farthest cube past the radius means something cut the sphere."""
+    n, placed = int(round(cc * 1e-6 / h ** 3)), {}
+    fat = np.isin(labels, (FAT, FAT_DEEP, GLAND)) & breast
+    radius = (3 * cc * 1e-6 / (4 * np.pi)) ** (1 / 3)
+    for side, on_side in (("L", centres[:, 0] > 0), ("R", centres[:, 0] < 0)):
+        ids = np.flatnonzero(fat & on_side)
+        if len(ids) < n:
+            raise ValueError(f"the breast {side} holds {len(ids) * h ** 3 * 1e6:.0f} cc of fat, less than the balloon's {cc} cc")
+        distance = np.linalg.norm(centres[ids] - np.asarray(spheres[side]), axis=1)
+        order = np.argsort(distance, kind="stable")[:n]
+        labels[ids[order]] = BALLOON
+        placed[side] = {"cc": round(n * h ** 3 * 1e6, 3), "radius_cm": round(radius * 100, 2), "farthest_cm": round(float(distance[order].max()) * 100, 2)}
+    return placed
+
+
 def outward(verts, tris):
     """fit.outward. Builds made before bug human-model/11 was fixed have the left leg's bones inside out, and a winding number of -1
     called them outside (body_v2 had no left femur), so every bone is still turned outward before use."""
@@ -293,6 +309,7 @@ def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None, d
 
     s = {k: v / 1000 for k, v in structure.items() if k.endswith("_mm")}
     breast, muscle_mask = np.isin(z_of, BREAST_ZONES), None
+    balloon_cc = (tissue or {}).get("balloon_cc", 0)
     if tissue is not None:
         cells = np.floor((c - tissue["origin"]) / tissue["h"]).astype(int)
         valid = ((cells >= 0) & (cells < tissue["shape"])).all(axis=1)
@@ -302,7 +319,7 @@ def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None, d
             return out
         muscle_mask = at(tissue["muscle"])
         breast = at(tissue["breast"]) & ~muscle_mask
-    lab = label_voxels(d_skin, t_fat, t_superficial, d_bone, inside[included], in_bone, in_chest, in_trunk, front_of_spine, chest_bone, breast, h, s, structure["skin_band_voxels"], gland=gland, muscle_mask=muscle_mask)
+    lab = label_voxels(d_skin, t_fat, t_superficial, d_bone, inside[included], in_bone, in_chest, in_trunk, front_of_spine, chest_bone, breast, h, s, structure["skin_band_voxels"], gland=gland and not balloon_cc, muscle_mask=muscle_mask)
     raw = np.full(int(np.prod(shape)), -1, np.int8)
     raw[included] = lab
 
@@ -312,6 +329,10 @@ def build(skin, tris, rig, bones, fat_mm, structure, h, gpu_mesh, groups=None, d
              "gland_to_fat": island_cleanup(clean, GLAND, FAT, int(structure["min_island_voxels"])),
              "cavity_to_muscle": island_cleanup(clean, CAVITY, MUSCLE, int(structure["min_island_voxels"])),
              "viscera_to_muscle": island_cleanup(clean, VISCERA, MUSCLE, int(structure["min_island_voxels"]))}
+    if balloon_cc:  # after the cleanup, so that nothing changes the count
+        breast_grid = np.zeros(len(raw), bool)
+        breast_grid[included] = breast
+        moved["balloon_cc"] = place_balloons(clean.reshape(-1), centres, breast_grid, h, balloon_cc, tissue["balloon_centres"])
     nodes, tets, tet_voxel, vox = layers.tetrahedra(clean >= 0, origin, h)
     tet_label = clean[tuple(vox.T)][tet_voxel]
     zone_index = {z: i for i, z in enumerate(ZONES)}

@@ -157,3 +157,30 @@ def test_the_bellys_viscera_are_apart_from_the_chest():
     t_fat = np.full(3, 0.02)
     lab = body.label_voxels(d_skin, t_fat, t_fat, **v)
     assert lab.tolist() == [body.CAVITY, body.VISCERA, body.FAT]
+
+
+def test_place_balloons_are_spheres_of_the_exact_volume():
+    h = 0.005
+    axes = [np.arange(-30, 30) * h + h / 2, np.arange(-12, 12) * h + h / 2, np.arange(-12, 12) * h + h / 2]
+    xs, ys, zs = np.meshgrid(*axes, indexing="ij")
+    centres = np.column_stack([xs.ravel(), ys.ravel(), zs.ravel()])
+    labels = np.full(len(centres), body.FAT, np.int8)
+    spheres = {"L": np.array([0.08, 0.0, 0.0]), "R": np.array([-0.08, 0.0, 0.0])}
+    placed = body.place_balloons(labels, centres, np.ones(len(centres), bool), h, 100.0, spheres)
+    for side, on in (("L", centres[:, 0] > 0), ("R", centres[:, 0] < 0)):
+        inside = on & (labels == body.BALLOON)
+        assert inside.sum() * h ** 3 * 1e6 == pytest.approx(100.0, abs=h ** 3 * 1e6)
+        assert placed[side]["farthest_cm"] <= placed[side]["radius_cm"] + 100 * h
+        d = np.linalg.norm(centres - spheres[side], axis=1)
+        assert d[inside].max() <= d[on & (labels != body.BALLOON)].min() + 1e-9
+
+
+def test_place_balloons_takes_only_fat_and_refuses_too_little():
+    h = 0.01
+    centres = np.array([[0.05, 0.0, 0.0], [0.05, 0.01, 0.0], [-0.05, 0.0, 0.0], [-0.05, 0.01, 0.0]])
+    spheres = {"L": centres[1], "R": centres[3]}
+    labels = np.array([body.SKIN, body.GLAND, body.MUSCLE, body.FAT_DEEP], np.int8)
+    body.place_balloons(labels, centres, np.ones(4, bool), h, 1.0, spheres)
+    assert labels.tolist() == [body.SKIN, body.BALLOON, body.MUSCLE, body.BALLOON]
+    with pytest.raises(ValueError):
+        body.place_balloons(np.array([body.FAT, body.MUSCLE, body.FAT, body.MUSCLE], np.int8), centres, np.ones(4, bool), h, 2.0, spheres)

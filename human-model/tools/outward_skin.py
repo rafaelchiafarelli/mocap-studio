@@ -83,6 +83,7 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
     first = skin.copy()
     outlines = []
     bust_report = {}
+    balloon_cc, balloon_centres = 0.0, None
     if sex == "female":
         # The skin grows with the breast before anything else: it isn't pushed up to a volume, or it presses on it (Rafael, 2026-11-09)
         from skin_over_bone import tape, tape_topology
@@ -101,6 +102,7 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
         z_nipple = float((apexes[1][2] + apexes[-1][2]) / 2) - wish.get("pendentes", 0.0) * breast_table["adjustments"]["pendentes_m"]
         asked = fields["bust"]["value"]
         low, high = 0.3, 3.0
+        balloon_cc = wish.get("balloon_cc", 0.0)
         if not wish.get("projection_cm"):  # the projection that makes the tape read the sheet's bust; a fader's value is taken as it is
             for _ in range(12):
                 mid = (low + high) / 2
@@ -109,7 +111,27 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
         else:
             factor = 1.0
         outlines, skin = inflated(factor)
-        bust_report = {"asked_cm": round(asked, 1), "reached_cm": round(bust_at(skin, z_nipple), 1), "projection_cm": round(outlines[0]["project"] * 100, 1), "base_cm": round(outlines[0]["radius"] * 100, 1), "difference_cm": round(difference, 1), "first_shape_bust_cm": round(bust_at(first, z_nipple), 1)}
+        balloon_centres = None
+        if balloon_cc:  # the chest goes flat, then its skin stretches over each sphere, which rests against what lies under it: the bust is then a result, not a target
+            lines = [{**p, "project": 1e-4} for p in outlines]
+            skin = breast_skin.inflate(first, patch, lines)
+            radius = (3 * balloon_cc * 1e-6 / (4 * np.pi)) ** (1 / 3)
+            over = radius + cfg["structure"]["skin_band_voxels"] * voxel + voxel  # room for the skin's own band over the sphere
+            solid = centres[(core | muscle_solid).ravel()]
+            balloon_centres = {}
+            for side, label in ((1, "L"), (-1, "R")):
+                nipple_xz = apexes[side][[0, 2]]
+                axis = np.array([nipple_xz[0] * wish.get("balloon_spacing", 1.0), nipple_xz[1]])  # spacing: of the distance between the nipples, about the body's middle
+                gap = solid[:, [0, 2]] - axis
+                near = (gap ** 2).sum(axis=1) < radius ** 2
+                y = float((solid[near, 1] - np.sqrt(radius ** 2 - (gap[near] ** 2).sum(axis=1))).min()) - voxel / 2
+                centre = np.array([axis[0], y, axis[1]])
+                line = lines[0 if side == 1 else 1]
+                r = breast_skin.rho(skin, line)
+                chest_y = float(np.median(skin[(r > 0.5) & (r < 0.9) & (skin[:, 1] < line["front_y"]), 1]))
+                skin = breast_skin.onto_sphere(skin, centre, over, chest_y, pole=nipple_xz)
+                balloon_centres[label] = centre
+        bust_report = {"asked_cm": round(asked, 1), "reached_cm": round(bust_at(skin, z_nipple), 1), "projection_cm": round(outlines[0]["project"] * 100, 1), "base_cm": round(outlines[0]["radius"] * 100, 1), "difference_cm": round(difference, 1), "first_shape_bust_cm": round(bust_at(first, z_nipple), 1), "balloon_cc": balloon_cc}
         regions_out = shapes.breast_regions(wish, breast_table)
     inner = core | muscle_solid
 
@@ -140,8 +162,11 @@ def main(build_dir, name, sheet_json, out_dir, overrides):
     breast = np.zeros(shape, bool)
     for outline in outlines:
         breast |= breast_skin.footprint(centres, outline).reshape(shape)
+    if balloon_cc:  # a sphere's worth around each centre, and a little more, so hmcore.body.place_balloons can count its exact volume
+        reach = (3 * balloon_cc * 1e-6 / (4 * np.pi)) ** (1 / 3) + 2 * voxel
+        breast = np.any([np.linalg.norm(centres - c, axis=1) < reach for c in balloon_centres.values()], axis=0).reshape(shape)
     breast &= closed & ~inner
-    np.savez_compressed(os.path.join(out_dir, f"{name}.tissue.npz"), origin=origin, shape=np.array(shape), h=voxel, muscle=np.packbits(muscle_solid.ravel()), breast=np.packbits(breast.ravel()))
+    np.savez_compressed(os.path.join(out_dir, f"{name}.tissue.npz"), origin=origin, shape=np.array(shape), h=voxel, muscle=np.packbits(muscle_solid.ravel()), breast=np.packbits(breast.ravel()), balloon_cc=float(balloon_cc), **({"balloon_centres": np.array([balloon_centres["L"], balloon_centres["R"]])} if balloon_centres else {}))
     final = np.maximum(outward.sample(depth_field, new[ids], origin, voxel), 0.0)
     final_zone = zone[ids]
     with open(os.path.join(out_dir, f"{name}.fat_table.json"), "w") as f:

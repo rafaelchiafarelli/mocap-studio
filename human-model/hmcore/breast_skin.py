@@ -64,6 +64,29 @@ def inflate(verts, tris, outlines):
     return v
 
 
+def onto_sphere(verts, centre, radius, chest_y, pole=None):
+    """A copy of verts with the skin of a flat chest stretched over a sphere in front of it: the disc of skin inside the circle where the sphere meets the chest's plane (y = chest_y) becomes the cap of the sphere in front of that plane, each point at the same fraction of the way from the pole, so the pole is the disc's middle and the rim doesn't move. What the skin stands out of the plane (areola, nipple) stands out of the sphere. pole: the (x, z) of the skin that should land on the sphere's front, when the nipple isn't over the centre; the skin slides there, less and less towards the rim."""
+    v = np.asarray(verts, float).copy()
+    cx, cy, cz = centre
+    theta_rim = np.arccos(np.clip((cy - chest_y) / radius, -1.0, 1.0))
+    rim = radius * np.sin(theta_rim)
+    dx, dz = v[:, 0] - cx, v[:, 2] - cz
+    s = np.hypot(dx, dz)
+    m = (s < rim) & (v[:, 1] < chest_y + FRONT_REACH)
+    if pole is not None:
+        slide = 1.0 - (s[m] / rim) ** 2
+        dx[m] -= (pole[0] - cx) * slide
+        dz[m] -= (pole[1] - cz) * slide
+        s = np.hypot(dx, dz)
+    theta = s[m] / rim * theta_rim
+    out = radius + np.maximum(chest_y - v[m, 1], 0.0)
+    ux, uz = dx[m] / np.maximum(s[m], 1e-9), dz[m] / np.maximum(s[m], 1e-9)
+    v[m, 0] = cx + out * np.sin(theta) * ux
+    v[m, 2] = cz + out * np.sin(theta) * uz
+    v[m, 1] = cy - out * np.cos(theta)
+    return v
+
+
 def footprint(points, p):
     """Which points lie over this breast's base."""
     return (rho(points, p) < 1.0) & (points[:, 1] < p["front_y"])

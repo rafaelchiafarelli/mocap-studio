@@ -15,7 +15,7 @@ from hmcore import body, layers, meshgpu, regions as tissue_regions, xpbd
 
 TISSUE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "body_tissue.json")
 SIMULATION = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "simulation.json")
-TISSUE_KEYS = ("SUBSTEPS", "DAMPING", "FAT_YOUNG", "MUSCLE_YOUNG", "SKIN_YOUNG", "FAT_DENSITY", "MUSCLE_DENSITY", "POISSON", "CAVITY_YOUNG", "CAVITY_DENSITY", "FAT_DEEP_YOUNG", "FAT_DEEP_DENSITY", "GLAND_YOUNG", "GLAND_DENSITY", "GLAND_DAMPING", "VISCERA_YOUNG", "VISCERA_DENSITY", "VISCERA_POISSON")
+TISSUE_KEYS = ("SUBSTEPS", "DAMPING", "FAT_YOUNG", "MUSCLE_YOUNG", "SKIN_YOUNG", "FAT_DENSITY", "MUSCLE_DENSITY", "POISSON", "CAVITY_YOUNG", "CAVITY_DENSITY", "FAT_DEEP_YOUNG", "FAT_DEEP_DENSITY", "GLAND_YOUNG", "GLAND_DENSITY", "GLAND_DAMPING", "VISCERA_YOUNG", "VISCERA_DENSITY", "VISCERA_POISSON", "BALLOON_YOUNG", "BALLOON_DENSITY", "BALLOON_DAMPING", "BALLOON_POISSON")
 ABOVE_HIP = 0.02  # m above the hip bones' top: where the region is cut at the waist. 10 keeps the whole body
 RAMP = 1.0  # s from the rest pose into the walk's first pose, so the tissue isn't jolted
 SETTLE = 0.5  # s held in the first pose before frame 1
@@ -153,7 +153,10 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
     colours = xpbd.voxel_colours(vox, np.arange(len(tets)) // 6)
 
     wp.init()
-    s = xpbd.Solver(nodes, tets, colours, density, young, values["poisson"], damping=tissue_regions.node_values(tets, values["damping"], len(nodes)))
+    # One balloon per breast, each holding its own volume: the left is +X
+    is_balloon = label == body.BALLOON
+    sealed = np.where(is_balloon, (nodes[tets].mean(axis=1)[:, 0] < 0).astype(np.int32), -1) if is_balloon.any() else None
+    s = xpbd.Solver(nodes, tets, colours, density, young, values["poisson"], damping=tissue_regions.node_values(tets, values["damping"], len(nodes)), sealed=sealed)
     s.drive(driven, nodes[driven], all_rest=nodes, bone=node_bone[driven], all_bone=node_bone, n_bones=len(names))
     dt = 1 / fps
     eye = np.repeat(np.eye(4)[None], len(names), axis=0)
@@ -185,6 +188,8 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
     rest_vol = {k: s.volume(m) for k, m in label_vol.items()}
     back = nodes[tets].mean(axis=1)[:, 1] > np.median(nodes[:, 1])
     cut_faces = {k: layers.boundary_faces(tets[back & (label == i)]) for i, k in enumerate(body.LABELS) if (back & (label == i)).any()}
+    if sealed is not None:  # the balloons are at the front, which the cutaway leaves out: each is shown whole
+        cut_faces["balloon"] = layers.boundary_faces(tets[is_balloon])
     cut_nodes = np.unique(np.concatenate([f.ravel() for f in cut_faces.values()]))
 
     def poking(skin_now, f):
@@ -225,6 +230,7 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
         volumes = {f"{k}_volume": round(s.volume(m) / rest_vol[k], 4) for k, m in label_vol.items()} if measures_volume(f, len(frames) - 1, VOLUME_EVERY) else {}
         row = {"frame": f + 1, "walking": f < n_walk, "ms": round(ms[-1], 2), "inverted_tetrahedra": int((det <= 0).sum()),
                **bone_out, "skin_motion_max_mm": round(float(motion.max()), 1),
+               **({"balloon_L_cc": round(s.sealed_volumes()[0] * 1e6, 3), "balloon_R_cc": round(s.sealed_volumes()[1] * 1e6, 3)} if sealed is not None else {}),
                **volumes}
         if BONE_TEST and f < n_walk:
             current = skin_rest.copy()
@@ -248,6 +254,7 @@ def main(layers_npz, bones_npz, dump_npz, out_dir, overrides):
                "peak_vram_mib": round(wp.get_mempool_used_mem_high("cuda:0") / 2 ** 20, 1),
                "bone_through_skin": bone_summary(rows, walking) if BONE_TEST else {"measured": False},
                "inverted_tetrahedra_max": max(r["inverted_tetrahedra"] for r in rows),
+               **({"balloon_cc": {k: [min(r[k] for r in rows), max(r[k] for r in rows)] for k in ("balloon_L_cc", "balloon_R_cc")}} if sealed is not None else {}),
                "skin_motion_peak_by_zone_mm": {z: round(max(r["zone_motion"].get(z, 0.0) for r in walking), 1) for z in zones},
                "volume_range": {k: [min(r[f"{k}_volume"] for r in rows if f"{k}_volume" in r), max(r[f"{k}_volume"] for r in rows if f"{k}_volume" in r)] for k in label_vol}}
     np.savez_compressed(f"{out_dir}/body_walk.npz", skins=np.array(skins), skin_ids=skin_ids, patch=patch, cut_nodes=cut_nodes,

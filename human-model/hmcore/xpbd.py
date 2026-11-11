@@ -57,6 +57,47 @@ def _neo_hookean(x: wp.array(dtype=wp.vec3), tets: wp.array(dtype=wp.vec4i), inv
 
 
 @wp.kernel
+def _clear_gradient(gradient: wp.array(dtype=wp.vec3), ids: wp.array(dtype=int)):
+    gradient[ids[wp.tid()]] = wp.vec3(0.0, 0.0, 0.0)
+
+
+@wp.kernel
+def _clear_groups(volume: wp.array(dtype=float), weight: wp.array(dtype=float)):
+    volume[wp.tid()] = 0.0
+    weight[wp.tid()] = 0.0
+
+
+@wp.kernel
+def _sum_volume(x: wp.array(dtype=wp.vec3), tets: wp.array(dtype=wp.vec4i), ids: wp.array(dtype=int), group: wp.array(dtype=int),
+                volume: wp.array(dtype=float), gradient: wp.array(dtype=wp.vec3)):
+    k = wp.tid()
+    t = tets[ids[k]]
+    e1, e2, e3 = x[t[1]] - x[t[0]], x[t[2]] - x[t[0]], x[t[3]] - x[t[0]]
+    wp.atomic_add(volume, group[k], wp.dot(wp.cross(e1, e2), e3) / 6.0)
+    g1, g2, g3 = wp.cross(e2, e3) / 6.0, wp.cross(e3, e1) / 6.0, wp.cross(e1, e2) / 6.0
+    wp.atomic_add(gradient, t[0], -(g1 + g2 + g3))
+    wp.atomic_add(gradient, t[1], g1)
+    wp.atomic_add(gradient, t[2], g2)
+    wp.atomic_add(gradient, t[3], g3)
+
+
+@wp.kernel
+def _sum_weight(gradient: wp.array(dtype=wp.vec3), inv_mass: wp.array(dtype=float), ids: wp.array(dtype=int), group: wp.array(dtype=int), weight: wp.array(dtype=float)):
+    k = wp.tid()
+    n = ids[k]
+    wp.atomic_add(weight, group[k], inv_mass[n] * wp.dot(gradient[n], gradient[n]))
+
+
+@wp.kernel
+def _apply_volume(x: wp.array(dtype=wp.vec3), gradient: wp.array(dtype=wp.vec3), inv_mass: wp.array(dtype=float), ids: wp.array(dtype=int), group: wp.array(dtype=int),
+                  volume: wp.array(dtype=float), rest: wp.array(dtype=float), weight: wp.array(dtype=float)):
+    k = wp.tid()
+    n, g = ids[k], group[k]
+    if weight[g] > 0.0:
+        x[n] = x[n] + gradient[n] * ((rest[g] - volume[g]) / weight[g] * inv_mass[n])
+
+
+@wp.kernel
 def _floor(x: wp.array(dtype=wp.vec3), x_prev: wp.array(dtype=wp.vec3), floor: float):
     i = wp.tid()
     if x[i][2] < floor:
@@ -136,7 +177,7 @@ class Solver:
     """nodes (n x 3, m), tets (m x 4, positive volume), colours (from colours or voxel_colours), and per tetrahedron:
     density (kg/m3), Young's modulus (Pa), Poisson's ratio. Pinned nodes don't move by themselves; set_pinned moves them."""
 
-    def __init__(self, nodes, tets, tet_colours, density, young, poisson, pinned=None, damping=0.0, floor=-1e9, device="cuda:0"):
+    def __init__(self, nodes, tets, tet_colours, density, young, poisson, pinned=None, damping=0.0, floor=-1e9, device="cuda:0", sealed=None):
         self.device = device
         nodes = np.asarray(nodes, np.float64)
         order = np.argsort(tet_colours, kind="stable")
@@ -168,6 +209,34 @@ class Solver:
         self.tets_host = tets
         self._graph, self._compiled = None, False
         self.drive_ids, self.all_rest = None, None
+        self.sealed = None
+        if sealed is not None:
+            self._seal(np.asarray(sealed, np.int32)[order], tets, vol, len(nodes))
+
+    def _seal(self, sealed, tets, vol, n_nodes):
+        """sealed: per tetrahedron, in the solver's order, the sealed body it belongs to, or -1. Each body keeps its whole volume exactly, through one constraint, whatever its tetrahedra do: a bag of liquid, which holds its volume but not its shape."""
+        ids = np.flatnonzero(sealed >= 0)
+        groups = int(sealed.max()) + 1
+        node_ids, first = np.unique(tets[ids].ravel(), return_index=True)
+        a = lambda arr, t: wp.array(np.ascontiguousarray(arr, np.int32 if t is int else np.float32), dtype=t, device=self.device)
+        self.sealed = {"tets": a(ids, int), "tet_group": a(sealed[ids], int), "nodes": a(node_ids, int), "node_group": a(sealed[ids][first // 4], int),
+                       "rest": a(np.bincount(sealed[ids], vol[ids], groups), float), "volume": wp.zeros(groups, dtype=float, device=self.device),
+                       "weight": wp.zeros(groups, dtype=float, device=self.device), "gradient": wp.zeros(n_nodes, dtype=wp.vec3, device=self.device), "groups": groups}
+        self.sealed_rest = np.bincount(sealed[ids], vol[ids], groups)
+        self.sealed_tets = [tets[ids[sealed[ids] == g]] for g in range(groups)]
+
+    def _hold_sealed(self):
+        q = self.sealed
+        wp.launch(_clear_gradient, len(q["nodes"]), [q["gradient"], q["nodes"]], device=self.device)
+        wp.launch(_clear_groups, q["groups"], [q["volume"], q["weight"]], device=self.device)
+        wp.launch(_sum_volume, len(q["tets"]), [self.x, self.tets, q["tets"], q["tet_group"], q["volume"], q["gradient"]], device=self.device)
+        wp.launch(_sum_weight, len(q["nodes"]), [q["gradient"], self.inv_mass, q["nodes"], q["node_group"], q["weight"]], device=self.device)
+        wp.launch(_apply_volume, len(q["nodes"]), [self.x, q["gradient"], self.inv_mass, q["nodes"], q["node_group"], q["volume"], q["rest"], q["weight"]], device=self.device)
+
+    def sealed_volumes(self):
+        """Each sealed body's volume now, in m3."""
+        x = self.positions().astype(float)
+        return [float(volumes(x, t).sum()) for t in self.sealed_tets]
 
     def set_pinned(self, ids, positions):
         """Moves pinned nodes to these positions for the next step."""
@@ -230,6 +299,8 @@ class Solver:
                 start, stop = int(self.slices[c]), int(self.slices[c + 1])
                 wp.launch(_neo_hookean, stop - start, [self.x, self.tets, self.inv_rest, self.rest_volume, self.mu, self.lam, self.inv_mass, h, start],
                           device=self.device)
+            if self.sealed is not None:
+                self._hold_sealed()
             wp.launch(_floor, self.n, [self.x, self.x_prev, self.floor], device=self.device)
             if self.all_rest is not None:
                 wp.launch(_velocity_relative, self.n, [self.x, self.x_prev, self.v, self.inv_mass, self.all_rest, self.node_bone, self.T0, self.T1,

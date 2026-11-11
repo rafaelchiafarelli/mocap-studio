@@ -57,8 +57,14 @@ def _breast_problems(b):
     out = []
     if b.get("shape") is not None and b["shape"] not in BREAST_SHAPES:
         out.append(f"breast.shape must be one of {', '.join(BREAST_SHAPES)}")
-    for k in set(b) - {"shape", *BREAST_ADJUSTMENTS, *BREAST_FADERS}:
+    for k in set(b) - {"shape", "balloon_cc", "balloon_spacing", *BREAST_ADJUSTMENTS, *BREAST_FADERS}:
         out.append(f"breast.{k} isn't a shape or an adjustment")
+    if "balloon_cc" in b and (not _number(b["balloon_cc"]) or b["balloon_cc"] <= 0):
+        out.append("breast.balloon_cc must be a positive number")
+    if "balloon_spacing" in b and (not _number(b["balloon_spacing"]) or b["balloon_spacing"] <= 0):
+        out.append("breast.balloon_spacing must be a positive number")
+    if "balloon_cc" in b and "projection_cm" in b:
+        out.append("give breast.balloon_cc or breast.projection_cm, not both: the balloon's volume sets the projection")
     for k in BREAST_FADERS:
         if k in b and (not _number(b[k]) or b[k] <= 0):
             out.append(f"breast.{k} must be a positive number")

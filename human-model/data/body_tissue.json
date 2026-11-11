@@ -1,6 +1,6 @@
 {
  "_about": "Tissue values for the body's walking simulations (tools/body_walk.py). Muscle, fat and skin are Rafael's rafa8 values from the thigh; the cavity (organs) is declared by eye. Edit to change; a run can override one as NAME=value. Units: Pa, kg/m3, 1/s, steps per frame. REGIONS overrides by tissue and zone, {tissue: {zone: {young, density, poisson, damping}}}; empty means the defaults everywhere.",
- "_source": "rafa8 (2026-11-07) for SUBSTEPS to POISSON; CAVITY_* declared 2026-11-07; GLAND_YOUNG and GLAND_DAMPING from PRESETS[\"breast\"] in blender/muscle_sphere.py (LIQUID 2000 and DAMPER 50, as the closest values it has), GLAND_DENSITY declared 1040; VISCERA_* start as the cavity's, so nothing changes until they are tuned; FAT_DEEP_* start as the fat's, so the two layers move alike until tuned",
+ "_source": "rafa8 (2026-11-07) for SUBSTEPS to POISSON; CAVITY_* declared 2026-11-07; GLAND_YOUNG and GLAND_DAMPING from PRESETS[\"breast\"] in blender/muscle_sphere.py (LIQUID 2000 and DAMPER 50, as the closest values it has), GLAND_DENSITY declared 1040; VISCERA_* start as the cavity's, so nothing changes until they are tuned; FAT_DEEP_* start as the fat's, so the two layers move alike until tuned; BALLOON_* declared 2026-11-09: water's density, and a very soft inside, since the balloon's volume is held by one constraint per balloon, not by its tetrahedra",
  "REGIONS": {},
  "SUBSTEPS": 160,
  "DAMPING": 20.0,
@@ -18,6 +18,10 @@
  "VISCERA_YOUNG": 3000.0,
  "VISCERA_DENSITY": 1000.0,
  "VISCERA_POISSON": 0.45,
+ "BALLOON_YOUNG": 200.0,
+ "BALLOON_DENSITY": 1000.0,
+ "BALLOON_DAMPING": 20.0,
+ "BALLOON_POISSON": 0.3,
  "CAVITY_YOUNG": 3000.0,
  "CAVITY_DENSITY": 1000.0
 }

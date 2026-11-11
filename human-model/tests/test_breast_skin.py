@@ -108,3 +108,28 @@ def test_the_move_fades_towards_the_back():
     p = {**outline(), "front_y": bs.FRONT_FADE / 2}  # the plate lies halfway through the fade
     out = bs.inflate(v, f, [p])
     assert out[:, 1].min() == pytest.approx(-p["project"] / 2, abs=0.004)
+
+
+def test_onto_sphere_puts_the_disc_on_the_sphere_and_keeps_the_rim():
+    a = np.linspace(0, 2 * np.pi, 48, endpoint=False)
+    rings = [np.column_stack([r * np.cos(a), np.zeros(48), r * np.sin(a)]) for r in np.linspace(0.005, 0.2, 40)]
+    flat = np.concatenate(rings)
+    centre, radius = np.array([0.0, -0.02, 0.0]), 0.06
+    out = bs.onto_sphere(flat, centre, radius, 0.0)
+    rim = radius * np.sqrt(1 - (0.02 / radius) ** 2)
+    inside = np.hypot(flat[:, 0], flat[:, 2]) < rim
+    assert np.linalg.norm(out[inside] - centre, axis=1) == pytest.approx(radius, abs=1e-9)
+    assert out[inside, 1].min() == pytest.approx(centre[1] - radius, abs=1e-3)  # the pole, towards the front
+    assert np.array_equal(out[~inside], flat[~inside])
+    near_rim = inside & (np.hypot(flat[:, 0], flat[:, 2]) > rim - 0.006)
+    assert np.abs(out[near_rim, 1]).max() < 0.012  # arrives at the chest's plane
+
+
+def test_onto_sphere_brings_the_pole_skin_to_the_front_and_keeps_the_rim():
+    a = np.linspace(0, 2 * np.pi, 48, endpoint=False)
+    flat = np.concatenate([np.column_stack([r * np.cos(a), np.zeros(48), r * np.sin(a)]) for r in np.linspace(0.005, 0.2, 40)] + [np.array([[0.015, 0.0, 0.0]])])
+    centre, radius = np.array([0.0, -0.02, 0.0]), 0.06
+    out = bs.onto_sphere(flat, centre, radius, 0.0, pole=(0.015, 0.0))
+    assert out[-1, 1] < centre[1] - radius * 0.99  # the nipple's point is at the front
+    rim = radius * np.sqrt(1 - (0.02 / radius) ** 2)
+    assert np.array_equal(out[np.hypot(flat[:, 0], flat[:, 2]) >= rim], flat[np.hypot(flat[:, 0], flat[:, 2]) >= rim])

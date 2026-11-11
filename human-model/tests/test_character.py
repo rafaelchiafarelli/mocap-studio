@@ -168,3 +168,10 @@ def test_the_sixteen_test_bodies_are_valid():
 def test_breast_faders_are_checked():
     assert ch.problems({"sex": "female", "breast": {"shape": "gota", "projection_cm": 9.0, "power": 2.5}}) == []
     assert any("projection_cm" in p for p in ch.problems({"sex": "female", "breast": {"projection_cm": -1}}))
+
+
+def test_balloon_is_a_positive_volume_and_excludes_the_projection():
+    from hmcore import character as c
+    assert c._breast_problems({"balloon_cc": 450}) == []
+    assert c._breast_problems({"balloon_cc": 0})
+    assert c._breast_problems({"balloon_cc": 450, "projection_cm": 3})

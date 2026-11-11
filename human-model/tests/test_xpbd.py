@@ -204,3 +204,26 @@ def test_damping_per_node_matches_the_same_damping_for_all():
         for _ in range(4):
             s.step(1 / 24, 10)
     assert np.allclose(a.positions(), b.positions())
+
+
+def test_sealed_body_keeps_its_volume_while_its_tetrahedra_give():
+    nodes, tets, tet_voxel, vox = _cube(4)
+    colours = xpbd.voxel_colours(vox, tet_voxel)
+    pinned = np.flatnonzero(nodes[:, 2] > nodes[:, 2].max() - 1e-6)
+    make = lambda sealed: xpbd.Solver(nodes, tets, colours, 1000.0, 200.0, 0.3, pinned=pinned, damping=20.0, device="cpu", sealed=sealed)
+    sealed, free = make(np.zeros(len(tets), np.int32)), make(None)
+    rest = sealed.sealed_volumes()[0]
+    assert rest == pytest.approx(0.001, rel=1e-6)
+    for _ in range(12):
+        sealed.step(1 / 24, 40)
+        free.step(1 / 24, 40)
+    assert sealed.sealed_volumes()[0] == pytest.approx(rest, rel=2e-3)
+    assert abs(free.volume() / rest - 1) > abs(sealed.sealed_volumes()[0] / rest - 1)
+
+
+def test_two_sealed_bodies_are_held_apart():
+    nodes, tets, tet_voxel, vox = _cube(4)
+    group = (nodes[tets].mean(axis=1)[:, 0] < 0).astype(np.int32)
+    s = xpbd.Solver(nodes, tets, xpbd.voxel_colours(vox, tet_voxel), 1000.0, 200.0, 0.3, device="cpu", sealed=group)
+    assert len(s.sealed_volumes()) == 2
+    assert sum(s.sealed_volumes()) == pytest.approx(0.001, rel=1e-6)

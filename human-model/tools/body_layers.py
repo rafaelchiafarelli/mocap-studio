@@ -92,7 +92,7 @@ def main(build_dir, name, out_dir, overrides):
         if k == "TISSUE":  # the real muscles and breast, from tools/outward_skin.py
             t = np.load(val)
             tissue = {"origin": t["origin"], "shape": tuple(t["shape"]), "h": float(t["h"]), "muscle": np.unpackbits(t["muscle"]).astype(bool)[:int(np.prod(t["shape"]))].reshape(tuple(t["shape"])),
-                      "breast": np.unpackbits(t["breast"]).astype(bool)[:int(np.prod(t["shape"]))].reshape(tuple(t["shape"]))}
+                      "breast": np.unpackbits(t["breast"]).astype(bool)[:int(np.prod(t["shape"]))].reshape(tuple(t["shape"])), "balloon_cc": float(t["balloon_cc"]) if "balloon_cc" in t.files else 0.0, "balloon_centres": dict(zip("LR", t["balloon_centres"])) if "balloon_centres" in t.files else None}
             continue
         if k == "FAT_TABLE":  # each zone's fat, from tools/outward_skin.py, in place of the table's
             table = json.load(open(val))
