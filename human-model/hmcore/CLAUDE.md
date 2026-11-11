@@ -35,6 +35,8 @@
 - `meshgpu.py`: inside-or-outside and closest point for millions of points, on Warp's meshes. GPU image only.
 - `layers.py`: a limb from the inside out: skin patch, voxels labelled bone, muscle or fat, tetrahedra, and the skin tied to them. [docs/muscle-physics.md](../docs/muscle-physics.md#experiment-2-a-thigh-built-from-the-inside-out).
 
+- `deltamush.py`: Delta Mush on plain arrays, for `blender/pose_corrections.py`.
+
 ## Key facts / gotchas
 
 - A scan isn't centred on x=0, so "medial" and "midline" are always relative to the bone pair: `bonelib.py:33`.
