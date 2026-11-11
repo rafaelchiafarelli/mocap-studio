@@ -28,6 +28,7 @@ bpy.context.view_layer.update()
 M = np.array(rig.matrix_world)
 head = lambda n: (np.array(rig.data.bones[n].head_local) @ M[:3, :3].T + M[:3, 3])
 marks = np.array([head("thigh.L")[2], head("spine.003")[2]])
+foot_rest = np.array([head("foot.L"), head("foot.R")], np.float32)
 first, last = scene.frame_start, scene.frame_end
 frames = []
 feet = []
@@ -38,5 +39,5 @@ for f in range(first, last + 1):
     W = rig.matrix_world
     feet.append([[*(W @ rig.pose.bones[f"foot.{s}"].head), *(W @ rig.pose.bones[f"toe.{s}"].head)] for s in "LR"])
 pm.set_display(body, True)
-np.savez_compressed(a[0], positions=np.array(frames), rest=rest, tris=pm.triangles(body), fps=scene.render.fps / scene.render.fps_base, first=first, marks=marks, feet=np.array(feet, np.float32), **weights)
+np.savez_compressed(a[0], positions=np.array(frames), rest=rest, tris=pm.triangles(body), fps=scene.render.fps / scene.render.fps_base, first=first, marks=marks, feet=np.array(feet, np.float32), foot_rest=foot_rest, **weights)
 print("frames", len(frames), first, last, "fps", scene.render.fps)

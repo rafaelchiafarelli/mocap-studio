@@ -11,6 +11,7 @@
 - `__init__.py`: marks the package.
 - `test_deltamush.py`, `test_folds.py`: `hmcore/deltamush.py` and `hmcore/folds.py`.
 - `test_skin_waves.py`: `hmcore/skin_waves.py`.
+- `test_foot_impact.py`: `hmcore/foot_impact.py`.
 - `test_body.py`: `hmcore/body.py` and the pure parts of `tools/body_report.py`.
 - `test_drive.py`: `hmcore/activation.py`, `retarget.py`, `tongue.py`, `morph.py` and `retire.py`.
 - `test_editor.py`: the editor's catalog, recipe and tape.
