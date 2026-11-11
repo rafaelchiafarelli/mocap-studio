@@ -1,5 +1,6 @@
 {
- "_about": "How each body region sways, for hmcore/skin_waves.py (initiative animation-body), by eye, to be tuned against the reference clips. gain: how much of the inertia reaches the skin, 0 to 1. hz: its natural frequency. damping: its damping ratio. speed: how fast a wave crosses it, m/s.",
+ "_about": "How each body region sways, for hmcore/skin_waves.py (initiative animation-body), by eye, to be tuned against the reference clips. gain: how much of the inertia reaches the skin, 0 to 1. hz: its natural frequency. damping: its damping ratio. speed: how fast a wave crosses it, m/s. impact: the pulse of each step, by eye: size in m/s2 at the foot, width in seconds, speed up the body in m/s, reach in metres of skin (it falls to 37% over that distance).",
+ "impact": {"size": 300.0, "width_s": 0.012, "speed": 40.0, "reach": 0.9},
  "base": {"gain": 0.04, "hz": 14.0, "damping": 0.5, "speed": 2.0},
  "breast": {"gain": 1.0, "hz": 4.5, "damping": 0.22, "speed": 1.4},
  "glute": {"gain": 0.75, "hz": 6.0, "damping": 0.24, "speed": 1.8},
