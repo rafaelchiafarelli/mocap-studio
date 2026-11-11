@@ -61,4 +61,5 @@ The layers in the finished file:
 | Built models | `G:\mocap-studio-downloads\models\hm-build\` |
 | Review images and videos | `G:\mocap-studio-downloads\review\2026-11-03\` |
 | Open bugs | `initiatives/bugs/epics/human-model/` |
-| The plan and task files | Removed when this was declared a first pass: `git log -- initiatives/human-model` |
+| The plan and task files | Removed when this was declared a first pass: `git log -- initiatives/human-model` |- [animation-body.md](animation-body.md): the new body for animation, its stages and what was measured.
+
