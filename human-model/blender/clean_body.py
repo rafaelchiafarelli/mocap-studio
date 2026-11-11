@@ -23,6 +23,34 @@ for name, value in recipe.get("targets", {}).items():
 rig = HumanService.add_builtin_rig(body, "rigify.human")
 rig.name = "HM_rig"
 body.name = "HM_body"
+
+
+HEAD_BONE = "spine.006"
+
+
+def merge_orphan_weights():
+    """MPFB's weights name bones Rigify would generate (the twist bones DEF-thigh.L.001 and so on, and DEF-eye_master.L), which a plain metarig doesn't have, so those vertices stay behind as the limb or the head moves and tear into flaps.
+    Their weight goes to the real bone: the limb's, or the head's. Returns the groups merged."""
+    bones = {b.name for b in rig.data.bones}
+    merged = {}
+    for name in [g.name for g in body.vertex_groups if g.name.startswith("DEF-") and g.name not in bones]:
+        target = HEAD_BONE if "eye_master" in name else name[len("DEF-"):].replace(".001", "")
+        if target not in bones:
+            continue
+        source, sink = body.vertex_groups[name], body.vertex_groups.get(target) or body.vertex_groups.new(name=target)
+        count = 0
+        for v in body.data.vertices:
+            for g in v.groups:
+                if g.group == source.index and g.weight > 0:
+                    sink.add([v.index], g.weight, "ADD")
+                    count += 1
+        body.vertex_groups.remove(source)
+        merged[name] = (target, count)
+    return merged
+
+
+merged = merge_orphan_weights()
+print("merged weights", merged)
 for poly in body.data.polygons:
     poly.use_smooth = True
 if not any(m.type == "SUBSURF" for m in body.modifiers):
@@ -37,6 +65,6 @@ bpy.ops.wm.save_as_mainfile(filepath=a[1])
 
 mods = [(m.name, m.type) for m in body.modifiers]
 base = len(body.data.vertices)
-report = {"recipe": recipe.get("name"), "vertices_with_helpers": base, "body_vertices": N_BODY, "modifiers": mods, "bones": len(rig.data.bones), "shape_keys": len(body.data.shape_keys.key_blocks) if body.data.shape_keys else 0}
+report = {"recipe": recipe.get("name"), "vertices_with_helpers": base, "body_vertices": N_BODY, "modifiers": mods, "bones": len(rig.data.bones), "merged_orphan_weights": merged, "shape_keys": len(body.data.shape_keys.key_blocks) if body.data.shape_keys else 0}
 json.dump(report, open(a[2], "w"), indent=1)
 print(report)
