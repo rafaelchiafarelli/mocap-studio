@@ -9,7 +9,7 @@ The new start of initiative `animation-body` (Rafael, 2026-11-10): a whole MPFB2
 | `01_corpo` | `blender/clean_body.py` | The body from a recipe alone, its rig, helpers masked. Weights of bones the metarig lacks go to real bones |
 | `02_amplitude` | `blender/range_of_motion.py` | A range-of-motion test, and how much skin collapses per pose |
 | `03_correcoes` | `blender/pose_corrections.py` | Volume-preserving skinning, fading out at the elbows |
-| `04_caminhada` | `blender/walk.py`, `arm_clearance.py`, `apply_corrections.py` | The measured walk, feet planted, the hands kept out of the body, with those corrections |
+| `04_caminhada` | `blender/walk.py`, `arm_clearance.py`, `apply_corrections.py` | The measured walk, feet planted, the hands touching the body, which gives under them, with those corrections |
 | `05_dobras` | `blender/fold_lines.py`, `fold_apply.py` | 17 folds as shape keys following the pose |
 | `06_malha_fina` | `blender/fold_fine.py` | A thin crease per fold on the subdivided skin |
 | `07_ondas` | `blender/skin_dump.py`, `tools/skin_waves.py`, `blender/wave_bake.py` | Sway, travelling waves and the step's impact, baked per frame |
@@ -28,4 +28,4 @@ The new start of initiative `animation-body` (Rafael, 2026-11-10): a whole MPFB2
 | Arms overhead | 5.1% | 3.4% |
 | Elbow bent | 4.7% | 4.7% |
 
-Delta Mush was tried at the four joints and lowered the collapse at none. Wave peaks at the medium step impact: 14 mm breast, 16 mm buttocks, 12 mm thigh, 5 mm flanks, 4 mm belly, 2 mm calf, 1 mm upper arm. Hands through the body while walking (Rafael, 2026-11-11): 68 frames per side, up to 68 mm deep; none after `arm_clearance.py`, opening the arm at most 7.5 degrees. All values are by eye; Rafael's verdict hasn't been given.
+Delta Mush was tried at the four joints and lowered the collapse at none. Wave peaks at the medium step impact: 14 mm breast, 16 mm buttocks, 12 mm thigh, 5 mm flanks, 4 mm belly, 2 mm calf, 1 mm upper arm. Hands and body (Rafael, 2026-11-11: a collision, not hands held away): a hand may sink 12 mm, where the skin dents under it, up to 9 mm, in 70 of 144 frames; past that the arm opens, at most 4.5 degrees, 1.2 on average. Before, hands went up to 58 mm into the body in 54 frames. All values are by eye; Rafael's verdict hasn't been given.

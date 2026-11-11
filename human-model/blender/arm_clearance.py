@@ -1,6 +1,6 @@
-"""Keeps the forearms, hands and fingers outside the body while walking: a collision solved on the pose, not simulated. Run with --blend on a walking body. Args: out.blend out.json
-Each frame, points along the forearm, hand and middle finger are tested against the skin of the trunk and legs (the arms' own skin left out). Where a point is inside, or closer than its radius plus MARGIN_M, the upper arm opens outwards a little at a time.
-The opening found per frame is then widened and smoothed over time so the arm doesn't jerk, and keyed on top of the walk."""
+"""The contact between hands and body while walking: the hand is stopped by the body, which gives under it. Run with --blend on a walking body. Args: out.blend out.json
+Each frame, points along the forearm, hand and fingers are tested against the skin of the trunk and legs (the arms' own skin left out). A point may go up to SKIN_GIVES_M into the skin, which tools/skin_waves.py then dents under it;
+only past that does the upper arm open, by as little as it takes, smoothed over time and keyed on top of the walk. The hand touches and slides on the body instead of being held away from it (Rafael, 2026-11-11)."""
 import json, math, os, sys
 import bpy
 import numpy as np
@@ -14,35 +14,20 @@ import posing as P
 a = hb.args()
 rig, body = bpy.data.objects["HM_rig"], bpy.data.objects["HM_body"]
 scene = bpy.context.scene
-MARGIN_M = 0.01
-STEP_DEG, MOST_DEG = 1.5, 25.0
-SMOOTH_FRAMES = 4  # the opening is held this many frames either side, then eased
+MARGIN_M = -0.012  # SKIN_GIVES_M: how far a point may sink into the skin, which yields there
+STEP_DEG, MOST_DEG = 0.5, 25.0
+SMOOTH_FRAMES = 2  # the opening is eased over this many frames either side
 sign = {"L": 1, "R": -1}
-ARM_BONES = ("upper_arm", "forearm", "hand", "palm", "f_", "thumb", "shoulder")
-POINTS = [("forearm", 0.5, 0.040), ("forearm", 1.0, 0.032), ("hand", 0.5, 0.025), ("hand", 1.0, 0.020), ("f_middle.03", 1.0, 0.010), ("f_index.03", 1.0, 0.010), ("f_pinky.03", 1.0, 0.010)]
+import hand_points as hp
 
 pm.set_display(body, False)
 tris = pm.triangles(body)
-arm_weight = np.zeros(pm.N_BODY)
-groups = {g.index: g.name for g in body.vertex_groups}
-for v in body.data.vertices[: pm.N_BODY]:
-    for g in v.groups:
-        name = groups[g.group]
-        if any(name.startswith(b) for b in ARM_BONES):
-            arm_weight[v.index] += g.weight
+arm_weight = hp.arm_weight(body, pm.N_BODY)
 trunk_tris = tris[(arm_weight[tris] < 0.2).all(axis=1)]
 
 
 def points(side):
-    pts = []
-    for bone, along, radius in POINTS:
-        name = f"{bone}.{side}"
-        if name not in rig.pose.bones:
-            continue
-        pb = rig.pose.bones[name]
-        p = rig.matrix_world @ (pb.head + along * (pb.tail - pb.head))
-        pts.append((p, radius))
-    return pts
+    return hp.points(rig, side)
 
 
 def worst(tree, side):
@@ -87,10 +72,9 @@ for i, f in enumerate(range(first, last + 1)):
 
 
 def smooth(x):
-    held = np.array([x[max(0, i - SMOOTH_FRAMES): i + SMOOTH_FRAMES + 1].max() for i in range(len(x))])
     kernel = np.hanning(2 * SMOOTH_FRAMES + 3)[1:-1]
     kernel /= kernel.sum()
-    padded = np.pad(held, SMOOTH_FRAMES, mode="edge")
+    padded = np.pad(x, SMOOTH_FRAMES, mode="edge")
     return np.maximum(np.convolve(padded, kernel, mode="valid"), x)
 
 
@@ -111,6 +95,8 @@ for i, f in enumerate(range(first, last + 1)):
 pm.set_display(body, True)
 scene.frame_set(first)
 bpy.ops.wm.save_as_mainfile(filepath=a[0])
-report = {s: {"frames_touching_before": int((before[s] > MARGIN_M).sum()), "deepest_before_mm": float(before[s].max() * 1000), "frames_touching_after": int((after[s] > MARGIN_M).sum()), "deepest_after_mm": float(after[s].max() * 1000), "largest_opening_deg": float(opening[s].max()), "mean_opening_deg": float(opening[s].mean())} for s in "LR"}
+# worst() is how far short of the allowed sinking a point is; a point touches when it is within its radius of the skin.
+deep = lambda x: (x - MARGIN_M) * 1000
+report = {s: {"frames_touching": int((after[s] >= MARGIN_M).sum()), "frames_through_before": int((before[s] > 0).sum()), "deepest_before_mm": float(deep(before[s]).max()), "frames_through_after": int((after[s] > 0).sum()), "deepest_after_mm": float(deep(after[s]).max()), "largest_opening_deg": float(opening[s].max()), "mean_opening_deg": float(opening[s].mean())} for s in "LR"}
 json.dump(report, open(a[1], "w"), indent=1)
 print(json.dumps(report))

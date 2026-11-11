@@ -110,3 +110,21 @@ def values_from(masks, table, n):
         mixed = sums[k] / np.maximum(total, 1e-6)
         out[k] = share * mixed + (1 - share) * base[k]
     return Values(**out)
+
+
+def contact_dent(positions, hands, arm_weight, adjacency, gives=0.015, spread=3):
+    """How far the skin sinks under the hands, per frame and vertex (positive is inward). hands: frames x points x (x, y, z, radius).
+    A skin vertex inside a point's sphere sinks by how far it is inside, up to `gives`, and the dent spreads a little along the skin. The arms' own skin doesn't sink."""
+    frames, n = positions.shape[0], positions.shape[1]
+    out = np.zeros((frames, n), np.float32)
+    free = arm_weight < 0.2
+    for f in range(frames):
+        depth = np.zeros(n)
+        for x, y, z, r in hands[f]:
+            dist = np.linalg.norm(positions[f] - (x, y, z), axis=1)
+            depth = np.maximum(depth, r - dist)
+        depth = np.clip(depth, 0.0, gives) * free
+        if depth.any():
+            spread_out = dm.smooth(depth[:, None], adjacency, spread, 0.5)[:, 0]
+            out[f] = np.maximum(depth, spread_out) * free
+    return out

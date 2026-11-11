@@ -4,6 +4,7 @@ import bpy
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(sys.argv[sys.argv.index("--python") + 1])))
 import hmblender as hb
+import hand_points as hp
 import posed_mesh as pm
 
 a = hb.args()
@@ -32,12 +33,14 @@ foot_rest = np.array([head("foot.L"), head("foot.R")], np.float32)
 first, last = scene.frame_start, scene.frame_end
 frames = []
 feet = []
+hands = []
 for f in range(first, last + 1):
     scene.frame_set(f)
     bpy.context.view_layer.update()
     frames.append(pm.read(body)[: pm.N_BODY].astype(np.float32))
     W = rig.matrix_world
     feet.append([[*(W @ rig.pose.bones[f"foot.{s}"].head), *(W @ rig.pose.bones[f"toe.{s}"].head)] for s in "LR"])
+    hands.append([[*p, r] for s in "LR" for p, r in hp.points(rig, s)])
 pm.set_display(body, True)
-np.savez_compressed(a[0], positions=np.array(frames), rest=rest, tris=pm.triangles(body), fps=scene.render.fps / scene.render.fps_base, first=first, marks=marks, feet=np.array(feet, np.float32), foot_rest=foot_rest, **weights)
+np.savez_compressed(a[0], positions=np.array(frames), rest=rest, tris=pm.triangles(body), fps=scene.render.fps / scene.render.fps_base, first=first, marks=marks, feet=np.array(feet, np.float32), foot_rest=foot_rest, hands=np.array(hands, np.float32), arm=hp.arm_weight(body, pm.N_BODY).astype(np.float32), **weights)
 print("frames", len(frames), first, last, "fps", scene.render.fps)
