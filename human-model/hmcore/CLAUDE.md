@@ -41,6 +41,8 @@
 
 - `skin_waves.py`: sway and travelling waves on the skin as one bounded offset per vertex, and the body regions they use.
 
+- `foot_impact.py`: when each foot touches the ground, and the pulse it sends up the body.
+
 ## Key facts / gotchas
 
 - A scan isn't centred on x=0, so "medial" and "midline" are always relative to the bone pair: `bonelib.py:33`.
