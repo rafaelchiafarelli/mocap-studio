@@ -8,6 +8,7 @@
 
 ## Files
 
+- `arm_clearance.py`: keeps forearms, hands and fingers outside the trunk and legs while walking, by opening the upper arm only as much as needed, smoothed over time and keyed on the walk (`--blend`).
 - `clean_body.py`: an MPFB2 human from a recipe alone, rig named `HM_rig`, helpers masked, skin subdivided on display, no inner layers (initiative `animation-body`).
 - `posed_mesh.py`: reads the posed skin with helpers (Mask and Subsurf off), and measures where its triangles shrink against the rest mesh; shared by the range-of-motion and correction scripts.
 - `range_of_motion.py`: keys the arms overhead, elbows and knees fully bent, trunk turning and bending, hips flexed and a squat, and reports per pose how much of the skin collapses (`--blend`).

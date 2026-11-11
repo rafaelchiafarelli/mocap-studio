@@ -43,7 +43,9 @@ def main(args) -> int:
     run(BLENDER / "range_of_motion.py", rom, rom_json, blend=body)
     run(BLENDER / "pose_corrections.py", rom_json, corrected, d["03_correcoes"] / "correcoes.json", npz, blend=rom)
     run(BLENDER / "walk.py", HERE / "data" / "gait_walk.json", "female", walk, CYCLES, STOP_STEPS, blend=body)
-    run(BLENDER / "apply_corrections.py", npz, fixed_walk, blend=walk)
+    clear_walk = d["04_caminhada"] / "caminhada_bracos_livres.blend"
+    run(BLENDER / "arm_clearance.py", clear_walk, d["04_caminhada"] / "bracos.json", blend=walk)
+    run(BLENDER / "apply_corrections.py", npz, fixed_walk, blend=clear_walk)
     if stop == "04_caminhada":
         return 0
     folds = HERE / "data" / "folds.json"
