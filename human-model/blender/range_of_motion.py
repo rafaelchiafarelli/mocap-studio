@@ -20,18 +20,27 @@ def arm_down(s):
     return (f"upper_arm.{s}", P.ry(sign[s] * arm_hang[s]))
 
 
+def forearm_bend(s, degrees):
+    """Bends the forearm in the hanging upper arm's plane; its rest axis is first rebuilt straight, as walk.py does."""
+    return (f"forearm.{s}", P.rx(-degrees) @ P.ry(sign[s] * (P.hang_angle(rig, f"forearm.{s}", 8.0) - arm_hang[s])))
+
+
+def shin_bend(s, degrees):
+    return (f"shin.{s}", P.rx(degrees) @ P.ry(sign[s] * (P.hang_angle(rig, f"shin.{s}") - leg_hang[s])))
+
+
 POSES = [
     ("bracos_acima_cabeca", "shoulder", [(f"upper_arm.{s}", P.ry(-sign[s] * 150)) for s in "LR"]),
     ("braco_a_frente", "shoulder", [(f"upper_arm.{s}", P.rx(-85) @ P.ry(sign[s] * arm_hang[s])) for s in "LR"]),
     ("braco_para_tras", "shoulder", [(f"upper_arm.{s}", P.rx(45) @ P.ry(sign[s] * arm_hang[s])) for s in "LR"]),
-    ("cotovelo_dobrado", "elbow", [arm_down(s) for s in "LR"] + [(f"forearm.{s}", P.rx(-135)) for s in "LR"]),
+    ("cotovelo_dobrado", "elbow", [arm_down(s) for s in "LR"] + [forearm_bend(s, 135) for s in "LR"]),
     ("antebraco_torcido", "wrist", [arm_down(s) for s in "LR"] + [(f"forearm.{s}", P.rz(sign[s] * 80)) for s in "LR"]),
-    ("joelho_dobrado", "knee", [(f"thigh.{s}", P.rx(-60) @ P.ry(sign[s] * leg_hang[s])) for s in "LR"] + [(f"shin.{s}", P.rx(130)) for s in "LR"]),
+    ("joelho_dobrado", "knee", [(f"thigh.{s}", P.rx(-60) @ P.ry(sign[s] * leg_hang[s])) for s in "LR"] + [shin_bend(s, 130) for s in "LR"]),
     ("quadril_flexionado", "hip", [(f"thigh.{s}", P.rx(-95) @ P.ry(sign[s] * leg_hang[s])) for s in "LR"]),
     ("perna_aberta", "hip", [(f"thigh.{s}", P.ry(-sign[s] * 45)) for s in "LR"]),
-    ("agachamento", "squat", [(f"thigh.{s}", P.rx(-105) @ P.ry(sign[s] * leg_hang[s])) for s in "LR"] + [(f"shin.{s}", P.rx(115)) for s in "LR"] + [(f"foot.{s}", P.rx(25)) for s in "LR"] + [arm_down(s) for s in "LR"]),
+    ("agachamento", "squat", [(f"thigh.{s}", P.rx(-105) @ P.ry(sign[s] * leg_hang[s])) for s in "LR"] + [shin_bend(s, 115) for s in "LR"] + [(f"foot.{s}", P.rx(25)) for s in "LR"] + [arm_down(s) for s in "LR"]),
     ("tronco_girando", "trunk", [("spine", P.rz(20)), ("spine.001", P.rz(20)), ("spine.002", P.rz(20)), ("spine.003", P.rz(15))]),
-    ("tronco_a_frente", "trunk", [("spine", P.rx(-25)), ("spine.001", P.rx(-25)), ("spine.002", P.rx(-20)), ("spine.003", P.rx(-15))]),
+    ("tronco_a_frente", "trunk", [("spine", P.rx(15)), ("spine.001", P.rx(15)), ("spine.002", P.rx(15)), ("spine.003", P.rx(10))]),
     ("tronco_de_lado", "trunk", [("spine", P.ry(-15)), ("spine.001", P.ry(-15)), ("spine.002", P.ry(-15)), ("spine.003", P.ry(-10))]),
 ]
 JOINT_POINT = {"shoulder": "upper_arm.L", "elbow": "forearm.L", "wrist": "hand.L", "knee": "shin.L", "hip": "thigh.L", "squat": "thigh.L", "trunk": "spine.001"}

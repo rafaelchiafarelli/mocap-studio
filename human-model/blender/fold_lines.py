@@ -116,7 +116,7 @@ for s in "LR":
         if inside.size:
             c = V[inside].mean(0)
             z = np.percentile(V[inside, 2], 3)
-            add("sob_o_seio", s, line(np.array([c[0], c[1] + 0.015, z]), UP, FORWARD, 72, 0.14), driver_for("spine.002", P.rx(-20)), 16, 3.2, 0.7)
+            add("sob_o_seio", s, line(np.array([c[0], c[1] + 0.015, z]), UP, FORWARD, 72, 0.14), driver_for("spine.002", P.rx(15)), 16, 3.2, 0.7)
     # The side of the waist, deepened by leaning to that side.
     waist, _ = point("spine.002", 0.1)
     waist = axis_at(waist[2])
@@ -124,7 +124,7 @@ for s in "LR":
     add("lado_da_cintura", s, line(waist, UP, out, 42, 0.25), driver_for("spine.001", lean), 11, 3.0, 0.15)
 # Across the belly, below the navel, deepened by bending forward.
 belly, _ = point("spine.001", -0.4)
-add("barriga", "", line(axis_at(belly[2]), UP, FORWARD, 62, 0.25), driver_for("spine.001", P.rx(-25)), 13, 3.4, 0.05)
+add("barriga", "", line(axis_at(belly[2]), UP, FORWARD, 62, 0.25), driver_for("spine.001", P.rx(15)), 13, 3.4, 0.05)
 
 pm.set_display(body, True)
 out = {"_about": "The folds of the skin (initiative animation-body). Written by blender/fold_lines.py; the depths and widths are by eye. vertices: the line, in MPFB's skin order. driver: the bone's local Euler axis, its value at rest and at full depth. at_rest: the share of the depth already there at rest.", "folds": folds}
