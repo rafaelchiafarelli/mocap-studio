@@ -15,6 +15,8 @@
 - `fold_lines.py`: finds each fold's line on the skin and the rig pose that drives it, and writes `data/folds.json` (`--blend`).
 - `fold_apply.py`: the catalogue as shape keys following the pose, with a fader per fold and one for fat in `HM_controls`, plain-expression drivers (`--blend`).
 - `fold_fine.py`: a thin crease per fold on the subdivided skin, from images in UV space and a Geometry Nodes modifier driven by each fold's shape key (`--blend`).
+- `skin_dump.py`: the skin's motion per frame, the rig's weights and the feet's path, for `tools/skin_waves.py` (`--blend`).
+- `wave_bake.py`: bakes the wave offsets into one shape key per frame, played by driver with a `wave_amount` fader (`--blend`).
 - `hmblender.py`: shared helpers: meshes, drivers, render setup.
 - `posing.py`: joint rotations in the rest pose's axes.
 - `export_human.py`: MPFB human to arrays.
