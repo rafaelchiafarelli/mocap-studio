@@ -112,7 +112,7 @@ def values_from(masks, table, n):
     return Values(**out)
 
 
-def contact_dent(positions, hands, arm_weight, adjacency, gives=0.015, spread=3):
+def contact_dent(positions, hands, arm_weight, adjacency, gives=0.005, spread=3):  # 5 mm at most: Rafael, 2026-11-11
     """How far the skin sinks under the hands, per frame and vertex (positive is inward). hands: frames x points x (x, y, z, radius).
     A skin vertex inside a point's sphere sinks by how far it is inside, up to `gives`, and the dent spreads a little along the skin. The arms' own skin doesn't sink."""
     frames, n = positions.shape[0], positions.shape[1]

@@ -8,7 +8,7 @@
 
 ## Files
 
-- `arm_clearance.py`: the hands' contact with the body while walking: a hand may sink 12 mm into the skin, which yields there (`tools/skin_waves.py`); only past that does the upper arm open, smoothed and keyed on the walk (`--blend`).
+- `arm_clearance.py`: the hands' contact with the body while walking: a hand may sink 5 mm into the skin, which yields there (`tools/skin_waves.py`); past that the fingers straighten, the wrist turns up to 15 degrees, then the arm opens, 5 degrees by rule and further only to keep the hand out, counted apart; smoothed and keyed on the walk (`--blend`).
 - `hand_points.py`: points with radii along forearms, hands and fingers, and the arms' share of each skin vertex, for that contact.
 - `clean_body.py`: an MPFB2 human from a recipe alone, rig named `HM_rig`, helpers masked, skin subdivided on display, no inner layers (initiative `animation-body`).
 - `posed_mesh.py`: reads the posed skin with helpers (Mask and Subsurf off), and measures where its triangles shrink against the rest mesh; shared by the range-of-motion and correction scripts.
@@ -21,6 +21,7 @@
 - `wave_bake.py`: bakes the wave offsets into one shape key per frame, played by driver with a `wave_amount` fader (`--blend`).
 - `simple_video.py`: plain viewport-style frames for a video from one view, the camera following the hips, optionally with the folds off (`--blend`; made at Rafael's request, 2026-11-11).
 - `simple_stills.py`: plain viewport-style images of a body at rest or walking, from the front, back and side (`--blend`; the only images the animation body uses).
+- `hands.py`: relaxed hands: fingers curled towards the palm and closed towards the middle finger, the wrist a damped spring that trails the forearm and hangs a little under gravity (`--blend`).
 - `hmblender.py`: shared helpers: meshes, drivers, render setup.
 - `posing.py`: joint rotations in the rest pose's axes.
 - `export_human.py`: MPFB human to arrays.
@@ -44,6 +45,7 @@
 - `tape_check.py`: measures people with the editor's tape, optionally with stills of its lines.
 - `measure_sweep.py`: how far each slider moves each tape measure.
 - `walk_clearance.py`: skin against bones while walking.
+- `walk.py`: with a sixth argument `smooth_stop`, the stop slows forward to rest instead of walking back (animation body).
 - `walk.py`: keys the walking cycle: the pelvis's tilt off the hip angle, toes rolling at push-off, the root from a soft contact, and each stance foot planted by correcting its leg; with `stop_steps`, more steps, shorter and slower each, end it standing.
 - `walk_check.py`: a walk file's root steps, the planted foot's slide and its height against the floor.
 - `muscle_sphere.py`: a liquid-filled sphere lifting a box, on our own solver: [docs/muscle-physics.md](../docs/muscle-physics.md).

@@ -14,6 +14,7 @@ gait = json.load(open(a[0]))[a[1]]
 out = a[2]
 cycles = int(a[3]) if len(a) > 3 else 3
 stop_steps = int(a[4]) if len(a) > 4 else 0
+smooth_stop = len(a) > 5 and a[5] == "smooth_stop"  # the body slows to a stop, always forward (initiative animation-body); off for the older chain
 rig = bpy.data.objects["HM_rig"]
 cols = gait["columns"]
 mean = np.array(gait["mean"])
@@ -165,6 +166,21 @@ for f in range(total + 1):
         y += float(((prev[1] + w) / 2) @ (prev[0] - ys))
     prev = (ys, w)
     root[f] = (y, -float(h @ w))
+
+if smooth_stop and n_stop > 0:
+    # The legs easing back to standing pull the contact forward, so the root solved above walks backwards at the end, up to 0.85 m/s: a jolt.
+    # Instead the body keeps its walking speed into the stop and slows smoothly to rest where that root ends, over the standing feet, never moving back.
+    # A cubic from the walking speed to zero; it can't overshoot when the distance is at least a third of speed x time, so it's never shorter than that.
+    v0 = root[walking][0] - root[walking - 1][0]
+    span = total - walking
+    m0 = v0 * span
+    distance = root[total][0] - root[walking][0]
+    if abs(distance) < abs(m0) / 3 or np.sign(distance) != np.sign(m0):
+        distance = m0 / 3
+    for k in range(span + 1):
+        u = k / span
+        root[walking + k][0] = root[walking][0] + m0 * (u - 2 * u * u + u ** 3) + distance * (3 * u * u - 2 * u ** 3)
+    root[walking:, 1] = np.convolve(np.pad(root[walking:, 1], 6, mode="edge"), np.hanning(13) / np.hanning(13).sum(), mode="valid")
 
 # Second pass: the root keeps that path, and each foot bearing weight is planted by inverse kinematics on its leg. A foot point
 # that touches the floor keeps the place where it touched until the foot leaves; the leg's hip, knee and ankle are corrected from the
