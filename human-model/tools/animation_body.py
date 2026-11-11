@@ -43,12 +43,9 @@ def main(args) -> int:
     run(BLENDER / "range_of_motion.py", rom, rom_json, blend=body)
     run(BLENDER / "pose_corrections.py", rom_json, corrected, d["03_correcoes"] / "correcoes.json", npz, blend=rom)
     run(BLENDER / "walk.py", HERE / "data" / "gait_walk.json", "female", walk, CYCLES, STOP_STEPS, "smooth_stop", blend=body)
-    swung = d["04_caminhada"] / "caminhada_cotovelo.blend"
-    run(BLENDER / "arm_swing.py", swung, d["04_caminhada"] / "cotovelo.json", blend=walk)
-    relaxed = d["04_caminhada"] / "caminhada_maos_relaxadas.blend"
-    run(BLENDER / "hands.py", relaxed, d["04_caminhada"] / "maos.json", blend=swung)
-    clear_walk = d["04_caminhada"] / "caminhada_contato.blend"
-    run(BLENDER / "arm_clearance.py", clear_walk, d["04_caminhada"] / "contato.json", blend=relaxed)
+    # The arms are damped pendulums with collision (Rafael, 2026-11-11); arm_swing.py, hands.py and arm_clearance.py were the earlier way, kept but no longer run
+    clear_walk = d["04_caminhada"] / "caminhada_bracos_pendulo.blend"
+    run(BLENDER / "arm_pendulum.py", clear_walk, d["04_caminhada"] / "bracos_pendulo.json", blend=walk)
     run(BLENDER / "apply_corrections.py", npz, fixed_walk, blend=clear_walk)
     if stop == "04_caminhada":
         return 0
