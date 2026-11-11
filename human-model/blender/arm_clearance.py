@@ -1,12 +1,19 @@
-"""The contact between hands and body while walking: the hand is stopped by the body, which gives under it. Run with --blend on a walking body. Args: out.blend out.json
-Each frame, points along the forearm, hand and fingers are tested against the skin of the trunk and legs (the arms' own skin left out). A point may go up to 5 mm into the skin, which tools/skin_waves.py then dents under it;
-past that the hand gives first, turning outwards at the wrist up to WRIST_MOST_DEG, and only then the upper arm opens, up to MOST_DEG, each by as little as it takes, smoothed over time and keyed on top of the walk. The hand touches and slides on the body instead of being held away from it (Rafael, 2026-11-11)."""
+"""The contact between hands and body while walking: the hand is stopped by the body, and both give. Run with --blend on a walking body. Args: out.blend out.json
+Each frame, points along the forearm, hand and fingers are tested against the skin of the trunk and legs (the arms' own skin left out). A point may go 5 mm into the skin, which tools/skin_waves.py
+dents under it. Past that, in order, each by as little as it takes (Rafael, 2026-11-11):
+  1. the fingers straighten;
+  2. the elbow bends further, up to ELBOW_MOST_DEG;
+  3. the wrist bends on its own hinge, up to WRIST_MOST_DEG, whichever way frees the hand;
+  4. the shoulder opens the arm, MOST_DEG by rule, and up to BEYOND_DEG more only to keep the hand out, counted apart.
+Each give is smoothed over time, never below what a frame needs, and keyed on top of the walk. Then rounds close whatever smoothing undid, elbow first, then shoulder.
+This is geometry, not physics: no mass, no friction (see the explainer in the review folder)."""
 import json, math, os, sys
 import bpy
 import numpy as np
-from mathutils import Matrix, Vector
+from mathutils import Quaternion, Vector
 from mathutils.bvhtree import BVHTree
 sys.path.insert(0, os.path.dirname(os.path.abspath(sys.argv[sys.argv.index("--python") + 1])))
+import hand_points as hp
 import hmblender as hb
 import posed_mesh as pm
 import posing as P
@@ -14,205 +21,185 @@ import posing as P
 a = hb.args()
 rig, body = bpy.data.objects["HM_rig"], bpy.data.objects["HM_body"]
 scene = bpy.context.scene
-MARGIN_M = -0.005  # how far a point may sink into the skin, which yields there (Rafael, 2026-11-11: 5 mm at most)
-WRIST_MOST_DEG = 15.0  # the hand gives first: fingers straighten, then it turns at the wrist
-BEYOND_DEG = 20.0  # past MOST_DEG the arm may still open, to keep the hand out of the body; such frames are counted apart
+MARGIN_M = -0.005  # a point may sink this far into the skin, which yields there (Rafael: 5 mm at most)
+ELBOW_MOST_DEG = 20.0
+WRIST_MOST_DEG = 10.0
+STEP_DEG, MOST_DEG = 0.5, 5.0  # the shoulder: never more than MOST_DEG on its own (Rafael's rule)
+BEYOND_DEG = 20.0
+SMOOTH_FRAMES = 2
 FINGERS = ("f_index", "f_middle", "f_ring", "f_pinky", "thumb")
-STEP_DEG, MOST_DEG = 0.5, 5.0  # then the arm, never more than this on its own (Rafael's rule, 2026-11-11)
-SMOOTH_FRAMES = 2  # the opening is eased over this many frames either side
 sign = {"L": 1, "R": -1}
-import hand_points as hp
 
 pm.set_display(body, False)
 tris = pm.triangles(body)
 arm_weight = hp.arm_weight(body, pm.N_BODY)
 trunk_tris = tris[(arm_weight[tris] < 0.2).all(axis=1)]
+first, last = scene.frame_start, scene.frame_end
+n = last - first + 1
 
 
-def points(side):
-    return hp.points(rig, side)
+def tree_now():
+    V = pm.read(body)[: pm.N_BODY]
+    return BVHTree.FromPolygons([Vector(x) for x in V], trunk_tris.tolist())
 
 
 def worst(tree, side):
-    """The deepest a point gets into the skin, as metres short of its radius plus the margin; 0 when all are clear."""
+    """How far the deepest point is past what the skin may give, in metres; 0 when all are clear."""
     short = 0.0
-    for p, radius in points(side):
-        hit = tree.find_nearest(p)
-        if hit[0] is None:
-            continue
-        location, normal = hit[0], hit[1]
-        d = (p - location).dot(normal)
-        short = max(short, radius + MARGIN_M - d)
+    for p, radius in hp.points(rig, side):
+        location, normal, _, _ = tree.find_nearest(p)
+        if location is not None:
+            short = max(short, radius + MARGIN_M - (p - location).dot(normal))
     return short
 
 
-def turn_hand(side, degrees, base):
-    """Turns the hand outwards about the vertical, at the wrist, from its walk pose `base` (a 4x4 pose matrix)."""
-    pb = rig.pose.bones[f"hand.{side}"]
-    head = base.to_translation()
-    pb.matrix = Matrix.Translation(head) @ Matrix.Rotation(math.radians(-sign[side] * degrees), 4, "Z") @ Matrix.Translation(-head) @ base
+def bones(side):
+    fingers = [rig.pose.bones[f"{f}.0{i}.{side}"] for f in FINGERS for i in (1, 2, 3) if f"{f}.0{i}.{side}" in rig.pose.bones]
+    return rig.pose.bones[f"upper_arm.{side}"], rig.pose.bones[f"forearm.{side}"], rig.pose.bones[f"hand.{side}"], fingers
 
 
-def finger_bones(side):
-    return [rig.pose.bones[f"{f}.0{i}.{side}"] for f in FINGERS for i in (1, 2, 3) if f"{f}.0{i}.{side}" in rig.pose.bones]
+def saved_pose(side):
+    upper, fore, hand, fingers = bones(side)
+    return upper.rotation_quaternion.copy(), fore.rotation_quaternion.copy(), hand.rotation_quaternion.copy(), [f.rotation_quaternion.copy() for f in fingers]
 
 
-def straighten(side, share, saved):
-    """Takes `share` of the relaxed curl out of the fingers: they give as they touch."""
-    for pb, q in zip(finger_bones(side), saved):
-        pb.rotation_quaternion = q.slerp((1, 0, 0, 0), share)
+def hinge_sign(side, bone, towards):
+    """The local X turn of `bone` that moves the hand's tip along `towards` (a world direction): which way the elbow and wrist bend on this rig."""
+    pb = rig.pose.bones[f"{bone}.{side}"]
+    tip = rig.pose.bones[f"hand.{side}"]
+    saved = pb.rotation_quaternion.copy()
+    moved = {}
+    for s in (1, -1):
+        pb.rotation_quaternion = saved @ Quaternion((1, 0, 0), math.radians(10 * s))
+        bpy.context.view_layer.update()
+        moved[s] = Vector(towards).dot(rig.matrix_world @ tip.tail)
+    pb.rotation_quaternion = saved
+    bpy.context.view_layer.update()
+    return 1 if moved[1] > moved[-1] else -1
 
 
-def open_arm(side, degrees, base):
-    rest_rot = P.rest_rotation(rig, f"upper_arm.{side}")
-    pb = rig.pose.bones[f"upper_arm.{side}"]
-    world = rest_rot @ base.to_matrix() @ rest_rot.inverted()
-    pb.rotation_quaternion = P.to_basis(rig, f"upper_arm.{side}", P.ry(-sign[side] * degrees) @ world)
+def pose(side, base, fingers=0.0, elbow=0.0, wrist=0.0, shoulder=0.0):
+    """Sets the arm from its walk pose `base` plus each give."""
+    upper, fore, hand, finger_bones = bones(side)
+    u, fo, h, fs = base
+    world = P.rest_rotation(rig, f"upper_arm.{side}") @ u.to_matrix() @ P.rest_rotation(rig, f"upper_arm.{side}").inverted()
+    upper.rotation_quaternion = P.to_basis(rig, f"upper_arm.{side}", P.ry(-sign[side] * shoulder) @ world) if shoulder else u
+    fore.rotation_quaternion = fo @ Quaternion((1, 0, 0), math.radians(elbow * elbow_sign[side]))
+    hand.rotation_quaternion = h @ Quaternion((1, 0, 0), math.radians(wrist))
+    for pb, q in zip(finger_bones, fs):
+        pb.rotation_quaternion = q.slerp((1, 0, 0, 0), fingers)
 
 
-first, last = scene.frame_start, scene.frame_end
-needed = {s: np.zeros(last - first + 1) for s in "LR"}
-wrist_needed = {s: np.zeros(last - first + 1) for s in "LR"}
-finger_needed = {s: np.zeros(last - first + 1) for s in "LR"}
-before = {s: np.zeros(last - first + 1) for s in "LR"}
+def key(side, f):
+    upper, fore, hand, fingers = bones(side)
+    for pb in [upper, fore, hand] + fingers:
+        pb.keyframe_insert("rotation_quaternion", frame=f)
+
+
+scene.frame_set(first)
+elbow_sign = {s: hinge_sign(s, "forearm", (0, -1, 0)) for s in "LR"}  # bending brings the hand forward
+gives = {s: {k: np.zeros(n) for k in ("fingers", "elbow", "wrist", "shoulder")} for s in "LR"}
+before = {s: np.zeros(n) for s in "LR"}
+base = {s: [] for s in "LR"}
 for i, f in enumerate(range(first, last + 1)):
     scene.frame_set(f)
-    V = pm.read(body)[: pm.N_BODY]
-    tree = BVHTree.FromPolygons([Vector(x) for x in V], trunk_tris.tolist())
+    tree = tree_now()
     for s in "LR":
-        pb = rig.pose.bones[f"upper_arm.{s}"]
-        hand = rig.pose.bones[f"hand.{s}"]
-        base, hand_base, hand_quat = pb.rotation_quaternion.copy(), hand.matrix.copy(), hand.rotation_quaternion.copy()
-        fingers = [f.rotation_quaternion.copy() for f in finger_bones(s)]
+        b = saved_pose(s)
+        base[s].append(b)
         before[s][i] = worst(tree, s)
-        share = 0.0
-        while worst(tree, s) > 0 and share < 1.0:
-            share = min(1.0, share + 0.1)
-            straighten(s, share, fingers)
+        g = {"fingers": 0.0, "elbow": 0.0, "wrist": 0.0, "shoulder": 0.0}
+
+        def clear():
+            pose(s, b, **g)
             bpy.context.view_layer.update()
-        wrist, way = 0.0, 0.0
-        if worst(tree, s) > 0:
-            # the wrist turns whichever way frees the hand
+            return worst(tree, s) <= 0
+
+        while not clear() and g["fingers"] < 1.0:
+            g["fingers"] = min(1.0, g["fingers"] + 0.1)
+        while not clear() and g["elbow"] < ELBOW_MOST_DEG:
+            g["elbow"] += STEP_DEG
+        if not clear():
             trial = {}
             for d in (1.0, -1.0):
-                turn_hand(s, d * 5.0, hand_base)
-                bpy.context.view_layer.update()
+                g["wrist"] = d * 5.0
+                clear()
                 trial[d] = worst(tree, s)
             way = 1.0 if trial[1.0] <= trial[-1.0] else -1.0
-        while way and worst(tree, s) > 0 and wrist < WRIST_MOST_DEG:
-            wrist += STEP_DEG
-            turn_hand(s, way * wrist, hand_base)
-            bpy.context.view_layer.update()
-        if way and worst(tree, s) > 0 and wrist >= WRIST_MOST_DEG:
-            turn_hand(s, way * wrist, hand_base)
-        angle = 0.0
-        while worst(tree, s) > 0 and angle < MOST_DEG + BEYOND_DEG:
-            angle += STEP_DEG
-            open_arm(s, angle, base)
-            bpy.context.view_layer.update()
-        needed[s][i], wrist_needed[s][i], finger_needed[s][i] = angle, way * wrist, share
-        pb.rotation_quaternion = base
-        hand.rotation_quaternion = hand_quat
-        for f, q in zip(finger_bones(s), fingers):
-            f.rotation_quaternion = q
-        bpy.context.view_layer.update()
+            g["wrist"] = 0.0
+            while not clear() and abs(g["wrist"]) < WRIST_MOST_DEG:
+                g["wrist"] += way * STEP_DEG
+        while not clear() and g["shoulder"] < MOST_DEG + BEYOND_DEG:
+            g["shoulder"] += STEP_DEG
+        for k, v in g.items():
+            gives[s][k][i] = v
+        pose(s, b)
+    bpy.context.view_layer.update()
 
 
 def smooth(x):
+    """Eased over time, never below what a frame needs, keeping the sign of a two-way give."""
+    size = np.abs(x)
     kernel = np.hanning(2 * SMOOTH_FRAMES + 3)[1:-1]
     kernel /= kernel.sum()
-    padded = np.pad(x, SMOOTH_FRAMES, mode="edge")
-    return np.maximum(np.convolve(padded, kernel, mode="valid"), x)
-
-
-after = {s: np.zeros(last - first + 1) for s in "LR"}
-walk_arm = {s: [] for s in "LR"}
-opening = {s: smooth(needed[s]) for s in "LR"}
-def smooth_signed(x):
-    kernel = np.hanning(2 * SMOOTH_FRAMES + 3)[1:-1]
-    kernel /= kernel.sum()
-    return np.convolve(np.pad(x, SMOOTH_FRAMES, mode="edge"), kernel, mode="valid")
-
-
-def smooth_wrist(x):
-    """The turn's size smoothed like the arm's, never below what a frame needed; its way kept from the nearest frame that turned."""
-    size = smooth(np.abs(x))
+    eased = np.maximum(np.convolve(np.pad(size, SMOOTH_FRAMES, mode="edge"), kernel, mode="valid"), size)
     way = np.sign(x)
     known = np.nonzero(way)[0]
     if known.size:
         way = way[known[np.abs(np.arange(len(x))[:, None] - known[None]).argmin(axis=1)]]
-    return size * way
+    else:
+        way = np.ones(len(x))
+    return eased * way
 
 
-wrist_turn = {s: smooth_wrist(wrist_needed[s]) for s in "LR"}
-finger_give = {s: smooth(finger_needed[s]) for s in "LR"}
-for i, f in enumerate(range(first, last + 1)):
-    scene.frame_set(f)
-    for s in "LR":
-        pb = rig.pose.bones[f"upper_arm.{s}"]
-        hand = rig.pose.bones[f"hand.{s}"]
-        hand_base = hand.matrix.copy()
-        walk_arm[s].append(pb.rotation_quaternion.copy())
-        open_arm(s, float(opening[s][i]), pb.rotation_quaternion.copy())
-        pb.keyframe_insert("rotation_quaternion", frame=f)
-        bpy.context.view_layer.update()
-        turn_hand(s, float(wrist_turn[s][i]), rig.pose.bones[f"hand.{s}"].matrix.copy())
-        hand.keyframe_insert("rotation_quaternion", frame=f)
-        straighten(s, float(finger_give[s][i]), [b.rotation_quaternion.copy() for b in finger_bones(s)])
-        for b in finger_bones(s):
-            b.keyframe_insert("rotation_quaternion", frame=f)
-    bpy.context.view_layer.update()
-    V = pm.read(body)[: pm.N_BODY]
-    tree = BVHTree.FromPolygons([Vector(x) for x in V], trunk_tris.tolist())
-    for s in "LR":
-        # smoothing can undo part of a frame's fix; whatever still goes through is closed here by the arm, and counted
-        extra = 0.0
-        pb = rig.pose.bones[f"upper_arm.{s}"]
-        base = pb.rotation_quaternion.copy()
-        while worst(tree, s) > 0 and opening[s][i] + extra < MOST_DEG + BEYOND_DEG:
-            extra += STEP_DEG
-            open_arm(s, extra, base)
-            bpy.context.view_layer.update()
-        if extra:
-            opening[s][i] += extra
-            pb.keyframe_insert("rotation_quaternion", frame=f)
-        after[s][i] = worst(tree, s)
-# Smoothing can undo part of a frame's fix. Rounds: measure what still goes through, open the arm that much more, smooth, apply from the walk's own arm, until nothing does.
-def apply_opening():
+def apply_all():
     for i, f in enumerate(range(first, last + 1)):
         scene.frame_set(f)
         for s in "LR":
-            pb = rig.pose.bones[f"upper_arm.{s}"]
-            pb.rotation_quaternion = walk_arm[s][i]
-            open_arm(s, float(opening[s][i]), walk_arm[s][i])
-            pb.keyframe_insert("rotation_quaternion", frame=f)
+            pose(s, base[s][i], **{k: float(v[i]) for k, v in gives[s].items()})
+            key(s, f)
 
 
-for round_ in range(4):
-    extra = {s: np.zeros(last - first + 1) for s in "LR"}
+for s in "LR":
+    for k in gives[s]:
+        gives[s][k] = smooth(gives[s][k])
+apply_all()
+after = {s: np.zeros(n) for s in "LR"}
+for round_ in range(5):
+    extra = False
     for i, f in enumerate(range(first, last + 1)):
         scene.frame_set(f)
-        V = pm.read(body)[: pm.N_BODY]
-        tree = BVHTree.FromPolygons([Vector(x) for x in V], trunk_tris.tolist())
+        tree = tree_now()
         for s in "LR":
+            g = {k: float(v[i]) for k, v in gives[s].items()}
             after[s][i] = worst(tree, s)
-            pb = rig.pose.bones[f"upper_arm.{s}"]
-            base = pb.rotation_quaternion.copy()
-            while worst(tree, s) > 0 and opening[s][i] + extra[s][i] < MOST_DEG + BEYOND_DEG:
-                extra[s][i] += STEP_DEG
-                open_arm(s, extra[s][i], base)
+            if after[s][i] <= 0:
+                continue
+            extra = True
+            while after[s][i] > 0 and (g["elbow"] < ELBOW_MOST_DEG or g["shoulder"] < MOST_DEG + BEYOND_DEG):
+                if g["elbow"] < ELBOW_MOST_DEG:
+                    g["elbow"] += STEP_DEG
+                else:
+                    g["shoulder"] += STEP_DEG
+                pose(s, base[s][i], **g)
                 bpy.context.view_layer.update()
-            pb.rotation_quaternion = base
-    if not any(extra[s].any() for s in "LR"):
+                after[s][i] = worst(tree, s)
+            gives[s]["elbow"][i], gives[s]["shoulder"][i] = g["elbow"], g["shoulder"]
+    if not extra:
         break
     for s in "LR":
-        opening[s] = smooth(opening[s] + extra[s])
-    apply_opening()
+        gives[s]["elbow"] = smooth(gives[s]["elbow"])
+        gives[s]["shoulder"] = smooth(gives[s]["shoulder"])
+    apply_all()
+
 pm.set_display(body, True)
 scene.frame_set(first)
 bpy.ops.wm.save_as_mainfile(filepath=a[0])
-# worst() is how far short of the allowed sinking a point is; a point touches when it is within its radius of the skin.
 deep = lambda x: (x - MARGIN_M) * 1000
-report = {s: {"frames_touching": int((after[s] >= MARGIN_M).sum()), "frames_through_before": int((before[s] > 0).sum()), "deepest_before_mm": float(deep(before[s]).max()), "frames_through_after": int((after[s] > 0).sum()), "deepest_after_mm": float(deep(after[s]).max()), "largest_opening_deg": float(opening[s].max()), "mean_opening_deg": float(opening[s].mean()), "largest_wrist_deg": float(np.abs(wrist_turn[s]).max()), "mean_wrist_deg": float(np.abs(wrist_turn[s]).mean()), "frames_fingers_giving": int((finger_give[s] > 0.05).sum()), "frames_arm_past_rule": int((opening[s] > MOST_DEG + 1e-6).sum())} for s in "LR"}
+report = {s: {"frames_through_before": int((before[s] > 0).sum()), "deepest_before_mm": float(deep(before[s]).max()), "frames_through_after": int((after[s] > 0).sum()),
+              "frames_fingers_giving": int((gives[s]["fingers"] > 0.05).sum()),
+              "elbow_extra_largest_deg": float(gives[s]["elbow"].max()), "elbow_extra_mean_deg": float(gives[s]["elbow"].mean()),
+              "wrist_largest_deg": float(np.abs(gives[s]["wrist"]).max()), "wrist_mean_deg": float(np.abs(gives[s]["wrist"]).mean()),
+              "shoulder_largest_deg": float(gives[s]["shoulder"].max()), "frames_shoulder_past_rule": int((gives[s]["shoulder"] > MOST_DEG + 1e-6).sum())} for s in "LR"}
 json.dump(report, open(a[1], "w"), indent=1)
 print(json.dumps(report))

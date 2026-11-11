@@ -43,8 +43,10 @@ def main(args) -> int:
     run(BLENDER / "range_of_motion.py", rom, rom_json, blend=body)
     run(BLENDER / "pose_corrections.py", rom_json, corrected, d["03_correcoes"] / "correcoes.json", npz, blend=rom)
     run(BLENDER / "walk.py", HERE / "data" / "gait_walk.json", "female", walk, CYCLES, STOP_STEPS, "smooth_stop", blend=body)
+    swung = d["04_caminhada"] / "caminhada_cotovelo.blend"
+    run(BLENDER / "arm_swing.py", swung, d["04_caminhada"] / "cotovelo.json", blend=walk)
     relaxed = d["04_caminhada"] / "caminhada_maos_relaxadas.blend"
-    run(BLENDER / "hands.py", relaxed, d["04_caminhada"] / "maos.json", blend=walk)
+    run(BLENDER / "hands.py", relaxed, d["04_caminhada"] / "maos.json", blend=swung)
     clear_walk = d["04_caminhada"] / "caminhada_contato.blend"
     run(BLENDER / "arm_clearance.py", clear_walk, d["04_caminhada"] / "contato.json", blend=relaxed)
     run(BLENDER / "apply_corrections.py", npz, fixed_walk, blend=clear_walk)
