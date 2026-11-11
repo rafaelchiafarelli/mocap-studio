@@ -23,8 +23,6 @@
  },
  "targets": {
   "measure-waist-circ-decr": 0.2985,
-  "measure-shoulder-dist-decr": 0.5,
-  "l-hand-scale-decr": 0.75,
-  "r-hand-scale-decr": 0.75
+  "measure-shoulder-dist-decr": 0.5
  }
 }

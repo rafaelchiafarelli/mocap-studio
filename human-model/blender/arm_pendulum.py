@@ -29,6 +29,9 @@ SUBSTEPS, ITERATIONS = 40, 4
 GRAVITY = np.array([0.0, 0.0, -9.81])
 FIST = {"f_index": (75, 85, 35), "f_middle": (78, 88, 35), "f_ring": (78, 88, 35), "f_pinky": (78, 85, 35), "thumb": (0, 35, 35)}  # a closed fist, by eye; the thumb's first joint turns on another axis, so only its last two bend
 FORWARD_WORLD = np.array([0.0, -1.0, 0.0])
+# Twist of the upper arm and the forearm about their own length (Rafael, 2026-11-11): each is a damped spring with inertia whose rest follows the trunk's turn
+# and, a little, the swing (an arm behind the body turns inwards); it lags and rocks slightly. By eye: frequency, damping ratio, degrees of twist per degree of swing.
+TWIST = {"upper": {"hz": 1.6, "damping": 0.35, "per_swing": 0.25}, "fore": {"hz": 2.6, "damping": 0.35, "per_swing": 0.30}}
 
 pm.set_display(body, False)
 tris = pm.triangles(body)
@@ -231,6 +234,37 @@ def limit_joints(p, s):
                 p[m] = p[j] + R @ (p[m] - p[j])
 
 
+def twist(pb, degrees):
+    """Turns a posed bone about its own length, through its head."""
+    bpy.context.view_layer.update()
+    M = pb.matrix.copy()
+    head = M.to_translation()
+    pb.matrix = Matrix.Translation(head) @ Matrix.Rotation(math.radians(degrees), 4, M.to_3x3().col[1]) @ Matrix.Translation(-head) @ M
+
+
+def inward_sign(side, bone):
+    """Which way of turning `bone` about its length moves the palm backwards, so a positive twist means turning the arm inwards."""
+    pb, ha = rig.pose.bones[f"{bone}.{side}"], rig.pose.bones[f"hand.{side}"]
+    saved = pb.matrix.copy()
+    moved = {}
+    for sg in (1, -1):
+        pb.matrix = saved
+        twist(pb, 10 * sg)
+        bpy.context.view_layer.update()
+        palm = np.array(W.to_3x3()) @ (np.array(ha.matrix.to_3x3()) @ palm_local[side])
+        moved[sg] = palm[1]  # +Y is backwards
+    pb.matrix = saved
+    bpy.context.view_layer.update()
+    return 1 if moved[1] > moved[-1] else -1
+
+
+def trunk_turn():
+    """The chest's turn about the vertical, in degrees."""
+    pb = rig.pose.bones["spine.003"]
+    x_axis = np.array(W.to_3x3()) @ np.array(pb.matrix.to_3x3().col[0])
+    return math.degrees(math.atan2(x_axis[1], x_axis[0]))
+
+
 def aim(pb, target):
     """Turns a posed bone about its head so its tail points at `target` (world), by the smallest turn, keeping its twist."""
     bpy.context.view_layer.update()
@@ -290,6 +324,11 @@ for s in "LR":
     x[s], x_prev[s] = p, prev
     report[s]["contacts"], report[s]["deepest_mm"] = 0, 0.0
 shoulder_prev = {s: x[s][0].copy() for s in "LR"}
+scene.frame_set(first)
+inward = {s: {bone: inward_sign(s, bone) for bone in ("upper_arm", "forearm")} for s in "LR"}
+yaw0 = trunk_turn()
+twist_state = {s: {"upper": [yaw0, 0.0], "fore": [0.0, 0.0]} for s in "LR"}
+swing_rest = {s: 0.0 for s in "LR"}
 for f in range(first, last + 1):
     scene.frame_set(f)
     V = pm.read(body)[: pm.N_BODY]
@@ -332,12 +371,27 @@ for f in range(first, last + 1):
                     left = max(left, RADIUS[name] - GIVE_M - float(np.dot(q - np.array(loc), np.array(normal))))
         report[s]["left_mm"] = max(report[s].get("left_mm", 0.0), left * 1000)
         report[s]["frames_left"] = report[s].get("frames_left", 0) + int(left > 0.001)
-        for name, (i, j) in (("upper_arm", (0, 1)), ("forearm", (1, 2)), ("hand", (2, 3))):
-            pb = rig.pose.bones[f"{name}.{s}"]
-            target = p[j] if name != "hand" else p[2] + (p[3] - p[2]) / 0.55
-            aim(pb, target)
+        # the twists' springs, one step per frame in small steps
+        u1 = p[1] - p[0]
+        swing = math.degrees(math.atan2(-u1[1], -u1[2])) - swing_rest[s]
+        yaw = trunk_turn()
+        for part, target in (("upper", yaw + TWIST["upper"]["per_swing"] * -swing), ("fore", TWIST["fore"]["per_swing"] * -swing)):
+            q, qv = twist_state[s][part]
+            omega = 2 * math.pi * TWIST[part]["hz"]
+            for _ in range(SUBSTEPS):
+                qv += dt * (-omega * omega * (q - target) - 2 * TWIST[part]["damping"] * omega * qv)
+                q += dt * qv
+            twist_state[s][part] = [q, qv]
+        upper_twist = twist_state[s]["upper"][0] - yaw
+        fore_twist = twist_state[s]["fore"][0]
+        aim(rig.pose.bones[f"upper_arm.{s}"], p[1])
+        twist(rig.pose.bones[f"upper_arm.{s}"], inward[s]["upper_arm"] * upper_twist)
+        aim(rig.pose.bones[f"forearm.{s}"], p[2])
         report[s].setdefault("palm_turn_deg", []).append(face_palm_in(s))
+        twist(rig.pose.bones[f"forearm.{s}"], inward[s]["forearm"] * fore_twist)
         aim(rig.pose.bones[f"hand.{s}"], p[2] + (p[3] - p[2]) / 0.55)
+        report[s].setdefault("upper_twist_deg", []).append(upper_twist)
+        report[s].setdefault("fore_twist_deg", []).append(fore_twist)
         for name in ("upper_arm", "forearm", "hand"):
             rig.pose.bones[f"{name}.{s}"].keyframe_insert("rotation_quaternion", frame=f)
         u1, u2 = p[1] - p[0], p[2] - p[1]
@@ -348,6 +402,6 @@ for f in range(first, last + 1):
 pm.set_display(body, True)
 scene.frame_set(first)
 bpy.ops.wm.save_as_mainfile(filepath=a[0])
-summary = {s: {"contact_steps": r["contacts"], "deepest_inside_a_step_mm": r["deepest_mm"], "swing_range_deg": [min(r["swing_deg"]), max(r["swing_deg"])], "elbow_range_deg": [min(r["elbow_deg"]), max(r["elbow_deg"])], "deepest_left_after_frame_mm": r.get("left_mm", 0.0), "frames_left_inside": r.get("frames_left", 0), "palm_turn_range_deg": [min(r["palm_turn_deg"]), max(r["palm_turn_deg"])]} for s, r in report.items()}
+summary = {s: {"contact_steps": r["contacts"], "deepest_inside_a_step_mm": r["deepest_mm"], "swing_range_deg": [min(r["swing_deg"]), max(r["swing_deg"])], "elbow_range_deg": [min(r["elbow_deg"]), max(r["elbow_deg"])], "deepest_left_after_frame_mm": r.get("left_mm", 0.0), "frames_left_inside": r.get("frames_left", 0), "palm_turn_range_deg": [min(r["palm_turn_deg"]), max(r["palm_turn_deg"])], "upper_twist_range_deg": [min(r["upper_twist_deg"]), max(r["upper_twist_deg"])], "fore_twist_range_deg": [min(r["fore_twist_deg"]), max(r["fore_twist_deg"])]} for s, r in report.items()}
 json.dump({"arms": summary, "thumbs": thumbs, "masses_kg": mass[1:].tolist()}, open(a[1], "w"), indent=1)
 print(json.dumps(summary))
