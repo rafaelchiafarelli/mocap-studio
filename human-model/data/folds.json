@@ -19,9 +19,9 @@
 "rest": 0.0,
 "deep": 0.4344412684440613
 },
-"depth_mm": 14,
+"depth_mm": 9,
 "width_cm": 3.0,
-"at_rest": 0.6
+"at_rest": 0.3
 },
 {
 "name": "virilha",
@@ -253,9 +253,9 @@
 "rest": 0.0,
 "deep": 0.4344412684440613
 },
-"depth_mm": 14,
+"depth_mm": 9,
 "width_cm": 3.0,
-"at_rest": 0.6
+"at_rest": 0.3
 },
 {
 "name": "virilha",

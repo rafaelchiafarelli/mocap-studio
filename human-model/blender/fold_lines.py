@@ -100,7 +100,7 @@ for s in "LR":
     out = np.array([float(g), 0.0, 0.0])
     # Under the buttock: across the back of the thigh's top. Standing, it already exists; a leg behind the body deepens it.
     hip, thigh_dir = point(f"thigh.{s}", 0.26)
-    add("sob_gluteo", s, line(hip, thigh_dir + np.array([0, 0.25, 0]), BACK + 0.15 * out, 62, 0.16), driver_for(f"thigh.{s}", P.rx(25)), 14, 3.0, 0.6)
+    add("sob_gluteo", s, line(hip, thigh_dir + np.array([0, 0.25, 0]), BACK + 0.15 * out, 62, 0.16), driver_for(f"thigh.{s}", P.rx(25)), 9, 3.0, 0.3)
     # The groin: across the front of the thigh's top, deepened by flexing the hip.
     hip2, _ = point(f"thigh.{s}", 0.10)
     add("virilha", s, line(hip2, thigh_dir + np.array([g * 0.35, -0.55, 0]), FORWARD + 0.5 * out, 60, 0.17), driver_for(f"thigh.{s}", P.rx(-90)), 15, 2.8, 0.2)
