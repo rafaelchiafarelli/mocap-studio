@@ -2,7 +2,7 @@
 
     python3 human-model/tools/animation_body.py RECIPE.json OUT_DIR [--stop-after STAGE]
 
-Stages (in OUT_DIR): 01_corpo, 02_amplitude, 03_correcoes, 04_caminhada, 05_dobras. Runs in WSL, calling Blender through blender_run.py. data/folds.json is rewritten from the clean body."""
+Stages (in OUT_DIR): 01_corpo, 02_amplitude, 03_correcoes, 04_caminhada, 05_dobras, 06_malha_fina. Runs in WSL, calling Blender through blender_run.py. data/folds.json is rewritten from the clean body."""
 from __future__ import annotations
 
 import subprocess
@@ -30,7 +30,7 @@ def main(args) -> int:
         return 2
     recipe, out = Path(args[0]).resolve(), Path(args[1])
     stop = args[args.index("--stop-after") + 1] if "--stop-after" in args else None
-    names = ["01_corpo", "02_amplitude", "03_correcoes", "04_caminhada", "05_dobras"]
+    names = ["01_corpo", "02_amplitude", "03_correcoes", "04_caminhada", "05_dobras", "06_malha_fina"]
     d = {n: out / n for n in names}
     for p in d.values():
         p.mkdir(parents=True, exist_ok=True)
@@ -50,6 +50,8 @@ def main(args) -> int:
     run(BLENDER / "fold_lines.py", folds, blend=body)
     run(BLENDER / "fold_apply.py", folds, d["05_dobras"] / "amplitude_com_dobras.blend", blend=corrected)
     run(BLENDER / "fold_apply.py", folds, d["05_dobras"] / "caminhada_com_dobras.blend", blend=fixed_walk)
+    run(BLENDER / "fold_fine.py", folds, d["06_malha_fina"] / "amplitude_malha_fina.blend", blend=d["05_dobras"] / "amplitude_com_dobras.blend")
+    run(BLENDER / "fold_fine.py", folds, d["06_malha_fina"] / "caminhada_malha_fina.blend", blend=d["05_dobras"] / "caminhada_com_dobras.blend")
     return 0
 
 

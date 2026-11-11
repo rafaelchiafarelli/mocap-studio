@@ -14,6 +14,7 @@
 - `pose_corrections.py`, `corrections_common.py`, `apply_corrections.py`: volume-preserving skinning fading out at the elbows, and Delta Mush tried per joint and kept only where it lowers the measured collapse (on the fitted woman, none was kept); `apply_corrections.py` puts the result on another file of the same body.
 - `fold_lines.py`: finds each fold's line on the skin and the rig pose that drives it, and writes `data/folds.json` (`--blend`).
 - `fold_apply.py`: the catalogue as shape keys following the pose, with a fader per fold and one for fat in `HM_controls`, plain-expression drivers (`--blend`).
+- `fold_fine.py`: a thin crease per fold on the subdivided skin, from images in UV space and a Geometry Nodes modifier driven by each fold's shape key (`--blend`).
 - `hmblender.py`: shared helpers: meshes, drivers, render setup.
 - `posing.py`: joint rotations in the rest pose's axes.
 - `export_human.py`: MPFB human to arrays.

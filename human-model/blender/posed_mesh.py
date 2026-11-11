@@ -8,7 +8,7 @@ N_BODY = 13380
 def set_display(body, on):
     """Mask and Subsurf hide or add vertices: off while reading, so the vertices are MPFB's own, in order."""
     for m in body.modifiers:
-        if m.type in ("MASK", "SUBSURF"):
+        if m.type in ("MASK", "SUBSURF", "NODES"):
             m.show_viewport = on
 
 

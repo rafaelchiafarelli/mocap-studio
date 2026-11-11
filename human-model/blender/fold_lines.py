@@ -62,6 +62,17 @@ def euler_at(bone, rotation):
     return [e.x, e.y, e.z]
 
 
+BREAST_FOLD_BELOW_M = 0.045  # by eye: how far below the nipple the fold under the breast runs
+BREAST_DEPTH_M = 0.05  # by eye: the fold's centre sits this far behind the nipple, inside the chest
+
+
+def group_vertices(name):
+    group = body.vertex_groups.get(name)
+    if group is None:
+        return np.array([], int)
+    return np.array([v.index for v in body.data.vertices[: pm.N_BODY] if any(g.group == group.index and g.weight > 0 for g in v.groups)], int)
+
+
 def driver_for(bone, rotation):
     rest, deep = euler_at(bone, None), euler_at(bone, rotation)
     k = int(np.argmax(np.abs(np.array(deep) - np.array(rest))))
@@ -105,18 +116,12 @@ for s in "LR":
     add("axila_frente", s, line(shoulder, arm_dir, FORWARD - 0.7 * out, 45, 0.13), driver_for(f"upper_arm.{s}", arm_rotation), 9, 2.0, 0.2)
     add("axila_atras", s, line(shoulder, arm_dir, BACK - 0.7 * out, 45, 0.13), driver_for(f"upper_arm.{s}", arm_rotation), 9, 2.0, 0.2)
     # Under the breast, from the group MPFB weights to the breast: the lowest vertices of its front.
-    group = body.vertex_groups.get(f"breast.{s}")
-    if group is not None:
-        weights = np.zeros(pm.N_BODY)
-        for v in body.data.vertices[: pm.N_BODY]:
-            for g2 in v.groups:
-                if g2.group == group.index:
-                    weights[v.index] = g2.weight
-        inside = np.nonzero(weights > 0.45)[0]
-        if inside.size:
-            c = V[inside].mean(0)
-            z = np.percentile(V[inside, 2], 3)
-            add("sob_o_seio", s, line(np.array([c[0], c[1] + 0.015, z]), UP, FORWARD, 72, 0.14), driver_for("spine.002", P.rx(15)), 16, 3.2, 0.7)
+    nipple = group_vertices("nipple")
+    side_nipple = nipple[(V[nipple, 0] > 0) == (g > 0)] if nipple.size else nipple
+    if side_nipple.size:
+        tip = V[side_nipple].mean(0)
+        center = np.array([tip[0], tip[1] + BREAST_DEPTH_M, tip[2] - BREAST_FOLD_BELOW_M])
+        add("sob_o_seio", s, line(center, UP, FORWARD + 0.15 * out, 70, 0.11), driver_for("spine.002", P.rx(15)), 9, 2.4, 0.4)
     # The side of the waist, deepened by leaning to that side.
     waist, _ = point("spine.002", 0.1)
     waist = axis_at(waist[2])
