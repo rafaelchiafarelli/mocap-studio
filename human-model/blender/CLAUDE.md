@@ -8,7 +8,8 @@
 
 ## Files
 
-- `arm_clearance.py`: the hands' contact with the body while walking: a hand may sink 5 mm into the skin, which yields there (`tools/skin_waves.py`); past that the fingers straighten, the wrist turns up to 15 degrees, then the arm opens, 5 degrees by rule and further only to keep the hand out, counted apart; smoothed and keyed on the walk (`--blend`).
+- `arm_clearance.py`: the hands' contact with the body while walking: a hand may sink 5 mm into the skin, which yields there (`tools/skin_waves.py`); past that, in order, the fingers straighten, the elbow bends up to 20 degrees more, the wrist bends on its hinge up to 10, and the shoulder opens, 5 by rule and further only to keep the hand out, counted apart; smoothed and keyed on the walk (`--blend`).
+- `arm_swing.py`: a live elbow in the walk's arm swing, bending from 12 degrees behind to 38 in front, a frame late, easing to the walk's own bend as it stops (`--blend`).
 - `hand_points.py`: points with radii along forearms, hands and fingers, and the arms' share of each skin vertex, for that contact.
 - `clean_body.py`: an MPFB2 human from a recipe alone, rig named `HM_rig`, helpers masked, skin subdivided on display, no inner layers (initiative `animation-body`).
 - `posed_mesh.py`: reads the posed skin with helpers (Mask and Subsurf off), and measures where its triangles shrink against the rest mesh; shared by the range-of-motion and correction scripts.

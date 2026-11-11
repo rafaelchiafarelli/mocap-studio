@@ -9,7 +9,7 @@ The new start of initiative `animation-body` (Rafael, 2026-11-10): a whole MPFB2
 | `01_corpo` | `blender/clean_body.py` | The body from a recipe alone, its rig, helpers masked. Weights of bones the metarig lacks go to real bones |
 | `02_amplitude` | `blender/range_of_motion.py` | A range-of-motion test, and how much skin collapses per pose |
 | `03_correcoes` | `blender/pose_corrections.py` | Volume-preserving skinning, fading out at the elbows |
-| `04_caminhada` | `blender/walk.py` (`smooth_stop`), `hands.py`, `arm_clearance.py`, `apply_corrections.py` | The measured walk, feet planted, slowing smoothly to a stop; relaxed hands with a wrist spring; hands touching the body (skin up to 5 mm, then fingers, wrist, arm); those corrections |
+| `04_caminhada` | `blender/walk.py` (`smooth_stop`), `arm_swing.py`, `hands.py`, `arm_clearance.py`, `apply_corrections.py` | The measured walk, feet planted, slowing smoothly to a stop; a live elbow in the swing; relaxed hands with a wrist spring; hands touching the body (skin up to 5 mm, then fingers, elbow, wrist, shoulder); those corrections |
 | `05_dobras` | `blender/fold_lines.py`, `fold_apply.py` | 17 folds as shape keys following the pose |
 | `06_malha_fina` | `blender/fold_fine.py` | A thin crease per fold on the subdivided skin |
 | `07_ondas` | `blender/skin_dump.py`, `tools/skin_waves.py`, `blender/wave_bake.py` | Sway, travelling waves and the step's impact, baked per frame |
