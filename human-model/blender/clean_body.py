@@ -35,10 +35,8 @@ scene = bpy.context.scene
 scene.render.fps = 24
 bpy.ops.wm.save_as_mainfile(filepath=a[1])
 
-V = hb.evaluated_verts(body)
 mods = [(m.name, m.type) for m in body.modifiers]
 base = len(body.data.vertices)
-report = {"recipe": recipe.get("name"), "vertices_with_helpers": base, "body_vertices": N_BODY, "modifiers": mods, "bones": len(rig.data.bones),
-          "height_m": float(hb.world_verts(body)[:N_BODY, 2].max() - hb.world_verts(body)[:N_BODY, 2].min()), "shape_keys": len(body.data.shape_keys.key_blocks) if body.data.shape_keys else 0}
+report = {"recipe": recipe.get("name"), "vertices_with_helpers": base, "body_vertices": N_BODY, "modifiers": mods, "bones": len(rig.data.bones), "shape_keys": len(body.data.shape_keys.key_blocks) if body.data.shape_keys else 0}
 json.dump(report, open(a[2], "w"), indent=1)
 print(report)
