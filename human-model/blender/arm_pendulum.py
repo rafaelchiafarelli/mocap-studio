@@ -1,7 +1,7 @@
 """Arms as damped triple pendulums with collision (Rafael, 2026-11-11). Run with --blend on a walking body. Args: out.blend out.json
 Each arm hangs from the shoulder, which the walking trunk carries: shoulder, elbow and wrist are joints, the upper arm, forearm and closed hand are weights. Gravity pulls them down and each joint is damped,
 so the arm settles pointing down and swings only from the trunk's motion; the wrist also has a light passive stiffness towards straight. The forearm turns about its length so the palm faces the thigh. The arm collides with the trunk and legs: it may press 5 mm into the skin (which tools/skin_waves.py dents), and friction slows
-it along the skin. Joints: the elbow doesn't bend backwards or past ELBOW_MOST_DEG, the wrist bends at most WRIST_MOST_DEG. Position-based dynamics with Verlet steps; the result is keyed on the rig."""
+it along the skin. Joints: the elbow is a hinge, bending only forwards and not past ELBOW_MOST_DEG, the wrist bends at most WRIST_MOST_DEG. Position-based dynamics with Verlet steps; the result is keyed on the rig."""
 import json, math, os, sys
 import bpy
 import numpy as np
@@ -160,13 +160,19 @@ def collide(p, prev, tree, s):
 def limit_joints(p, s):
     u1, u2, u3 = (p[1] - p[0]), (p[2] - p[1]), (p[3] - p[2])
     u1n = u1 / np.linalg.norm(u1)
-    # the elbow bends forward only: a backward bend of the forearm against the upper arm is taken out
-    back = -FORWARD_WORLD
-    off = u2 - np.dot(u2, u1n) * u1n
-    if np.dot(off, back) > 0:
-        u2 = u2 - np.dot(off, back) * back
-        p[2] = p[1] + u2 / np.linalg.norm(u2) * rest_len[s][1]
-        p[3] = p[2] + u3
+    # The elbow is a hinge: the forearm bends only forwards, in the plane of the upper arm and the body's forward direction.
+    # Its sideways part and any backward bend are taken out (Rafael saw the forearms bending outwards, 2026-11-11).
+    # The correction is shared by elbow and wrist by their weights, so to move the hand sideways the whole arm opens at the shoulder instead of the two fighting.
+    forward = FORWARD_WORLD - np.dot(FORWARD_WORLD, u1n) * u1n
+    if np.linalg.norm(forward) > 1e-6:
+        forward /= np.linalg.norm(forward)
+        side = np.cross(u1n, forward)
+        wrong = np.dot(u2, side) * side + min(0.0, float(np.dot(u2, forward))) * forward
+        if np.linalg.norm(wrong) > 1e-9:
+            w1, w2 = inv[1], inv[2]
+            p[1] += wrong * w1 / (w1 + w2)
+            p[2] -= wrong * w2 / (w1 + w2)
+            p[3] -= wrong * w2 / (w1 + w2)
     for (i, j, k), most in (((0, 1, 2), ELBOW_MOST_DEG), ((1, 2, 3), WRIST_MOST_DEG)):
         a_ = p[j] - p[i]
         b_ = p[k] - p[j]
@@ -194,6 +200,53 @@ def aim(pb, target):
 
 
 dt = 1.0 / (fps * SUBSTEPS)
+SETTLE_S = 2.0  # before the walk, the arms start hanging straight down and settle with the body still
+
+
+def hang(s):
+    """The arm hanging straight down from the shoulder, a little outwards so it starts clear of the hips."""
+    out = 1.0 if s == "L" else -1.0
+    p = np.zeros((4, 3))
+    p[0] = x[s][0]
+    direction = np.array([out * 0.15, 0.0, -1.0])
+    direction /= np.linalg.norm(direction)
+    for j in (1, 2, 3):
+        p[j] = p[j - 1] + direction * rest_len[s][j - 1]
+    return p
+
+
+scene.frame_set(first + 1)
+second = {s: world(rig.pose.bones[f"upper_arm.{s}"].head) for s in "LR"}
+scene.frame_set(first)
+settle_tree = BVHTree.FromPolygons([Vector(v) for v in pm.read(body)[: pm.N_BODY]], trunk_tris.tolist())
+for s in "LR":
+    # the walk starts already moving: the arms settle moving with the shoulder at that speed, so the first frame doesn't jolt them
+    step = (second[s] - x[s][0]) / SUBSTEPS
+    p = hang(s) - step * int(SETTLE_S * fps * SUBSTEPS)
+    prev = p - step
+    for _ in range(int(SETTLE_S * fps * SUBSTEPS)):
+        v = p - prev
+        for j in range(1, 4):
+            v[j] -= min(1.0, joint_damp[j - 1] * dt) * (v[j] - v[j - 1])
+        new = p + v + GRAVITY * dt * dt
+        new[0] = p[0] + step
+        prev, p = p, new
+        for _ in range(ITERATIONS):
+            for j in (1, 2, 3):
+                d = p[j] - p[j - 1]
+                L = np.linalg.norm(d)
+                corr = (L - rest_len[s][j - 1]) * d / max(L, 1e-9)
+                wi, wj = inv[j - 1], inv[j]
+                p[j - 1] += corr * wi / (wi + wj)
+                p[j] -= corr * wj / (wi + wj)
+            limit_joints(p, s)
+            # the body stands at the first frame's place: the settling arm is tested against it shifted by how far the shoulder still has to go
+            offset = x[s][0] - p[0]
+            moved, moved_prev = p + offset, prev + offset
+            collide(moved, moved_prev, settle_tree, s)
+            p, prev = moved - offset, moved_prev - offset
+    x[s], x_prev[s] = p, prev
+    report[s]["contacts"], report[s]["deepest_mm"] = 0, 0.0
 shoulder_prev = {s: x[s][0].copy() for s in "LR"}
 for f in range(first, last + 1):
     scene.frame_set(f)
