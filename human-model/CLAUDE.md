@@ -2,7 +2,7 @@
 
 **Role:** code and tools that build the human model, in this repository for now, not a separate one (Rafael, 2026-11-03). Start with [docs/README.md](docs/README.md).
 
-**Entry points:** `build_model.py RECIPE OUT_DIR` from WSL builds one individual; `hm.sh pytest` runs the tests in Docker, `hm.sh --gpu` the GPU image with the GPU; `install_editor.py` installs the Blender editor.
+**Entry points:** `build_model.py RECIPE OUT_DIR` from WSL builds one individual; `hm.sh pytest` runs the tests in Docker, `hm.sh --gpu` the GPU image with the GPU, `hm.sh --ref` the image with MediaPipe and OpenCV for `tools/check_reference.py`; `install_editor.py` installs the Blender editor.
 
 **Inputs → Outputs:** a recipe (`data/recipes/`) and the sources on `G:\\mocap-studio-downloads\\models\\` → `<name>.blend` with skin, rig, bones, muscles and their skin fields. The stages are in [human-model.process.md](human-model.process.md).
 
@@ -14,6 +14,7 @@
 - `setup_gpu_host.sh`: run once with `sudo` in WSL; installs the NVIDIA Container Toolkit so Docker can use the GPU, and checks it from a container. Changes the host, not the image.
 - `hm.sh`, `Dockerfile`, `requirements.in`, `requirements.txt`: the locked environment for `hmcore`.
 - `Dockerfile.gpu`, `requirements-gpu.in`, `requirements-gpu.txt`: the same plus NVIDIA Warp, for `hmcore/xpbd.py`. `hm.sh --gpu` builds and runs it.
+- `Dockerfile.reference`, `requirements-reference.in`, `requirements-reference.txt`: the image of `tools/check_reference.py`, with MediaPipe Pose and OpenCV. `hm.sh --ref` builds and runs it, with C: mounted read-only.
 - `ATTRIBUTION.md`: the credits a film has to carry.
 - `human-model.process.md`: the stages.
 - `docs/`: written to be read: `README.md`, `running.md`, `character-editor.md`, `character-controls.md`, `morphology.md`, `skeleton.md`, `muscles.md`, `skin.md`, `drive.md`, `muscle-physics.md`, `status.md`, `decisions.md`, `sources-and-validation.md`; and `diagrams/`, the walking simulation's stages and sequences, in draw.io and Portuguese.
