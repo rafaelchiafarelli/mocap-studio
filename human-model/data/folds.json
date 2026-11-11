@@ -1,0 +1,503 @@
+{
+"_about": "The folds of the skin (initiative animation-body). Written by blender/fold_lines.py; the depths and widths are by eye. vertices: the line, in MPFB's skin order. driver: the bone's local Euler axis, its value at rest and at full depth. at_rest: the share of the depth already there at rest.",
+"folds": [
+{
+"name": "sob_gluteo",
+"side": "L",
+"vertices": [
+10886,
+10885,
+10877,
+10898,
+10892,
+10942,
+11022
+],
+"driver": {
+"bone": "thigh.L",
+"axis": "X",
+"rest": 0.0,
+"deep": 0.4344412684440613
+},
+"depth_mm": 14,
+"width_cm": 3.0,
+"at_rest": 0.6
+},
+{
+"name": "virilha",
+"side": "L",
+"vertices": [
+10926,
+10920,
+10919,
+10921,
+10916,
+10922,
+10957,
+10960,
+10961,
+10959,
+10958,
+10963
+],
+"driver": {
+"bone": "thigh.L",
+"axis": "X",
+"rest": 0.0,
+"deep": -1.5707963705062866
+},
+"depth_mm": 15,
+"width_cm": 2.8,
+"at_rest": 0.2
+},
+{
+"name": "atras_do_joelho",
+"side": "L",
+"vertices": [
+11255,
+11256,
+11258,
+11277,
+11241,
+11260,
+11259,
+11263,
+11262,
+11265,
+11246,
+11264
+],
+"driver": {
+"bone": "shin.L",
+"axis": "X",
+"rest": 0.0,
+"deep": 2.0958168506622314
+},
+"depth_mm": 12,
+"width_cm": 2.2,
+"at_rest": 0.1
+},
+{
+"name": "dentro_do_cotovelo",
+"side": "L",
+"vertices": [
+10022,
+10057,
+10040,
+10023,
+10047,
+10030,
+10013,
+9996,
+10036,
+10002,
+9985,
+10031,
+9997,
+9980,
+9998,
+10547,
+10545,
+9982,
+9999,
+10016,
+10033,
+10050,
+10017
+],
+"driver": {
+"bone": "forearm.L",
+"axis": "X",
+"rest": 0.0,
+"deep": 2.482530117034912
+},
+"depth_mm": 8,
+"width_cm": 1.6,
+"at_rest": 0.05
+},
+{
+"name": "axila_frente",
+"side": "L",
+"vertices": [
+8346,
+10424,
+10425,
+8352,
+8095,
+8351,
+8544,
+8096,
+8126,
+8127,
+8097,
+8355,
+8099,
+8133,
+8100
+],
+"driver": {
+"bone": "upper_arm.L",
+"axis": "Z",
+"rest": 0.0,
+"deep": -0.691840648651123
+},
+"depth_mm": 9,
+"width_cm": 2.0,
+"at_rest": 0.2
+},
+{
+"name": "axila_atras",
+"side": "L",
+"vertices": [
+8305,
+10598,
+10613,
+8340,
+8295,
+8363,
+8303,
+8338,
+8284,
+10510,
+10514,
+10448,
+10452,
+8357,
+8361,
+8302,
+8339,
+8301,
+8345
+],
+"driver": {
+"bone": "upper_arm.L",
+"axis": "Z",
+"rest": 0.0,
+"deep": -0.691840648651123
+},
+"depth_mm": 9,
+"width_cm": 2.0,
+"at_rest": 0.2
+},
+{
+"name": "sob_o_seio",
+"side": "L",
+"vertices": [
+8506,
+8505,
+8561,
+8549,
+8489,
+8490,
+8474,
+8548,
+8476,
+8477,
+8492,
+8493
+],
+"driver": {
+"bone": "spine.002",
+"axis": "X",
+"rest": 0.0,
+"deep": -0.34906575083732605
+},
+"depth_mm": 16,
+"width_cm": 3.2,
+"at_rest": 0.7
+},
+{
+"name": "lado_da_cintura",
+"side": "L",
+"vertices": [
+10780,
+10778,
+10767,
+10781,
+10809,
+10771,
+10773,
+10772,
+10805,
+10775,
+10774,
+10716,
+10814,
+10718
+],
+"driver": {
+"bone": "spine.001",
+"axis": "Z",
+"rest": 0.0,
+"deep": 0.24873964488506317
+},
+"depth_mm": 11,
+"width_cm": 3.0,
+"at_rest": 0.15
+},
+{
+"name": "sob_gluteo",
+"side": "R",
+"vertices": [
+4404,
+4312,
+4261,
+4268,
+4244,
+4253,
+4254
+],
+"driver": {
+"bone": "thigh.R",
+"axis": "X",
+"rest": 0.0,
+"deep": 0.4344412684440613
+},
+"depth_mm": 14,
+"width_cm": 3.0,
+"at_rest": 0.6
+},
+{
+"name": "virilha",
+"side": "R",
+"vertices": [
+4337,
+4331,
+4332,
+4334,
+4333,
+4330,
+4292,
+4286,
+4291,
+4289,
+4290,
+4296
+],
+"driver": {
+"bone": "thigh.R",
+"axis": "X",
+"rest": 0.0,
+"deep": -1.5707963705062866
+},
+"depth_mm": 15,
+"width_cm": 2.8,
+"at_rest": 0.2
+},
+{
+"name": "atras_do_joelho",
+"side": "R",
+"vertices": [
+4646,
+4628,
+4647,
+4644,
+4645,
+4641,
+4642,
+4623,
+4659,
+4640,
+4638,
+4637
+],
+"driver": {
+"bone": "shin.R",
+"axis": "X",
+"rest": 0.0,
+"deep": 2.0958168506622314
+},
+"depth_mm": 12,
+"width_cm": 2.2,
+"at_rest": 0.1
+},
+{
+"name": "dentro_do_cotovelo",
+"side": "R",
+"vertices": [
+3349,
+3382,
+3365,
+3348,
+3331,
+3314,
+3880,
+3882,
+3330,
+3312,
+3329,
+3363,
+3317,
+3334,
+3368,
+3328,
+3345,
+3362,
+3379,
+3355,
+3372,
+3389,
+3354
+],
+"driver": {
+"bone": "forearm.R",
+"axis": "X",
+"rest": 0.0,
+"deep": 2.482530117034912
+},
+"depth_mm": 8,
+"width_cm": 1.6,
+"at_rest": 0.05
+},
+{
+"name": "axila_frente",
+"side": "R",
+"vertices": [
+1412,
+1445,
+1411,
+1683,
+1409,
+1439,
+1438,
+1408,
+1872,
+1679,
+1407,
+1680,
+3758,
+3757,
+1674
+],
+"driver": {
+"bone": "upper_arm.R",
+"axis": "Z",
+"rest": 0.0,
+"deep": 0.691840648651123
+},
+"depth_mm": 9,
+"width_cm": 2.0,
+"at_rest": 0.2
+},
+{
+"name": "axila_atras",
+"side": "R",
+"vertices": [
+1673,
+1629,
+1667,
+1630,
+1689,
+1685,
+3786,
+3782,
+3849,
+3845,
+1612,
+1666,
+1631,
+1691,
+1623,
+1668,
+3950,
+3934,
+1633
+],
+"driver": {
+"bone": "upper_arm.R",
+"axis": "Z",
+"rest": 0.0,
+"deep": 0.691840648651123
+},
+"depth_mm": 9,
+"width_cm": 2.0,
+"at_rest": 0.2
+},
+{
+"name": "sob_o_seio",
+"side": "R",
+"vertices": [
+1821,
+1820,
+1805,
+1804,
+1876,
+1802,
+1818,
+1817,
+1877,
+1889,
+1833,
+1834
+],
+"driver": {
+"bone": "spine.002",
+"axis": "X",
+"rest": 0.0,
+"deep": -0.34906575083732605
+},
+"depth_mm": 16,
+"width_cm": 3.2,
+"at_rest": 0.7
+},
+{
+"name": "lado_da_cintura",
+"side": "R",
+"vertices": [
+4063,
+4173,
+4061,
+4131,
+4132,
+4164,
+4129,
+4130,
+4128,
+4168,
+4138,
+4124,
+4135,
+4137
+],
+"driver": {
+"bone": "spine.001",
+"axis": "Z",
+"rest": 0.0,
+"deep": -0.24873964488506317
+},
+"depth_mm": 11,
+"width_cm": 3.0,
+"at_rest": 0.15
+},
+{
+"name": "barriga",
+"side": "",
+"vertices": [
+4280,
+4324,
+4327,
+4322,
+4320,
+4319,
+4357,
+4317,
+10981,
+10948,
+10949,
+10951,
+10955,
+10952,
+10910
+],
+"driver": {
+"bone": "spine.001",
+"axis": "X",
+"rest": 0.0,
+"deep": -0.43633216619491577
+},
+"depth_mm": 13,
+"width_cm": 3.4,
+"at_rest": 0.05
+}
+]
+}

@@ -37,6 +37,8 @@
 
 - `deltamush.py`: Delta Mush on plain arrays, for `blender/pose_corrections.py`.
 
+- `folds.py`: distance along the skin from a fold's line, and the shape of the dent.
+
 ## Key facts / gotchas
 
 - A scan isn't centred on x=0, so "medial" and "midline" are always relative to the bone pair: `bonelib.py:33`.
