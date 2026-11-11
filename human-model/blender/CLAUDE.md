@@ -72,6 +72,8 @@
 - Nothing depends on the muscle bodies: skin moves through shape keys and bones. Measured by `scratch/blender/retire_trial.py`.
 - MPFB's Rigify metarig deforms the skin; the generated control rig isn't used. Its `DEF-*` weights have to be merged into metarig bones, or vertices stay behind: `assemble.py:36`, and `clean_body.py` for the animation body.
 
+- On MPFB's rigify metarig the fingers' local X axis spreads them; bending about it twisted the fingers sideways. `arm_pendulum.py` picks, per finger bone, the local axis (X or Z) and way that moves it towards the palm, the palm found from the knuckle row and the fingertip's nail. `hands.py` (no longer run) still bends about X.
+
 ## Touchpoints
 
 `hmcore/`, `tools/`, `build_model.py`.

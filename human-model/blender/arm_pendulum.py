@@ -27,7 +27,7 @@ ELBOW_MOST_DEG, WRIST_MOST_DEG = 145.0, 35.0
 WRIST_STRAIGHTEN = 0.03  # per step, the share of its bend the wrist gives back: the passive stiffness that keeps a hanging hand in line with the forearm (by eye; without it the fists hooked)
 SUBSTEPS, ITERATIONS = 40, 4
 GRAVITY = np.array([0.0, 0.0, -9.81])
-FIST = {"f_index": (88, 100, 70), "f_middle": (90, 100, 70), "f_ring": (90, 100, 70), "f_pinky": (90, 95, 65), "thumb": (0, 35, 35)}  # a closed fist, by eye; the thumb's first joint turns on another axis, so only its last two bend
+FIST = {"f_index": (75, 85, 35), "f_middle": (78, 88, 35), "f_ring": (78, 88, 35), "f_pinky": (78, 85, 35), "thumb": (0, 35, 35)}  # a closed fist, by eye; the thumb's first joint turns on another axis, so only its last two bend
 FORWARD_WORLD = np.array([0.0, -1.0, 0.0])
 
 pm.set_display(body, False)
@@ -70,36 +70,43 @@ def face_palm_in(side):
 
 
 def fist_curl():
-    """Closes both hands into fists, keyed once. Each finger bone's curl direction is the one that moves its fingertip away from its nail:
-    MPFB's skin has a fingernails group, so the palm side is never guessed from the rest pose."""
+    """Closes both hands into fists, keyed once. Each finger bone bends about whichever of its local X and Z axes, and whichever way, moves it most towards the palm:
+    on this rig the fingers' X is the spreading axis, and turning about it bent them sideways (Rafael saw the armature 'breaking', 2026-11-11).
+    The palm is perpendicular to the hand and to its row of knuckles, on the side away from the middle fingertip's nail, measured on the straight hand at rest. Returns each bone's (axis, sign)."""
     rig.data.pose_position = "REST"
     bpy.context.view_layer.update()
     skin = pm.read(body)
     nails_group = body.vertex_groups["fingernails"].index
     nails = skin[[v.index for v in body.data.vertices if any(g.group == nails_group and g.weight > 0.5 for g in v.groups)]]
-    signs = {}
+    bend = {}
     for s in "LR":
+        # the palm is perpendicular to the hand's length and to the row of knuckles from index to little finger; the middle fingertip's nail says which face it is
+        hand_b = rig.pose.bones[f"hand.{s}"]
+        along = np.array(W @ hand_b.tail) - np.array(W @ hand_b.head)
+        knuckles = np.array(W @ rig.pose.bones[f"f_index.01.{s}"].head) - np.array(W @ rig.pose.bones[f"f_pinky.01.{s}"].head)
+        normal = np.cross(knuckles, along)
+        normal /= np.linalg.norm(normal)
+        tip = rig.pose.bones[f"f_middle.03.{s}"]
+        tip_mid = (np.array(W @ tip.head) + np.array(W @ tip.tail)) / 2
+        nail = nails[np.argsort(np.linalg.norm(nails - tip_mid, axis=1))[:6]].mean(axis=0)
+        palm_world = -normal if np.dot(nail - tip_mid, normal) > 0 else normal
+        palm_local[s] = np.array(rig.data.bones[f"hand.{s}"].matrix_local.to_3x3()).T @ (np.array(W.inverted().to_3x3()) @ palm_world)
         for finger in FIST:
-            tip = rig.pose.bones[f"{finger}.03.{s}"]
-            tip_point = np.array(W @ tip.tail)
-            nail = nails[np.argsort(np.linalg.norm(nails - tip_point, axis=1))[:12]].mean(axis=0)
-            axis = np.array(W @ tip.tail) - np.array(W @ tip.head)
-            axis /= np.linalg.norm(axis)
-            towards_nail = (nail - tip_point) - np.dot(nail - tip_point, axis) * axis
-            if finger == "f_middle":
-                palm_world = -towards_nail / np.linalg.norm(towards_nail)
-                rest_rot = np.array(rig.data.bones[f"hand.{s}"].matrix_local.to_3x3())
-                palm_local[s] = rest_rot.T @ (np.array(W.inverted().to_3x3()) @ palm_world)
             for i in (1, 2, 3):
                 pb = rig.pose.bones[f"{finger}.0{i}.{s}"]
                 pb.rotation_mode = "QUATERNION"
-                moved = {}
-                for sg in (1, -1):
-                    pb.rotation_quaternion = Quaternion((1, 0, 0), math.radians(15 * sg))
-                    bpy.context.view_layer.update()
-                    moved[sg] = float(np.dot(np.array(W @ tip.tail) - tip_point, towards_nail))
+                before = np.array(W @ pb.tail)
+                best = None
+                for axis in ((1.0, 0.0, 0.0), (0.0, 0.0, 1.0)):
+                    for sg in (1, -1):
+                        pb.rotation_quaternion = Quaternion(axis, math.radians(20 * sg))
+                        bpy.context.view_layer.update()
+                        towards_palm = float(np.dot(np.array(W @ pb.tail) - before, palm_world))
+                        if best is None or towards_palm > best[0]:
+                            best = (towards_palm, axis, sg)
                 pb.rotation_quaternion = (1, 0, 0, 0)
-                signs[pb.name] = 1 if moved[1] < moved[-1] else -1
+                bpy.context.view_layer.update()
+                bend[pb.name] = (best[1], best[2])
     rig.data.pose_position = "POSE"
     bpy.context.view_layer.update()
     for f in (first, last):
@@ -107,9 +114,10 @@ def fist_curl():
             for finger, angles in FIST.items():
                 for i, deg in enumerate(angles, 1):
                     pb = rig.pose.bones[f"{finger}.0{i}.{s}"]
-                    pb.rotation_quaternion = Quaternion((1, 0, 0), math.radians(deg * signs[pb.name]))
+                    axis, sg = bend[pb.name]
+                    pb.rotation_quaternion = Quaternion(axis, math.radians(deg * sg))
                     pb.keyframe_insert("rotation_quaternion", frame=f)
-    return signs
+    return bend
 
 
 curl_signs = fist_curl()
@@ -128,7 +136,7 @@ def wrap_thumbs():
                 bones[0].rotation_quaternion = Quaternion((1, 0, 0), math.radians(ax)) @ Quaternion((0, 0, 1), math.radians(az))
                 for b2 in range(0, 61, 15):
                     for pb, deg in zip(bones[1:], (b2, b2)):
-                        pb.rotation_quaternion = Quaternion((1, 0, 0), math.radians(deg * curl_signs[pb.name]))
+                        pb.rotation_quaternion = Quaternion(curl_signs[pb.name][0], math.radians(deg * curl_signs[pb.name][1]))
                     bpy.context.view_layer.update()
                     target = W @ (index.head + 0.5 * (index.tail - index.head))
                     d = ((W @ bones[2].tail) - target).length
@@ -139,7 +147,7 @@ def wrap_thumbs():
         for f in (first, last):
             bones[0].rotation_quaternion = Quaternion((1, 0, 0), math.radians(ax)) @ Quaternion((0, 0, 1), math.radians(az))
             for pb in bones[1:]:
-                pb.rotation_quaternion = Quaternion((1, 0, 0), math.radians(b2 * curl_signs[pb.name]))
+                pb.rotation_quaternion = Quaternion(curl_signs[pb.name][0], math.radians(b2 * curl_signs[pb.name][1]))
             for pb in bones:
                 pb.keyframe_insert("rotation_quaternion", frame=f)
     return found
