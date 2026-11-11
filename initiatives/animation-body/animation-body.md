@@ -2,7 +2,7 @@
 
 **Goal:** a whole human body, starting from MPFB2's sliders, that looks right at rest and shows in animation what a real body shows: "as dobrinhas do corpo, as reentrâncias e todas as ondas de choque do caminhar, quando existem" (Rafael, 2026-11-10).
 
-**Status:** planned in [epics](epics/README.md) on 2026-11-11; nothing of the body is built yet. The woman only for now. The reference tools exist: `human-model/tools/check_reference.py`, `cut_stretches.py` and `classify_body.py`.
+**Status:** all built on 2026-11-11, Rafael's verdict pending ([epics](epics/README.md)). The woman only for now. Stages, commands and measures: `human-model/docs/animation-body.md`. The reference tools exist: `human-model/tools/check_reference.py`, `cut_stretches.py` and `classify_body.py`.
 
 ## Why a new start
 
