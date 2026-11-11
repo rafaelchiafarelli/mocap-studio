@@ -113,6 +113,40 @@ def fist_curl():
 
 
 curl_signs = fist_curl()
+
+
+def wrap_thumbs():
+    """Lays each thumb over the closed fingers: its three joints turn, by a small search, until the thumb's tip rests on the index finger's middle bone, a little outside it, as a fist's thumb does."""
+    scene.frame_set(first)
+    found = {}
+    for s in "LR":
+        bones = [rig.pose.bones[f"thumb.0{i}.{s}"] for i in (1, 2, 3)]
+        index = rig.pose.bones[f"f_index.02.{s}"]
+        best = None
+        for ax in range(-60, 61, 10):
+            for az in range(-60, 61, 10):
+                bones[0].rotation_quaternion = Quaternion((1, 0, 0), math.radians(ax)) @ Quaternion((0, 0, 1), math.radians(az))
+                for b2 in range(0, 61, 15):
+                    for pb, deg in zip(bones[1:], (b2, b2)):
+                        pb.rotation_quaternion = Quaternion((1, 0, 0), math.radians(deg * curl_signs[pb.name]))
+                    bpy.context.view_layer.update()
+                    target = W @ (index.head + 0.5 * (index.tail - index.head))
+                    d = ((W @ bones[2].tail) - target).length
+                    if best is None or d < best[0]:
+                        best = (d, ax, az, b2)
+        d, ax, az, b2 = best
+        found[s] = {"gap_mm": d * 1000, "base_x": ax, "base_z": az, "bend": b2}
+        for f in (first, last):
+            bones[0].rotation_quaternion = Quaternion((1, 0, 0), math.radians(ax)) @ Quaternion((0, 0, 1), math.radians(az))
+            for pb in bones[1:]:
+                pb.rotation_quaternion = Quaternion((1, 0, 0), math.radians(b2 * curl_signs[pb.name]))
+            for pb in bones:
+                pb.keyframe_insert("rotation_quaternion", frame=f)
+    return found
+
+
+thumbs = wrap_thumbs()
+print("thumbs", thumbs)
 scene.frame_set(first)
 masses = {s: None for s in "LR"}
 mass = np.array([np.inf, BODY_KG * (SHARE["upper"] + SHARE["fore"]) / 2, BODY_KG * (SHARE["fore"] + SHARE["hand"]) / 2, BODY_KG * SHARE["hand"] / 2])
@@ -307,5 +341,5 @@ pm.set_display(body, True)
 scene.frame_set(first)
 bpy.ops.wm.save_as_mainfile(filepath=a[0])
 summary = {s: {"contact_steps": r["contacts"], "deepest_inside_a_step_mm": r["deepest_mm"], "swing_range_deg": [min(r["swing_deg"]), max(r["swing_deg"])], "elbow_range_deg": [min(r["elbow_deg"]), max(r["elbow_deg"])], "deepest_left_after_frame_mm": r.get("left_mm", 0.0), "frames_left_inside": r.get("frames_left", 0), "palm_turn_range_deg": [min(r["palm_turn_deg"]), max(r["palm_turn_deg"])]} for s, r in report.items()}
-json.dump({"arms": summary, "masses_kg": mass[1:].tolist()}, open(a[1], "w"), indent=1)
+json.dump({"arms": summary, "thumbs": thumbs, "masses_kg": mass[1:].tolist()}, open(a[1], "w"), indent=1)
 print(json.dumps(summary))
