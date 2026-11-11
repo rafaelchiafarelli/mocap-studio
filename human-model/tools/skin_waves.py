@@ -56,13 +56,17 @@ def main(args) -> int:
             distance.append(fd.surface_distance(rest, edges, sources.tolist(), 3.0))
         field = fi.pulses(events, normals, distance, fps, size=impact["size"], width=impact["width_s"], speed=impact["speed"], reach=impact["reach"])
     out, steps = sw.simulate(rest, tris, values, drive, fps, pulses=field)
+    dent = np.zeros_like(out)
+    if "hands" in d.files:
+        dent = sw.contact_dent(positions, d["hands"].astype(float), d["arm"].astype(float), adjacency)
+        out = out - dent
     report = {}
     for region, mask in masks.items():
         where = mask > 0.5
         report[region] = {"vertices": int(where.sum()), "peak_mm": float(np.abs(out[:, where]).max() * 1000) if where.any() else 0.0, "rms_mm": float(np.sqrt((out[:, where] ** 2).mean()) * 1000) if where.any() else 0.0}
     np.savez_compressed(args[1], offsets=out, rest=rest.astype(np.float32), tris=tris, first=d["first"], **{f"mask_{k}": v.astype(np.float32) for k, v in masks.items()})
-    Path(args[1]).with_suffix(".json").write_text(json.dumps({"substeps": steps, "touchdowns_s": events, "peak_drive_ms2": float(np.percentile(np.abs(drive), 99.9)), "regions": report, "table": table}, indent=1), encoding="utf-8")
-    print("passos por quadro", steps, "toques no chão", [len(e) for e in events])
+    Path(args[1]).with_suffix(".json").write_text(json.dumps({"substeps": steps, "contact_frames": int((dent.max(axis=1) > 0.0005).sum()), "deepest_dent_mm": float(dent.max() * 1000), "touchdowns_s": events, "peak_drive_ms2": float(np.percentile(np.abs(drive), 99.9)), "regions": report, "table": table}, indent=1), encoding="utf-8")
+    print("passos por quadro", steps, "toques no chão", [len(e) for e in events], "quadros com a mão encostada", int((dent.max(axis=1) > 0.0005).sum()), "afundamento máximo %.1f mm" % (dent.max() * 1000))
     for region, r in report.items():
         print(f"{region:10} {r['vertices']:5} vertices  pico {r['peak_mm']:6.1f} mm  rms {r['rms_mm']:5.2f} mm")
     return 0

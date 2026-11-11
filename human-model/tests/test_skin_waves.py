@@ -51,3 +51,14 @@ def test_inertia_of_steady_motion_is_zero():
     p[:, 0, 2] = np.arange(5) * 0.1
     n = np.tile([0.0, 0.0, 1.0], (5, 1, 1))
     assert np.abs(sw.inertia(p, n, 24)).max() < 1e-9
+
+
+def test_the_skin_sinks_under_a_hand_and_not_elsewhere():
+    v, t = grid(n=21, spacing=0.01)
+    positions = np.repeat(v[None], 2, axis=0)
+    hands = np.array([[[0.1, 0.1, 0.015, 0.02]], [[0.1, 0.1, 0.5, 0.02]]])
+    dent = sw.contact_dent(positions, hands, np.zeros(len(v)), sw.dm.neighbours(t, len(v)))
+    middle = 10 * 21 + 10
+    assert 0.004 < dent[0, middle] <= 0.015
+    assert dent[0, 0] == 0.0
+    assert dent[1].max() == 0.0
