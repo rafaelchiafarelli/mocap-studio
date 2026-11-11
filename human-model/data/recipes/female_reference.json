@@ -1,0 +1,28 @@
+{
+ "name": "female_reference",
+ "sex": "female",
+ "macros": {
+  "gender": 0.0,
+  "age": 0.5,
+  "muscle": 0.5,
+  "weight": 0.5,
+  "height": 0.5865889212827988,
+  "proportions": 0.5,
+  "cupsize": 0.5,
+  "firmness": 0.5,
+  "race": {
+   "african": 0.33,
+   "asian": 0.33,
+   "caucasian": 0.34
+  }
+ },
+ "assets": {
+  "eyes": "eyes/high-poly/high-poly.mhclo",
+  "teeth": "teeth/teeth_base/teeth_base.mhclo",
+  "tongue": "tongue/tongue01/tongue01.mhclo"
+ },
+ "targets": {
+  "measure-waist-circ-decr": 0.2985,
+  "measure-shoulder-dist-decr": 0.5
+ }
+}
