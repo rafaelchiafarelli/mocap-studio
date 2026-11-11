@@ -2,7 +2,7 @@
 
 **Goal:** a whole human body, starting from MPFB2's sliders, that looks right at rest and shows in animation what a real body shows: "as dobrinhas do corpo, as reentrâncias e todas as ondas de choque do caminhar, quando existem" (Rafael, 2026-11-10).
 
-**Status:** agreed in conversation on 2026-11-10; epics and tasks still to be planned. Nothing of the body is built yet. The tool for judging reference material exists: `human-model/tools/check_reference.py`.
+**Status:** planned in [epics](epics/README.md) on 2026-11-11; nothing of the body is built yet. The woman only for now. The reference tools exist: `human-model/tools/check_reference.py`, `cut_stretches.py` and `classify_body.py`.
 
 ## Why a new start
 
@@ -35,11 +35,14 @@ The breast starts as one region of the skin layer. The water balloon stays as a 
 - The whole body in the first pass, not one fold and one wave first: he analyses everything together.
 - The model comes first, while he gathers reference photos and videos.
 - The mesh tests M1 and M2 of the document below are left for the future.
+- The woman only, for now (2026-11-11).
+- Small errors in the body classifier are acceptable (2026-11-11).
 
 ## Reference and comparison
 
 - `tools/check_reference.py` rates each photo or video before use (`hm.sh --ref`).
-- A comparison against real people needs simple renders of the model, an exception to the rule of no renders unless asked. It was proposed and not yet answered.
+- A comparison against real people uses simple images of the model only, Rafael's exception to the rule of no renders unless asked (2026-11-11).
+- 31 of the 33 named models are classified, in `G:\mocap-studio-downloads\review\2026-11-10\passarela_trechos\` (`classificacao.html`). Silhouette is the most solid result; the gluteus's has low confidence, its prototypes being declared.
 - Reference material stays on `G:`, out of the repository, and enters no model.
 
 ## Sources and earlier work
