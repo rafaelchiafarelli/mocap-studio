@@ -1,0 +1,4 @@
+# The image of tools/check_reference.py: MediaPipe Pose (Apache-2.0, models inside the wheel) and OpenCV. numpy<2 because mediapipe 0.10.14 is built against it.
+mediapipe==0.10.14
+numpy<2
+pillow
