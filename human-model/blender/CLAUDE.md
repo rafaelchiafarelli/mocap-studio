@@ -17,6 +17,7 @@
 - `fold_fine.py`: a thin crease per fold on the subdivided skin, from images in UV space and a Geometry Nodes modifier driven by each fold's shape key (`--blend`).
 - `skin_dump.py`: the skin's motion per frame, the rig's weights and the feet's path, for `tools/skin_waves.py` (`--blend`).
 - `wave_bake.py`: bakes the wave offsets into one shape key per frame, played by driver with a `wave_amount` fader (`--blend`).
+- `simple_video.py`: plain viewport-style frames for a video from one view, the camera following the hips, optionally with the folds off (`--blend`; made at Rafael's request, 2026-11-11).
 - `simple_stills.py`: plain viewport-style images of a body at rest or walking, from the front, back and side (`--blend`; the only images the animation body uses).
 - `hmblender.py`: shared helpers: meshes, drivers, render setup.
 - `posing.py`: joint rotations in the rest pose's axes.
