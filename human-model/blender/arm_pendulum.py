@@ -327,19 +327,43 @@ def aim(pb, target):
 
 
 dt = 1.0 / (fps * SUBSTEPS)
-SETTLE_S = 2.0  # before the walk, the arms start hanging straight down and settle with the body still
+HANG_OPEN_MAX_DEG = 30.0  # how far the settling arm may open outwards to clear the skin
+SETTLE_S = 2.0  # before the walk, the arms start at their first target, clear of the skin, and settle with the body still
 
 
-def hang(s):
-    """The arm hanging straight down from the shoulder, a little outwards so it starts clear of the hips."""
-    out = 1.0 if s == "L" else -1.0
+def touches(p, tree):
+    """Whether any sample of the chain is in the skin past what it gives."""
+    for name, i, j in segments:
+        for t in SAMPLES[name]:
+            q = p[i] + t * (p[j] - p[i])
+            loc, normal, _, _ = tree.find_nearest(Vector(q))
+            if loc is not None and RADIUS[name] - GIVE_M - float(np.dot(q - np.array(loc), np.array(normal))) > 0:
+                return True
+    return False
+
+
+def chain_from(s, up, fore):
     p = np.zeros((4, 3))
     p[0] = x[s][0]
-    direction = np.array([out * 0.15, 0.0, -1.0])
-    direction /= np.linalg.norm(direction)
-    for j in (1, 2, 3):
-        p[j] = p[j - 1] + direction * rest_len[s][j - 1]
+    p[1] = p[0] + up * rest_len[s][0]
+    p[2] = p[1] + fore * rest_len[s][1]
+    p[3] = p[2] + fore * rest_len[s][2]
     return p
+
+
+def hang(s, tree, up, fore):
+    """The settling arm's pose and its muscles' aim: the first frame's target, opened outwards about the body's forward axis only as far as it takes to clear the skin.
+    On wide bodies the target went into the hip: for the whole settling the muscles pressed the arm into a still thigh, and the collision ended pushing it out and up,
+    so it came into the walk raised and fell in its first frames (the pear, rectangle and oval endomorphs, 2026-11-12)."""
+    out = 1.0 if s == "L" else -1.0
+    for deg in np.arange(0.0, HANG_OPEN_MAX_DEG + 1e-9, 1.0):
+        turn = Matrix.Rotation(math.radians(out * deg), 3, Vector(FORWARD_WORLD))
+        u, f = np.array(turn @ Vector(up)), np.array(turn @ Vector(fore))
+        p = chain_from(s, u, f)
+        if not touches(p, tree):
+            break
+    report[s]["settle_open_deg"] = float(deg)
+    return p, u, f
 
 
 last_target = {s: 0.0 for s in "LR"}
@@ -352,7 +376,8 @@ for s in "LR":
     up0, fo0, gain0 = targets(s, False)  # the arms settle with their muscles already on, at the first frame's pose
     # the walk starts already moving: the arms settle moving with the shoulder at that speed, so the first frame doesn't jolt them
     step = (second[s] - x[s][0]) / SUBSTEPS
-    p = hang(s) - step * int(SETTLE_S * fps * SUBSTEPS)
+    start, up0, fo0 = hang(s, settle_tree, up0, fo0)
+    p = start - step * int(SETTLE_S * fps * SUBSTEPS)
     prev = p - step
     for _ in range(int(SETTLE_S * fps * SUBSTEPS)):
         v = p - prev
@@ -494,6 +519,6 @@ for i, f in enumerate(range(first, last + 1)):
 pm.set_display(body, True)
 scene.frame_set(first)
 bpy.ops.wm.save_as_mainfile(filepath=a[0])
-summary = {s: {"contact_steps": r["contacts"], "deepest_inside_a_step_mm": r["deepest_mm"], "swing_range_deg": [min(r["swing_deg"]), max(r["swing_deg"])], "elbow_range_deg": [min(r["elbow_deg"]), max(r["elbow_deg"])], "deepest_left_after_frame_mm": r.get("left_mm", 0.0), "frames_left_inside": r.get("frames_left", 0), "palm_turn_range_deg": [min(r["palm_turn_deg"]), max(r["palm_turn_deg"])], "upper_twist_range_deg": [min(r["upper_twist_deg"]), max(r["upper_twist_deg"])], "fore_twist_range_deg": [min(r["fore_twist_deg"]), max(r["fore_twist_deg"])], "wrist_accel_p95_max_before": r["wrist_accel_before"], "wrist_accel_p95_max_after": r["wrist_accel_after"]} for s, r in report.items()}
+summary = {s: {"contact_steps": r["contacts"], "deepest_inside_a_step_mm": r["deepest_mm"], "swing_range_deg": [min(r["swing_deg"]), max(r["swing_deg"])], "elbow_range_deg": [min(r["elbow_deg"]), max(r["elbow_deg"])], "deepest_left_after_frame_mm": r.get("left_mm", 0.0), "frames_left_inside": r.get("frames_left", 0), "palm_turn_range_deg": [min(r["palm_turn_deg"]), max(r["palm_turn_deg"])], "upper_twist_range_deg": [min(r["upper_twist_deg"]), max(r["upper_twist_deg"])], "fore_twist_range_deg": [min(r["fore_twist_deg"]), max(r["fore_twist_deg"])], "wrist_accel_p95_max_before": r["wrist_accel_before"], "wrist_accel_p95_max_after": r["wrist_accel_after"], "settle_open_deg": r.get("settle_open_deg")} for s, r in report.items()}
 json.dump({"arms": summary, "thumbs": thumbs, "masses_kg": mass[1:].tolist()}, open(a[1], "w"), indent=1)
 print(json.dumps(summary))
