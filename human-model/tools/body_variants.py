@@ -1,6 +1,6 @@
 """Bodies for every silhouette, biotype and height, each built, walked and filmed apart, several at once (Rafael, 2026-11-12).
 
-    python3 human-model/tools/body_variants.py OUT_DIR [--workers 8] [--only NAME ...]
+    python3 human-model/tools/body_variants.py OUT_DIR [--workers 8] [--silhouettes pera,oval] [--only NAME ...]
 
 Each body: a recipe from the neutral woman, with the biotype's macros, fitted to the silhouette's waist/hip and shoulder/hip and the height (tools/fit_proportions.py);
 then tools/animation_body.py with the medium wave only; then a plain video with front, side and back, in OUT_DIR/videos/<name>.mp4. OUT_DIR/indice.csv lists what each body reached.
@@ -20,6 +20,8 @@ HEIGHTS = {"baixa": 155.0, "media": 165.0, "alta": 175.0}
 SILHOUETTES = {  # waist/hip girth, shoulder/hip on the tape
     "ampulheta": (0.72, 1.42), "pera": (0.84, 1.31), "triangulo_invertido": (0.84, 1.54), "retangulo": (0.92, 1.42), "oval": (1.00, 1.42),
 }
+SILHOUETTE_WEIGHT = {"oval": 0.20, "retangulo": 0.10}  # added to the biotype's weight macro: with the sliders alone the oval stopped at a waist/hip of 0.82; the silhouette wins over the biotype where they disagree (Rafael, 2026-11-08)
+LIMIT = 0.75  # the sliders' reach here; at 0.5 the pear, rectangle and oval came out alike
 BIOTYPES = {"ectomorfo": {"weight": 0.30, "muscle": 0.35}, "mesomorfo": {"weight": 0.50, "muscle": 0.75}, "endomorfo": {"weight": 0.78, "muscle": 0.55}}
 VIEWS = ("frente", "lado", "costas")
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
@@ -38,11 +40,12 @@ def build(name, sil, bio, height, out):
     recipe = json.loads((HERE / "data" / "recipes" / "female.json").read_text(encoding="utf-8"))
     recipe["name"] = name
     recipe["macros"].update(BIOTYPES[bio])
+    recipe["macros"]["weight"] = min(1.0, recipe["macros"]["weight"] + SILHOUETTE_WEIGHT.get(sil, 0.0))
     base = folder / "receita_base.json"
     base.write_text(json.dumps(recipe, indent=1), encoding="utf-8")
     fitted = folder / "receita.json"
     waist_hip, shoulder_hip = SILHOUETTES[sil]
-    if not fitted.exists() and not run([sys.executable, str(HERE / "tools" / "fit_proportions.py"), str(base), str(fitted), str(folder / "ajuste"), f"height_cm={height}", f"waist_hip={waist_hip}", f"shoulder_hip={shoulder_hip}"], log):
+    if not fitted.exists() and not run([sys.executable, str(HERE / "tools" / "fit_proportions.py"), str(base), str(fitted), str(folder / "ajuste"), f"height_cm={height}", f"waist_hip={waist_hip}", f"shoulder_hip={shoulder_hip}", f"limit={LIMIT}"], log):
         return name, "falhou no ajuste"
     if not (folder / "07_ondas" / "caminhada_final_ondas_media.blend").exists():
         if not run([sys.executable, str(HERE / "tools" / "animation_body.py"), str(fitted), str(folder), "--waves", "media"], log):
@@ -79,6 +82,10 @@ def main(args) -> int:
     workers = int(args[args.index("--workers") + 1]) if "--workers" in args else 8
     only = set(args[args.index("--only") + 1:]) if "--only" in args else None
     jobs = [(f"{sil}_{bio}_{alt}", sil, bio, h) for sil in SILHOUETTES for bio in BIOTYPES for alt, h in HEIGHTS.items()]
+    all_jobs = list(jobs)
+    if "--silhouettes" in args:
+        keep = set(args[args.index("--silhouettes") + 1].split(","))
+        jobs = [j for j in jobs if j[1] in keep]
     if only:
         jobs = [j for j in jobs if j[0] in only]
     out.mkdir(parents=True, exist_ok=True)
@@ -87,6 +94,9 @@ def main(args) -> int:
     with open(out / "indice.csv", "w", newline="", encoding="utf-8-sig") as f:
         w = csv.writer(f)
         w.writerow(["corpo", "silhueta", "biotipo", "altura", "resultado", "altura_cm", "cintura_quadril", "meta_cintura_quadril", "ombro_quadril", "meta_ombro_quadril", "video"])
+        for name, sil, bio, h in [j for j in all_jobs if j not in jobs and (out / j[0] / "ajuste" / "historico.json").exists()]:
+            r = reached(out / name)
+            w.writerow([name, sil, bio, h, "ok", r.get("altura_cm"), r.get("cintura_quadril"), r.get("meta_cintura_quadril"), r.get("ombro_quadril"), r.get("meta_ombro_quadril"), f"videos/{name}.mp4"])
         for (name, sil, bio, h), (_, status) in zip(jobs, results):
             r = reached(out / name)
             w.writerow([name, sil, bio, h, status, r.get("altura_cm"), r.get("cintura_quadril"), r.get("meta_cintura_quadril"), r.get("ombro_quadril"), r.get("meta_ombro_quadril"), f"videos/{name}.mp4"])
