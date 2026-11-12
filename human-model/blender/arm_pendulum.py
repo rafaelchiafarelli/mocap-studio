@@ -1,7 +1,7 @@
 """Arms as damped triple pendulums with collision (Rafael, 2026-11-11), with the shoulder's and elbow's muscles as soft springs towards a swing opposite the legs. Run with --blend on a walking body. Args: out.blend out.json
 Each arm hangs from the shoulder, which the walking trunk carries: shoulder, elbow and wrist are joints, the upper arm, forearm and closed hand are weights. Gravity pulls them down and each joint is damped,
 so the arm settles pointing down and swings only from the trunk's motion; the wrist also has a light passive stiffness towards straight. The forearm turns about its length so the palm faces the thigh. The arm collides with the trunk and legs: it may press 5 mm into the skin (which tools/skin_waves.py dents), and friction slows
-it along the skin. Joints: the elbow is a hinge, bending only forwards and not past ELBOW_MOST_DEG, the wrist bends at most WRIST_MOST_DEG. Position-based dynamics with Verlet steps; the result is keyed on the rig."""
+it along the skin. Joints: the elbow is a hinge, bending only forwards and not past ELBOW_MOST_DEG, the wrist bends at most WRIST_MOST_DEG. Position-based dynamics with Verlet steps; the solved arm is filtered over frames (SMOOTH_SIGMA_FRAMES) and keyed on the rig."""
 import json, math, os, sys
 import bpy
 import numpy as np
@@ -43,6 +43,7 @@ SHOULDER_DRIVE, ELBOW_DRIVE = 0.004, 0.0035  # per step, the share of the way to
 # While the target moves back the muscles relax to BACK_GAIN and the arm falls back by its own weight. By eye.
 FORWARD_GAIN, BACK_GAIN = 3.0, 0.3
 FORWARD_BIAS_DEG, INWARD_DEG, ELBOW_INTENT_DEG = 6.0, 0.0, 10.0  # reaching inwards by 3 brought the hands onto the body in thousands of steps; 0 in none
+SMOOTH_SIGMA_FRAMES = 1.2  # the filter on the solved arm, in frames
 MAX_REL_M_S = 2.5  # the fastest any point of the arm moves against the shoulder
 INTENT_S = 0.12  # the intention eases in and out over about this long; switched at once, it made the arm jump (Rafael, 2026-11-12)
 TWIST = {"upper": {"hz": 1.6, "damping": 0.35, "per_swing": 0.25}, "fore": {"hz": 2.6, "damping": 0.35, "per_swing": 0.30}}
@@ -381,6 +382,7 @@ for s in "LR":
 shoulder_prev = {s: x[s][0].copy() for s in "LR"}
 scene.frame_set(first)
 inward = {s: {bone: inward_sign(s, bone) for bone in ("upper_arm", "forearm")} for s in "LR"}
+solved = {s: [] for s in "LR"}
 last_target = {s: 0.0 for s in "LR"}
 intent = {s: 0.0 for s in "LR"}
 yaw0 = trunk_turn()
@@ -449,24 +451,49 @@ for f in range(first, last + 1):
             twist_state[s][part] = [q, qv]
         upper_twist = twist_state[s]["upper"][0] - yaw
         fore_twist = twist_state[s]["fore"][0]
+        solved[s].append(((p - p[0]).copy(), upper_twist, fore_twist))
+        report[s].setdefault("upper_twist_deg", []).append(upper_twist)
+        report[s].setdefault("fore_twist_deg", []).append(fore_twist)
+        u1, u2 = p[1] - p[0], p[2] - p[1]
+        if "trace" in a and s == "L" and f % 6 == 1:
+            print("trace", f, np.round(p, 3).tolist())
+        report[s]["swing_deg"].append(math.degrees(math.atan2(-u1[1], -u1[2])))
+        report[s]["elbow_deg"].append(math.degrees(math.acos(np.clip(np.dot(u1, u2) / (np.linalg.norm(u1) * np.linalg.norm(u2)), -1, 1))))
+
+def smoothed(series, sigma):
+    """A zero-phase gaussian over frames, edges held: keeps the swing (about 1 Hz), takes out the jolts the constraints leave."""
+    radius = int(3 * sigma) + 1
+    kernel = np.exp(-0.5 * (np.arange(-radius, radius + 1) / sigma) ** 2)
+    kernel /= kernel.sum()
+    padded = np.concatenate([np.repeat(series[:1], radius, axis=0), series, np.repeat(series[-1:], radius, axis=0)])
+    return np.stack([np.convolve(padded[:, k], kernel, mode="valid") for k in range(series.shape[1])], axis=1)
+
+
+# The solved arm is filtered before it becomes a pose: the wrist's acceleration against the shoulder reached 66 m/s2 in some frames (Rafael saw the arms jump, 2026-11-12)
+for s in "LR":
+    rel = np.array([r for r, _, _ in solved[s]])
+    flat = smoothed(rel.reshape(len(rel), -1), SMOOTH_SIGMA_FRAMES).reshape(rel.shape)
+    raw_acc = np.linalg.norm(np.diff(rel[:, 2], 2, axis=0), axis=1) * fps * fps
+    new_acc = np.linalg.norm(np.diff(flat[:, 2], 2, axis=0), axis=1) * fps * fps
+    report[s]["wrist_accel_before"] = [float(np.percentile(raw_acc, 95)), float(raw_acc.max())]
+    report[s]["wrist_accel_after"] = [float(np.percentile(new_acc, 95)), float(new_acc.max())]
+    solved[s] = [(flat[i], ut, ft) for i, (_, ut, ft) in enumerate(solved[s])]
+for i, f in enumerate(range(first, last + 1)):
+    scene.frame_set(f)
+    for s in "LR":
+        rel, upper_twist, fore_twist = solved[s][i]
+        p = world(rig.pose.bones[f"upper_arm.{s}"].head) + rel
         aim(rig.pose.bones[f"upper_arm.{s}"], p[1])
         twist(rig.pose.bones[f"upper_arm.{s}"], inward[s]["upper_arm"] * upper_twist)
         aim(rig.pose.bones[f"forearm.{s}"], p[2])
         report[s].setdefault("palm_turn_deg", []).append(face_palm_in(s))
         twist(rig.pose.bones[f"forearm.{s}"], inward[s]["forearm"] * fore_twist)
         aim(rig.pose.bones[f"hand.{s}"], p[2] + (p[3] - p[2]) / 0.55)
-        report[s].setdefault("upper_twist_deg", []).append(upper_twist)
-        report[s].setdefault("fore_twist_deg", []).append(fore_twist)
         for name in ("upper_arm", "forearm", "hand"):
             rig.pose.bones[f"{name}.{s}"].keyframe_insert("rotation_quaternion", frame=f)
-        u1, u2 = p[1] - p[0], p[2] - p[1]
-        if "trace" in a and s == "L" and f % 6 == 1:
-            print("trace", f, np.round(p, 3).tolist())
-        report[s]["swing_deg"].append(math.degrees(math.atan2(-u1[1], -u1[2])))
-        report[s]["elbow_deg"].append(math.degrees(math.acos(np.clip(np.dot(u1, u2) / (np.linalg.norm(u1) * np.linalg.norm(u2)), -1, 1))))
 pm.set_display(body, True)
 scene.frame_set(first)
 bpy.ops.wm.save_as_mainfile(filepath=a[0])
-summary = {s: {"contact_steps": r["contacts"], "deepest_inside_a_step_mm": r["deepest_mm"], "swing_range_deg": [min(r["swing_deg"]), max(r["swing_deg"])], "elbow_range_deg": [min(r["elbow_deg"]), max(r["elbow_deg"])], "deepest_left_after_frame_mm": r.get("left_mm", 0.0), "frames_left_inside": r.get("frames_left", 0), "palm_turn_range_deg": [min(r["palm_turn_deg"]), max(r["palm_turn_deg"])], "upper_twist_range_deg": [min(r["upper_twist_deg"]), max(r["upper_twist_deg"])], "fore_twist_range_deg": [min(r["fore_twist_deg"]), max(r["fore_twist_deg"])]} for s, r in report.items()}
+summary = {s: {"contact_steps": r["contacts"], "deepest_inside_a_step_mm": r["deepest_mm"], "swing_range_deg": [min(r["swing_deg"]), max(r["swing_deg"])], "elbow_range_deg": [min(r["elbow_deg"]), max(r["elbow_deg"])], "deepest_left_after_frame_mm": r.get("left_mm", 0.0), "frames_left_inside": r.get("frames_left", 0), "palm_turn_range_deg": [min(r["palm_turn_deg"]), max(r["palm_turn_deg"])], "upper_twist_range_deg": [min(r["upper_twist_deg"]), max(r["upper_twist_deg"])], "fore_twist_range_deg": [min(r["fore_twist_deg"]), max(r["fore_twist_deg"])], "wrist_accel_p95_max_before": r["wrist_accel_before"], "wrist_accel_p95_max_after": r["wrist_accel_after"]} for s, r in report.items()}
 json.dump({"arms": summary, "thumbs": thumbs, "masses_kg": mass[1:].tolist()}, open(a[1], "w"), indent=1)
 print(json.dumps(summary))
