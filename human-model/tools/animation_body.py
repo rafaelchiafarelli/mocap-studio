@@ -1,8 +1,8 @@
 """Builds the whole animation body in order, each stage from the last one's file, keeping every stage's result: a clean body, its range of motion, joint corrections, a walk, folds.
 
-    python3 human-model/tools/animation_body.py RECIPE.json OUT_DIR [--stop-after STAGE]
+    python3 human-model/tools/animation_body.py RECIPE.json OUT_DIR [--stop-after STAGE] [--waves media]
 
-Stages (in OUT_DIR): 01_corpo, 02_amplitude, 03_correcoes, 04_caminhada, 05_dobras, 06_malha_fina, 07_ondas (with a soft, medium and strong step impact). Runs in WSL, calling Blender through blender_run.py. data/folds.json is rewritten from the clean body."""
+Stages (in OUT_DIR): 01_corpo, 02_amplitude, 03_correcoes, 04_caminhada, 05_dobras, 06_malha_fina, 07_ondas (with a soft, medium and strong step impact; --waves media makes only the medium one). Each run writes its own folds.json, so several can run at once. Runs in WSL, calling Blender through blender_run.py. data/folds.json is rewritten from the clean body."""
 from __future__ import annotations
 
 import subprocess
@@ -49,7 +49,7 @@ def main(args) -> int:
     run(BLENDER / "apply_corrections.py", npz, fixed_walk, blend=clear_walk)
     if stop == "04_caminhada":
         return 0
-    folds = HERE / "data" / "folds.json"
+    folds = d["05_dobras"] / "folds.json"  # each run its own, so runs can go side by side; data/folds.json is the shared reference copy
     run(BLENDER / "fold_lines.py", folds, blend=body)
     run(BLENDER / "fold_apply.py", folds, d["05_dobras"] / "amplitude_com_dobras.blend", blend=corrected)
     run(BLENDER / "fold_apply.py", folds, d["05_dobras"] / "caminhada_com_dobras.blend", blend=fixed_walk)
@@ -58,7 +58,7 @@ def main(args) -> int:
     waves = d["07_ondas"]
     final = d["06_malha_fina"] / "caminhada_malha_fina.blend"
     run(BLENDER / "skin_dump.py", waves / "pele.npz", blend=final)
-    for label, size in (("suave", 90), ("media", 300), ("forte", 800)):
+    for label, size in (("suave", 90), ("media", 300), ("forte", 800)) if "--all-waves" in args or "--waves" not in args else (("media", 300),):
         offsets = waves / f"ondas_{label}.npz"
         done = subprocess.run([str(HERE / "hm.sh"), "python", "human-model/tools/skin_waves.py", str(waves / "pele.npz"), str(offsets), f"impact.size={size}"], capture_output=True, text=True)
         print(label, "\n".join(line for line in done.stdout.splitlines() if "pico" in line))

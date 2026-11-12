@@ -37,13 +37,14 @@ ARM_PER_LEG = 0.65
 REST_OUT_DEG = 5.0
 ELBOW_REST_DEG, ELBOW_FORWARD_DEG = 12.0, 15.0
 CARRY_DEG = 13.0  # a woman's elbow carrying angle: the straight forearm points this far outwards from the upper arm, so the hands pass beside the hips (12 to 15 is the usual range, from memory)
-SHOULDER_DRIVE, ELBOW_DRIVE = 0.012, 0.010  # per step, the share of the way to the target the muscles pull
+SHOULDER_DRIVE, ELBOW_DRIVE = 0.004, 0.0035  # per step, the share of the way to the target the muscles pull: weak, so weight and inertia lead (stronger ones made the arm reach a changed target within a frame: jumps)
 # Intention (Rafael, 2026-11-12: "we throw the arms forwards on purpose"). While the arm's target moves forwards the shoulder works: its pull is FORWARD_GAIN times
-# stronger, the target reaches FORWARD_BIAS_DEG further (INWARD_DEG towards the middle, 0 for now), and the elbow bends ELBOW_INTENT_DEG more; at the start of that phase the forearm gets a push.
+# stronger, the target reaches FORWARD_BIAS_DEG further (INWARD_DEG towards the middle, 0 for now), and the elbow bends ELBOW_INTENT_DEG more, all eased in and out over INTENT_S.
 # While the target moves back the muscles relax to BACK_GAIN and the arm falls back by its own weight. By eye.
 FORWARD_GAIN, BACK_GAIN = 3.0, 0.3
 FORWARD_BIAS_DEG, INWARD_DEG, ELBOW_INTENT_DEG = 6.0, 0.0, 10.0  # reaching inwards by 3 brought the hands onto the body in thousands of steps; 0 in none
-PUSH_M_S = 0.5  # the push's speed, on elbow and wrist, forwards
+MAX_REL_M_S = 2.5  # the fastest any point of the arm moves against the shoulder
+INTENT_S = 0.12  # the intention eases in and out over about this long; switched at once, it made the arm jump (Rafael, 2026-11-12)
 TWIST = {"upper": {"hz": 1.6, "damping": 0.35, "per_swing": 0.25}, "fore": {"hz": 2.6, "damping": 0.35, "per_swing": 0.30}}
 
 pm.set_display(body, False)
@@ -278,6 +279,35 @@ def inward_sign(side, bone):
     return 1 if moved[1] > moved[-1] else -1
 
 
+def targets(s, advance):
+    """The muscles' target directions for the upper arm and forearm this frame, and how hard they pull. `advance` moves the intention on by a frame."""
+    thigh = rig.pose.bones[f"thigh.{s}"]
+    leg = np.array(W.to_3x3()) @ np.array(thigh.tail - thigh.head)
+    leg_swing = math.degrees(math.atan2(-leg[1], -leg[2]))  # forward is positive
+    arm_swing = -ARM_PER_LEG * leg_swing
+    if advance:
+        going_forward = arm_swing > last_target[s]
+        last_target[s] = arm_swing
+        intent[s] += ((1.0 if going_forward else 0.0) - intent[s]) * min(1.0, 1.0 / (fps * INTENT_S))
+    else:
+        last_target[s] = arm_swing
+    k_ = intent[s]
+    gain = BACK_GAIN + (FORWARD_GAIN - BACK_GAIN) * k_
+    arm_swing += FORWARD_BIAS_DEG * k_
+    outward = 1.0 if s == "L" else -1.0
+    out_deg = REST_OUT_DEG - INWARD_DEG * k_
+    a_sw, a_out = math.radians(arm_swing), math.radians(out_deg)
+    upper_dir = np.array([outward * math.sin(a_out), -math.sin(a_sw) * math.cos(a_out), -math.cos(a_sw) * math.cos(a_out)])
+    elbow_flex = math.radians(ELBOW_REST_DEG + ELBOW_FORWARD_DEG * max(0.0, arm_swing) / 20.0 + ELBOW_INTENT_DEG * k_)
+    fwd = FORWARD_WORLD - np.dot(FORWARD_WORLD, upper_dir) * upper_dir
+    fwd /= np.linalg.norm(fwd)
+    carry = math.radians(CARRY_DEG)
+    straight = math.cos(carry) * upper_dir + math.sin(carry) * np.array([outward, 0.0, 0.0])
+    straight /= np.linalg.norm(straight)
+    fore_dir = math.cos(elbow_flex) * straight + math.sin(elbow_flex) * fwd
+    return upper_dir, fore_dir, gain
+
+
 def trunk_turn():
     """The chest's turn about the vertical, in degrees."""
     pb = rig.pose.bones["spine.003"]
@@ -311,11 +341,14 @@ def hang(s):
     return p
 
 
+last_target = {s: 0.0 for s in "LR"}
+intent = {s: 0.0 for s in "LR"}
 scene.frame_set(first + 1)
 second = {s: world(rig.pose.bones[f"upper_arm.{s}"].head) for s in "LR"}
 scene.frame_set(first)
 settle_tree = BVHTree.FromPolygons([Vector(v) for v in pm.read(body)[: pm.N_BODY]], trunk_tris.tolist())
 for s in "LR":
+    up0, fo0, gain0 = targets(s, False)  # the arms settle with their muscles already on, at the first frame's pose
     # the walk starts already moving: the arms settle moving with the shoulder at that speed, so the first frame doesn't jolt them
     step = (second[s] - x[s][0]) / SUBSTEPS
     p = hang(s) - step * int(SETTLE_S * fps * SUBSTEPS)
@@ -327,6 +360,8 @@ for s in "LR":
         new = p + v + GRAVITY * dt * dt
         new[0] = p[0] + step
         prev, p = p, new
+        p[1] += min(1.0, SHOULDER_DRIVE * gain0) * (p[0] + up0 * rest_len[s][0] - p[1])
+        p[2] += min(1.0, ELBOW_DRIVE * gain0) * (p[1] + fo0 * rest_len[s][1] - p[2])
         for _ in range(ITERATIONS):
             for j in (1, 2, 3):
                 d = p[j] - p[j - 1]
@@ -347,7 +382,7 @@ shoulder_prev = {s: x[s][0].copy() for s in "LR"}
 scene.frame_set(first)
 inward = {s: {bone: inward_sign(s, bone) for bone in ("upper_arm", "forearm")} for s in "LR"}
 last_target = {s: 0.0 for s in "LR"}
-was_forward = {s: False for s in "LR"}
+intent = {s: 0.0 for s in "LR"}
 yaw0 = trunk_turn()
 twist_state = {s: {"upper": [yaw0, 0.0], "fore": [0.0, 0.0]} for s in "LR"}
 swing_rest = {s: 0.0 for s in "LR"}
@@ -358,40 +393,17 @@ for f in range(first, last + 1):
     for s in "LR":
         shoulder_now = world(rig.pose.bones[f"upper_arm.{s}"].head)
         p, prev = x[s], x_prev[s]
-        thigh = rig.pose.bones[f"thigh.{s}"]
-        leg = np.array(W.to_3x3()) @ np.array(thigh.tail - thigh.head)
-        leg_swing = math.degrees(math.atan2(-leg[1], -leg[2]))  # forward is positive
-        arm_swing = -ARM_PER_LEG * leg_swing
-        going_forward = arm_swing > last_target[s]
-        if going_forward and not was_forward[s]:
-            # the start of the forward throw: a push on elbow and wrist
-            push = FORWARD_WORLD * PUSH_M_S * dt
-            prev = prev.copy()
-            prev[1] -= push
-            prev[2] -= push
-            prev[3] -= push
-            report[s]["pushes"] = report[s].get("pushes", 0) + 1
-        was_forward[s], last_target[s] = going_forward, arm_swing
-        gain = FORWARD_GAIN if going_forward else BACK_GAIN
-        if going_forward:
-            arm_swing += FORWARD_BIAS_DEG
-        outward = 1.0 if s == "L" else -1.0
-        out_deg = REST_OUT_DEG - (INWARD_DEG if going_forward else 0.0)
-        a_sw, a_out = math.radians(arm_swing), math.radians(out_deg)
-        upper_dir = np.array([outward * math.sin(a_out), -math.sin(a_sw) * math.cos(a_out), -math.cos(a_sw) * math.cos(a_out)])
-        elbow_flex = math.radians(ELBOW_REST_DEG + ELBOW_FORWARD_DEG * max(0.0, arm_swing) / 20.0 + (ELBOW_INTENT_DEG if going_forward else 0.0))
-        fwd = FORWARD_WORLD - np.dot(FORWARD_WORLD, upper_dir) * upper_dir
-        fwd /= np.linalg.norm(fwd)
-        carry = math.radians(CARRY_DEG)
-        straight = math.cos(carry) * upper_dir + math.sin(carry) * np.array([outward, 0.0, 0.0])
-        straight /= np.linalg.norm(straight)
-        fore_dir = math.cos(elbow_flex) * straight + math.sin(elbow_flex) * fwd
+        upper_dir, fore_dir, gain = targets(s, True)
         for k in range(SUBSTEPS):
             u = (k + 1) / SUBSTEPS
             v = p - prev
             # joint damping: each point's motion relative to its parent slows
             for j in range(1, 4):
                 v[j] -= min(1.0, joint_damp[j - 1] * dt) * (v[j] - v[j - 1])
+                rel = v[j] - v[0]
+                fast = np.linalg.norm(rel)
+                if fast > MAX_REL_M_S * dt:  # nothing in a walking arm moves this fast against the shoulder; it stops jumps the rest may leave
+                    v[j] = v[0] + rel * (MAX_REL_M_S * dt / fast)
             new = p + v + GRAVITY * dt * dt
             new[0] = shoulder_prev[s] + u * (shoulder_now - shoulder_prev[s])
             prev, p = p, new
@@ -455,6 +467,6 @@ for f in range(first, last + 1):
 pm.set_display(body, True)
 scene.frame_set(first)
 bpy.ops.wm.save_as_mainfile(filepath=a[0])
-summary = {s: {"contact_steps": r["contacts"], "deepest_inside_a_step_mm": r["deepest_mm"], "swing_range_deg": [min(r["swing_deg"]), max(r["swing_deg"])], "elbow_range_deg": [min(r["elbow_deg"]), max(r["elbow_deg"])], "deepest_left_after_frame_mm": r.get("left_mm", 0.0), "frames_left_inside": r.get("frames_left", 0), "palm_turn_range_deg": [min(r["palm_turn_deg"]), max(r["palm_turn_deg"])], "upper_twist_range_deg": [min(r["upper_twist_deg"]), max(r["upper_twist_deg"])], "fore_twist_range_deg": [min(r["fore_twist_deg"]), max(r["fore_twist_deg"])], "forward_throws": r.get("pushes", 0)} for s, r in report.items()}
+summary = {s: {"contact_steps": r["contacts"], "deepest_inside_a_step_mm": r["deepest_mm"], "swing_range_deg": [min(r["swing_deg"]), max(r["swing_deg"])], "elbow_range_deg": [min(r["elbow_deg"]), max(r["elbow_deg"])], "deepest_left_after_frame_mm": r.get("left_mm", 0.0), "frames_left_inside": r.get("frames_left", 0), "palm_turn_range_deg": [min(r["palm_turn_deg"]), max(r["palm_turn_deg"])], "upper_twist_range_deg": [min(r["upper_twist_deg"]), max(r["upper_twist_deg"])], "fore_twist_range_deg": [min(r["fore_twist_deg"]), max(r["fore_twist_deg"])]} for s, r in report.items()}
 json.dump({"arms": summary, "thumbs": thumbs, "masses_kg": mass[1:].tolist()}, open(a[1], "w"), indent=1)
 print(json.dumps(summary))
