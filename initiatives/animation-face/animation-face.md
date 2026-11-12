@@ -4,6 +4,8 @@
 
 **Status:** planned 2026-11-12. Epic 1 done the same day, awaiting Rafael: the faders ran unchanged on the new woman (`blender/face_character.py`), with the same mouth curves as the approved baseline (jaw correlation 0.33, 0.28 and 0.87 for setups A, B, C); video in `G:\\mocap-studio-downloads\\review\\2026-11-12\\rosto\\`. Builds on branch `animation-body`.
 
+Epic 2 first round (2026-11-12), awaiting Rafael. Measured on the baseline: at each M only 38 to 47% of the mouth's width touched (the sides stayed 1 to 6 mm open, teeth showing), and at each F the lower lip stopped 0.5 to 1.4 mm short of the upper teeth, rolled in under the upper lip. With `blender/lip_contact.py`, 82 to 84% of the width touches at M, with no lip crossing the other, and the F reaches 0.2 mm from the teeth; the largest give is 4.6 mm. A first try met the lips by vertical rays and misread a lip behind the other as inside it. The F still looks sucked in, since its pose rolls the lower lip (`mouthRollLower` 0.7, `lipBite` 1.0); a copy with 0.2 and 0.3, the contact lifting the lip to the teeth, is offered beside it, not applied to the fader reference. Video in `G:\\mocap-studio-downloads\\review\\2026-11-12\\rosto\\contato_labios\\`.
+
 ## Decided by Rafael (2026-11-12)
 
 - Start with the recordings we already have; then record videos aimed at the problems found.

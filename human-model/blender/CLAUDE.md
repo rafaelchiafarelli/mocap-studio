@@ -25,7 +25,9 @@
 - `simple_stills.py`: plain viewport-style images of a body at rest or walking, from the front, back and side (`--blend`; the only images the animation body uses).
 - `hands.py`: relaxed hands: fingers curled towards the palm and closed towards the middle finger, the wrist a damped spring that trails the forearm and hangs a little under gravity (`--blend`).
 - `face_character.py`: the animation body's woman with eyes, teeth, tongue, eyelashes and the 52 ARKit shapes (Faceunits 01, CC0), ready for the mouth faders (`--blend`; initiative `animation-face`).
-- `face_video.py`: plain close-up frames of a face, following the head, with display colours and textures so eyes show their irises (`--blend`).
+- `face_video.py`: plain close-up frames of a face, following the head, with display colours and textures so eyes show their irises; `boca_perfil` and `boca_tres_quartos` frame the mouth up close (`--blend`).
+- `lip_contact.py`: the lips seal at an M (as much as the faders' `mouthPress` asks), each point of a lip's edge meeting its partner on the other lip halfway, and at an F the lower lip goes to the upper incisors' edge (as much as `lipBite` asks); lips never go into the teeth; the give spreads into the lip; baked as a shape key per frame with contact, fader `lip_contact` on `HM_controls`. Re-run after the faders change (`--blend`; initiative `animation-face`, epic 2).
+- `lip_contact_check.py`: per frame, the gap between the lips in 2 mm strips across the mouth, the share that touches, the lower lip against the upper teeth, and lips inside the teeth; with a folder, SVG cuts through the mouth at each M and F (`--blend`).
 - `hmblender.py`: shared helpers: meshes, drivers, render setup.
 - `posing.py`: joint rotations in the rest pose's axes.
 - `export_human.py`: MPFB human to arrays.

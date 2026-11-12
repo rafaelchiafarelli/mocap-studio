@@ -1,5 +1,5 @@
 """Frames of the face, close up and plain (viewport-style), for a video with the recording's sound (initiative animation-face). Run with --blend. Args: out_dir [view]
-view: frente (default) or tres_quartos. Frames follow the scene's range; the camera follows the head."""
+view: frente (default), tres_quartos, or the mouth up close: boca_perfil, boca_tres_quartos (for the lips' contact). Frames follow the scene's range; the camera follows the head."""
 import math, os, sys
 import bpy
 import numpy as np
@@ -24,12 +24,16 @@ for o in bpy.data.objects:
                         m.diffuse_color = colour
 os.makedirs(out, exist_ok=True)
 FRAMES = [int(x) for x in a[2].split(",")] if len(a) > 2 else None
-offset = {"frente": np.array([0.0, -0.55, 0.0]), "tres_quartos": np.array([0.36, -0.42, 0.0])}[view]
+offset = {"frente": np.array([0.0, -0.55, 0.0]), "tres_quartos": np.array([0.36, -0.42, 0.0]),
+          "boca_perfil": np.array([0.30, 0.0, 0.0]), "boca_tres_quartos": np.array([0.21, -0.21, 0.02])}[view]
+mouth = view.startswith("boca")
 for f in FRAMES or range(scene.frame_start, scene.frame_end + 1):
     scene.frame_set(f)
     head = rig.pose.bones["spine.006"]
     c = np.array(rig.matrix_world @ (head.head + 0.45 * (head.tail - head.head)))
-    cam = hb.camera_look("HM_face_cam", tuple(c + offset), tuple(c), lens=60)
+    if mouth:  # between the lip bones' roots, which sit at the middle of each lip
+        c = np.mean([np.array(rig.matrix_world @ rig.pose.bones[n].head) for n in ("lip.T.L", "lip.B.L", "lip.T.R", "lip.B.R")], axis=0)
+    cam = hb.camera_look("HM_face_cam", tuple(c + offset), tuple(c), lens=150 if mouth else 60)
     cam.data.clip_start = 0.01
     scene.camera = cam
     scene.render.filepath = os.path.join(out, f"{f:04d}.png")
