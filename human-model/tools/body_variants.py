@@ -1,9 +1,9 @@
 """Bodies for every silhouette, biotype and height, each built, walked and filmed apart, several at once (Rafael, 2026-11-12).
 
-    python3 human-model/tools/body_variants.py OUT_DIR [--workers 8] [--silhouettes pera,oval] [--only NAME ...]
+    python3 human-model/tools/body_variants.py OUT_DIR [--workers 8] [--silhouettes pera,oval] [--only NAME ...] [--redo-arms]
 
 Each body: a recipe from the neutral woman, with the biotype's macros, fitted to the silhouette's waist/hip and shoulder/hip and the height (tools/fit_proportions.py);
-then tools/animation_body.py with the medium wave only; then a plain video with front, side and back, in OUT_DIR/videos/<name>.mp4. OUT_DIR/indice.csv lists what each body reached.
+then tools/animation_body.py with the medium wave only; then a plain video with front, side and back, in OUT_DIR/videos/<name>.mp4. OUT_DIR/indice.csv lists what each body reached. --redo-arms keeps each built walk and redoes the arms onward (animation_body.py --from arms) and the video.
 Runs in WSL. The targets below are by eye: the silhouettes' waist/hip from data/silhouette_ratios.json, the shoulder/hip in the tape's terms, which read about 1.11 times the photos'.
 """
 from __future__ import annotations
@@ -24,6 +24,7 @@ SILHOUETTE_WEIGHT = {"oval": 0.20, "retangulo": 0.10}  # added to the biotype's 
 LIMIT = 0.75  # the sliders' reach here; at 0.5 the pear, rectangle and oval came out alike
 BIOTYPES = {"ectomorfo": {"weight": 0.30, "muscle": 0.35}, "mesomorfo": {"weight": 0.50, "muscle": 0.75}, "endomorfo": {"weight": 0.78, "muscle": 0.55}}
 VIEWS = ("frente", "lado", "costas")
+REDO_ARMS = False
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 
@@ -47,7 +48,13 @@ def build(name, sil, bio, height, out):
     waist_hip, shoulder_hip = SILHOUETTES[sil]
     if not fitted.exists() and not run([sys.executable, str(HERE / "tools" / "fit_proportions.py"), str(base), str(fitted), str(folder / "ajuste"), f"height_cm={height}", f"waist_hip={waist_hip}", f"shoulder_hip={shoulder_hip}", f"limit={LIMIT}"], log):
         return name, "falhou no ajuste"
-    if not (folder / "07_ondas" / "caminhada_final_ondas_media.blend").exists():
+    if REDO_ARMS:
+        if not run([sys.executable, str(HERE / "tools" / "animation_body.py"), str(fitted), str(folder), "--waves", "media", "--from", "arms"], log):
+            return name, "falhou na cadeia"
+        for view in VIEWS:
+            for png in (folder / "quadros" / view).glob("*.png"):
+                png.unlink()
+    elif not (folder / "07_ondas" / "caminhada_final_ondas_media.blend").exists():
         if not run([sys.executable, str(HERE / "tools" / "animation_body.py"), str(fitted), str(folder), "--waves", "media"], log):
             return name, "falhou na cadeia"
     frames = folder / "quadros"
@@ -78,6 +85,8 @@ def main(args) -> int:
     if not args:
         print(__doc__)
         return 2
+    global REDO_ARMS
+    REDO_ARMS = "--redo-arms" in args
     out = Path(args[0])
     workers = int(args[args.index("--workers") + 1]) if "--workers" in args else 8
     only = set(args[args.index("--only") + 1:]) if "--only" in args else None

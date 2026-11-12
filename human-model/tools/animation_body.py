@@ -1,8 +1,9 @@
 """Builds the whole animation body in order, each stage from the last one's file, keeping every stage's result: a clean body, its range of motion, joint corrections, a walk, folds.
 
-    python3 human-model/tools/animation_body.py RECIPE.json OUT_DIR [--stop-after STAGE] [--waves media]
+    python3 human-model/tools/animation_body.py RECIPE.json OUT_DIR [--stop-after STAGE] [--from arms] [--waves media]
 
-Stages (in OUT_DIR): 01_corpo, 02_amplitude, 03_correcoes, 04_caminhada, 05_dobras, 06_malha_fina, 07_ondas (with a soft, medium and strong step impact; --waves media makes only the medium one). Each run writes its own folds.json, so several can run at once. Runs in WSL, calling Blender through blender_run.py. data/folds.json is rewritten from the clean body."""
+Stages (in OUT_DIR): 01_corpo, 02_amplitude, 03_correcoes, 04_caminhada, 05_dobras, 06_malha_fina, 07_ondas (with a soft, medium and strong step impact; --waves media makes only the medium one). Each run writes its own folds.json, so several can run at once. Runs in WSL, calling Blender through blender_run.py. data/folds.json is rewritten from the clean body.
+--from arms keeps the body, range of motion, corrections and walk already in OUT_DIR and redoes the arms and every stage after them."""
 from __future__ import annotations
 
 import subprocess
@@ -37,12 +38,15 @@ def main(args) -> int:
     body, rom, rom_json = d["01_corpo"] / "corpo.blend", d["02_amplitude"] / "amplitude.blend", d["02_amplitude"] / "amplitude.json"
     corrected, npz = d["03_correcoes"] / "amplitude_corrigida.blend", d["03_correcoes"] / "correcoes.npz"
     walk, fixed_walk = d["04_caminhada"] / "caminhada.blend", d["04_caminhada"] / "caminhada_corrigida.blend"
-    run(BLENDER / "clean_body.py", recipe, body, d["01_corpo"] / "corpo.json")
-    if stop == "01_corpo":
-        return 0
-    run(BLENDER / "range_of_motion.py", rom, rom_json, blend=body)
-    run(BLENDER / "pose_corrections.py", rom_json, corrected, d["03_correcoes"] / "correcoes.json", npz, blend=rom)
-    run(BLENDER / "walk.py", HERE / "data" / "gait_walk.json", "female", walk, CYCLES, STOP_STEPS, "smooth_stop", blend=body)
+    if "--from" not in args:
+        run(BLENDER / "clean_body.py", recipe, body, d["01_corpo"] / "corpo.json")
+        if stop == "01_corpo":
+            return 0
+        run(BLENDER / "range_of_motion.py", rom, rom_json, blend=body)
+        run(BLENDER / "pose_corrections.py", rom_json, corrected, d["03_correcoes"] / "correcoes.json", npz, blend=rom)
+        run(BLENDER / "walk.py", HERE / "data" / "gait_walk.json", "female", walk, CYCLES, STOP_STEPS, "smooth_stop", blend=body)
+    elif args[args.index("--from") + 1] != "arms" or not walk.exists():
+        raise SystemExit("--from takes only 'arms', and needs 04_caminhada/caminhada.blend already built")
     # The arms are damped pendulums with collision (Rafael, 2026-11-11); arm_swing.py, hands.py and arm_clearance.py were the earlier way, kept but no longer run
     clear_walk = d["04_caminhada"] / "caminhada_bracos_pendulo.blend"
     run(BLENDER / "arm_pendulum.py", clear_walk, d["04_caminhada"] / "bracos_pendulo.json", blend=walk)
