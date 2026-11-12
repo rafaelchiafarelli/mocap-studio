@@ -1,6 +1,6 @@
-"""Finds a recipe whose body reaches a height, a waist/hip and a shoulder/hip, moving the waist, hip and shoulder sliders, the belly (stomach-pregnant) and the height macro.
+"""Finds a recipe whose body reaches a height, a waist/hip and a shoulder/hip, moving the waist, hip and shoulder sliders and the height macro; the belly (stomach-pregnant) only if belly= allows it, since it makes a pot belly.
 
-    python3 human-model/tools/fit_proportions.py RECIPE.json OUT_RECIPE.json WORK_DIR [height_cm=170] [waist_hip=0.69] [shoulder_hip=1.35] [limit=0.5]
+    python3 human-model/tools/fit_proportions.py RECIPE.json OUT_RECIPE.json WORK_DIR [height_cm=170] [waist_hip=0.69] [shoulder_hip=1.35] [limit=0.5] [belly=0]
 
 Runs in WSL (standard library only) and calls Blender through blender_run.py. Each round measures the real mesh with the editor's tape (blender/body_tape.py), so the tape's convex outline is what gets fitted; the slider sweeps in
 data/measure_sweep.json only give the direction. Sliders stay within +-0.5, where MPFB's targets don't distort, the belly within 0.8; each round picks, among all their combinations, the one its measures predict nearest both ratios. shoulder_hip is the tape's definition (shoulder width against hip girth, through ANSUR II means), and it reads higher on MPFB than on photos, so a photo's value has to be applied as a change from the neutral body.
@@ -22,7 +22,7 @@ SLIDERS = {"waist": "measure-waist-circ-decr-incr", "hip": "measure-hips-circ-de
 STOMACH = "stomach-pregnant-incr"  # one-way: the belly, for waists that the waist slider alone can't reach (oval, rectangle)
 # cm per unit of slider on the neutral woman, each way, from data/measure_sweep.json (the stomach's first guess is corrected after each round)
 GAIN = {"waist": (9.4, 9.4), "hip": (8.8, 17.8), "shoulder_width": (2.8, 5.0)}
-STOMACH_LIMIT = 0.8
+STOMACH_LIMIT = 0.0  # off: the "pregnant" target raised the waist by pushing a belly forward, and every slim body came out pot-bellied (Rafael, 2026-11-12)
 PENALTY = 0.002  # prefers smaller slider moves among equally good ones
 STATURE = [(0.0, 123.5), (0.25, 141.6), (0.5, 159.1), (0.75, 193.4), (1.0, 229.2)]  # the woman's height per macro, data/macro_sweep.json
 
@@ -72,7 +72,7 @@ def main(args) -> int:
 
     steps = int(round(goals.get("limit", LIMIT) / 0.05))
     grid = [round(x * 0.05, 2) for x in range(-steps, steps + 1)]
-    belly = [round(x * 0.05, 2) for x in range(0, int(STOMACH_LIMIT / 0.05) + 1)]
+    belly = [round(x * 0.05, 2) for x in range(0, int(round(goals.get("belly", STOMACH_LIMIT) / 0.05)) + 1)]
     for n in range(1, ROUNDS + 1):
         trial = json.loads(json.dumps(recipe))
         trial["name"] = out.stem
