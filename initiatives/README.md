@@ -37,6 +37,7 @@ Rules specific to this repository:
 | [tissue-research](tissue-research/tissue-research.md) | To be planned — measured fat, muscle and tissue data to replace declared values |
 | [xray-view](xray-view/xray-view.md) | To be planned — see through the model, with each layer's opacity set separately |
 | [floor-contact](floor-contact/floor-contact.md) | Research, to be planned — a floor the character really stands on, in three levels |
+| [animation-face](animation-face/animation-face.md) | Planned, under way — the animation body's face, judged against the mouth faders: faders on the new face, lip contact, soft tissue, eyes, audio to face, more actors |
 | [animation-body](animation-body/animation-body.md) | Built, awaiting Rafael's verdict — a whole MPFB2 woman for animation, with folds and walking shock waves, and far less anatomy and physics |
 | [body-type-selection](body-type-selection/body-type-selection.md) | Paused 2026-11-10, its models judged unusable; all of it on branch `body-type-selection-backup` — choose silhouette and biotype by name, with bones from the measures and the skin as the result of the layers |
 | [fast-review](fast-review/fast-review.md) | Planned, first next — both bodies in one Blender file, no rendering unless asked |
