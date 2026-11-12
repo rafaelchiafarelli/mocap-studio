@@ -2,7 +2,7 @@
 
 **Goal:** the face of the animation body, believable in speech and expression, built the way the body was: a simple physical model plus the right anatomy, judged against the mouth faders on the same recording (Rafael, 2026-11-12).
 
-**Status:** planned 2026-11-12, epic 1 under way. Builds on branch `animation-body`.
+**Status:** planned 2026-11-12. Epic 1 done the same day, awaiting Rafael: the faders ran unchanged on the new woman (`blender/face_character.py`), with the same mouth curves as the approved baseline (jaw correlation 0.33, 0.28 and 0.87 for setups A, B, C); video in `G:\\mocap-studio-downloads\\review\\2026-11-12\\rosto\\`. Builds on branch `animation-body`.
 
 ## Decided by Rafael (2026-11-12)
 

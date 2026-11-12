@@ -24,6 +24,8 @@
 - `simple_video.py`: plain viewport-style frames for a video from one view, the camera following the hips, optionally with the folds off (`--blend`; made at Rafael's request, 2026-11-11).
 - `simple_stills.py`: plain viewport-style images of a body at rest or walking, from the front, back and side (`--blend`; the only images the animation body uses).
 - `hands.py`: relaxed hands: fingers curled towards the palm and closed towards the middle finger, the wrist a damped spring that trails the forearm and hangs a little under gravity (`--blend`).
+- `face_character.py`: the animation body's woman with eyes, teeth, tongue, eyelashes and the 52 ARKit shapes (Faceunits 01, CC0), ready for the mouth faders (`--blend`; initiative `animation-face`).
+- `face_video.py`: plain close-up frames of a face, following the head, with display colours and textures so eyes show their irises (`--blend`).
 - `hmblender.py`: shared helpers: meshes, drivers, render setup.
 - `posing.py`: joint rotations in the rest pose's axes.
 - `export_human.py`: MPFB human to arrays.
