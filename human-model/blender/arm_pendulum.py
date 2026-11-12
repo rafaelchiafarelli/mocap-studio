@@ -1,4 +1,4 @@
-"""Arms as damped triple pendulums with collision (Rafael, 2026-11-11). Run with --blend on a walking body. Args: out.blend out.json
+"""Arms as damped triple pendulums with collision (Rafael, 2026-11-11), with the shoulder's and elbow's muscles as soft springs towards a swing opposite the legs. Run with --blend on a walking body. Args: out.blend out.json
 Each arm hangs from the shoulder, which the walking trunk carries: shoulder, elbow and wrist are joints, the upper arm, forearm and closed hand are weights. Gravity pulls them down and each joint is damped,
 so the arm settles pointing down and swings only from the trunk's motion; the wrist also has a light passive stiffness towards straight. The forearm turns about its length so the palm faces the thigh. The arm collides with the trunk and legs: it may press 5 mm into the skin (which tools/skin_waves.py dents), and friction slows
 it along the skin. Joints: the elbow is a hinge, bending only forwards and not past ELBOW_MOST_DEG, the wrist bends at most WRIST_MOST_DEG. Position-based dynamics with Verlet steps; the result is keyed on the rig."""
@@ -31,6 +31,13 @@ FIST = {"f_index": (75, 85, 35), "f_middle": (78, 88, 35), "f_ring": (78, 88, 35
 FORWARD_WORLD = np.array([0.0, -1.0, 0.0])
 # Twist of the upper arm and the forearm about their own length (Rafael, 2026-11-11): each is a damped spring with inertia whose rest follows the trunk's turn
 # and, a little, the swing (an arm behind the body turns inwards); it lags and rocks slightly. By eye: frequency, damping ratio, degrees of twist per degree of swing.
+# The shoulder's muscles (Rafael, 2026-11-11: the passive arms looked like hanging wood, swung only by the thigh's hits). The elbow is pulled, as by a soft spring, towards a swing opposite the
+# same side's leg, ARM_PER_LEG of its angle, with the arm a little out from the body; the elbow towards a light bend, more as the arm goes forward. Weight, inertia and damping still act on top. By eye.
+ARM_PER_LEG = 0.65
+REST_OUT_DEG = 5.0
+ELBOW_REST_DEG, ELBOW_FORWARD_DEG = 12.0, 15.0
+CARRY_DEG = 13.0  # a woman's elbow carrying angle: the straight forearm points this far outwards from the upper arm, so the hands pass beside the hips (12 to 15 is the usual range, from memory)
+SHOULDER_DRIVE, ELBOW_DRIVE = 0.012, 0.010  # per step, the share of the way to the target the muscles pull
 TWIST = {"upper": {"hz": 1.6, "damping": 0.35, "per_swing": 0.25}, "fore": {"hz": 2.6, "damping": 0.35, "per_swing": 0.30}}
 
 pm.set_display(body, False)
@@ -211,7 +218,14 @@ def limit_joints(p, s):
     forward = FORWARD_WORLD - np.dot(FORWARD_WORLD, u1n) * u1n
     if np.linalg.norm(forward) > 1e-6:
         forward /= np.linalg.norm(forward)
-        side = np.cross(u1n, forward)
+        # the hinge's plane leans outwards by the carrying angle: the straight forearm points a little away from the body
+        out = np.cross(forward, u1n) * (1.0 if s == "L" else -1.0)
+        out /= np.linalg.norm(out)
+        if np.dot(out, [1.0 if s == "L" else -1.0, 0, 0]) < 0:
+            out = -out
+        base = math.cos(math.radians(CARRY_DEG)) * u1n + math.sin(math.radians(CARRY_DEG)) * out
+        side = np.cross(base, forward)
+        side /= np.linalg.norm(side)
         wrong = np.dot(u2, side) * side + min(0.0, float(np.dot(u2, forward))) * forward
         if np.linalg.norm(wrong) > 1e-9:
             w1, w2 = inv[1], inv[2]
@@ -336,6 +350,20 @@ for f in range(first, last + 1):
     for s in "LR":
         shoulder_now = world(rig.pose.bones[f"upper_arm.{s}"].head)
         p, prev = x[s], x_prev[s]
+        thigh = rig.pose.bones[f"thigh.{s}"]
+        leg = np.array(W.to_3x3()) @ np.array(thigh.tail - thigh.head)
+        leg_swing = math.degrees(math.atan2(-leg[1], -leg[2]))  # forward is positive
+        arm_swing = -ARM_PER_LEG * leg_swing
+        outward = 1.0 if s == "L" else -1.0
+        a_sw, a_out = math.radians(arm_swing), math.radians(REST_OUT_DEG)
+        upper_dir = np.array([outward * math.sin(a_out), -math.sin(a_sw) * math.cos(a_out), -math.cos(a_sw) * math.cos(a_out)])
+        elbow_flex = math.radians(ELBOW_REST_DEG + ELBOW_FORWARD_DEG * max(0.0, arm_swing) / 20.0)
+        fwd = FORWARD_WORLD - np.dot(FORWARD_WORLD, upper_dir) * upper_dir
+        fwd /= np.linalg.norm(fwd)
+        carry = math.radians(CARRY_DEG)
+        straight = math.cos(carry) * upper_dir + math.sin(carry) * np.array([outward, 0.0, 0.0])
+        straight /= np.linalg.norm(straight)
+        fore_dir = math.cos(elbow_flex) * straight + math.sin(elbow_flex) * fwd
         for k in range(SUBSTEPS):
             u = (k + 1) / SUBSTEPS
             v = p - prev
@@ -353,9 +381,12 @@ for f in range(first, last + 1):
                     wi, wj = inv[j - 1], inv[j]
                     p[j - 1] += corr * wi / (wi + wj)
                     p[j] -= corr * wj / (wi + wj)
+                # the muscles pull towards the target pose, softly: elbow from the shoulder, wrist from the elbow
+                p[1] += SHOULDER_DRIVE * (p[0] + upper_dir * rest_len[s][0] - p[1])
+                p[2] += ELBOW_DRIVE * (p[1] + fore_dir * rest_len[s][1] - p[2])
                 u2 = p[2] - p[1]
-                straight = p[2] + u2 / np.linalg.norm(u2) * rest_len[s][2]
-                p[3] += WRIST_STRAIGHTEN * (straight - p[3])
+                straight_hand = p[2] + u2 / np.linalg.norm(u2) * rest_len[s][2]
+                p[3] += WRIST_STRAIGHTEN * (straight_hand - p[3])
                 if "no_limits" not in a:
                     limit_joints(p, s)
                 if "no_collision" not in a:
