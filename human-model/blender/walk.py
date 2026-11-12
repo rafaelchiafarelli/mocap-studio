@@ -224,6 +224,13 @@ def plant(side, ph, target_pitch, target_h, plants, d):
     return d, r
 
 
+def key_frame(f):
+    for pb_name in ["spine", "spine.002"] + [f"{b}.{s}" for s in "LR" for b in ("thigh", "shin", "foot", "toe", "upper_arm", "forearm")]:
+        if pb_name in rig.pose.bones:
+            rig.pose.bones[pb_name].keyframe_insert("rotation_quaternion", frame=f + 1)
+    rig.keyframe_insert("location", frame=f + 1)
+
+
 fixes = {s: np.zeros((total + 1, 3)) for s in "LR"}
 left_over = {s: np.zeros((total + 1, 2)) for s in "LR"}
 plants = {s: [None, None, None] for s in "LR"}
@@ -249,11 +256,22 @@ for f in range(total + 1):
             if plants[side][i] is None and w[i] > 0.3 and h[i] < 0.002:
                 plants[side][i] = float(y[i])  # this point has touched: it stays here until the foot leaves
         fixes[side][f], left_over[side][f], last[side] = d, r[:2], d
-    pose(phase, {s: fixes[s][f] for s in "LR"})
-    for pb_name in ["spine", "spine.002"] + [f"{b}.{s}" for s in "LR" for b in ("thigh", "shin", "foot", "toe", "upper_arm", "forearm")]:
-        if pb_name in rig.pose.bones:
-            rig.pose.bones[pb_name].keyframe_insert("rotation_quaternion", frame=f + 1)
-    rig.keyframe_insert("location", frame=f + 1)
+    if not smooth_stop:
+        pose(phase, {s: fixes[s][f] for s in "LR"})
+        key_frame(f)
+if smooth_stop:
+    # A stance leg's correction drops to nothing the frame its foot leaves the ground; in the slowed stop the corrections reach 15 degrees,
+    # so that drop jumped the leg (and, through it, the arms). Each correction eases out over a few frames instead, and in over a few before.
+    window = np.hanning(9)[1:-1]
+    window /= window.sum()
+    for side in "LR":
+        for k in range(3):
+            fixes[side][:, k] = np.convolve(np.pad(fixes[side][:, k], 3, mode="edge"), window, mode="valid")
+    for f in range(total + 1):
+        amount = amount_at(f)
+        rig.location = (0, root[f][0], root[f][1])
+        pose(phase_at(f), {s: fixes[s][f] for s in "LR"})
+        key_frame(f)
 allfix = np.abs(np.vstack([fixes[s] for s in "LR"]))
 planted = np.vstack([left_over[s][np.any(fixes[s] != 0, axis=1)] for s in "LR"])
 if len(planted):

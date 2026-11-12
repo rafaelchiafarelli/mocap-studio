@@ -47,7 +47,7 @@
 - `tape_check.py`: measures people with the editor's tape, optionally with stills of its lines.
 - `measure_sweep.py`: how far each slider moves each tape measure.
 - `walk_clearance.py`: skin against bones while walking.
-- `walk.py`: with a sixth argument `smooth_stop`, the stop slows forward to rest instead of walking back (animation body).
+- `walk.py`: with a sixth argument `smooth_stop`, the stop slows forward to rest instead of walking back, and the stance legs' corrections ease in and out over a few frames instead of dropping at toe-off (animation body).
 - `walk.py`: keys the walking cycle: the pelvis's tilt off the hip angle, toes rolling at push-off, the root from a soft contact, and each stance foot planted by correcting its leg; with `stop_steps`, more steps, shorter and slower each, end it standing.
 - `walk_check.py`: a walk file's root steps, the planted foot's slide and its height against the floor.
 - `muscle_sphere.py`: a liquid-filled sphere lifting a box, on our own solver: [docs/muscle-physics.md](../docs/muscle-physics.md).
