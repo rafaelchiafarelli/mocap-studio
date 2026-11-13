@@ -10,6 +10,8 @@ Epic 3 first round (2026-11-12): cheeks, jowls and lips as masses on springs pus
 
 Epic 5 quick test (2026-11-13): Audio2Face-3D v3.0 (identity Mark, the earlier test's scripts in `experiments/face-history/audio2face/`) on the baseline's voice, its mouth on the same face, with eyes, brows and head from the tracking (`experiments/face-mouth/apply_a2f_mouth.py`). Its opening follows the video's at 0.48 correlation, 0.50 with 3 frames of delay, against 0.33 for the faders from sound alone (setup A) and 0.87 for setup C, which takes the opening from the video. Its lips seal poorly at M: 12 to 26% of the width touches at the first four, 75 and 83% at the last two, against 38 to 47% for the faders without contact. At F the lower lip stays 2.4 to 4.8 mm from the upper teeth (faders 0.5 to 1.3). It runs at 0.5 s per second of audio on the CPU. Video in `G:\\mocap-studio-downloads\\review\\2026-11-12\\rosto\\audio2face\\`. Rafael's verdict (2026-11-13): the faders look better.
 
+Dense skin tracking (2026-11-13, `experiments/face-dense/`): BootsTAPIR on the baseline recording, moved onto the woman's mesh as a vertex cache. The tracks agree with MediaPipe within 2 px on a 372 px face. On the character the mouth barely opens: the lips' opening follows the actress's at 0.52 correlation with a 6 px grid and 0.82 with 4 px, and stays 3.8 mm open where hers is shut, since the query frame had the mouth shut and the tracker followed one lip on the seam. Next: lips queried on an open-mouth frame, a finer grid on the mouth and a coarser one elsewhere. Videos in `G:\\mocap-studio-downloads\\review\\2026-11-13\\`.
+
 ## Decided by Rafael (2026-11-12)
 
 - Start with the recordings we already have; then record videos aimed at the problems found.
