@@ -8,6 +8,8 @@ Epic 2 first round (2026-11-12), awaiting Rafael. Measured on the baseline: at e
 
 Epic 3 first round (2026-11-12): cheeks, jowls and lips as masses on springs pushed by their own motion, with the body's wave model (`tools/face_tissue.py`, `data/face_tissue.json`, by eye). On the baseline recording they move 0.36, 0.46 and 0.29 mm at most: she sits and talks, and the face's soft parts accelerate 0.6 to 2 m/s² (99th percentile), too little to show. Baked with the fader `face_sway` in `G:\\mocap-studio-downloads\\review\\2026-11-12\\rosto\\tecido_mole\\`. It will show with the head's bounce at each step, or a recording with fast head turns.
 
+Epic 5 quick test (2026-11-13): Audio2Face-3D v3.0 (identity Mark, the earlier test's scripts in `experiments/face-history/audio2face/`) on the baseline's voice, its mouth on the same face, with eyes, brows and head from the tracking (`experiments/face-mouth/apply_a2f_mouth.py`). Its opening follows the video's at 0.48 correlation, 0.50 with 3 frames of delay, against 0.33 for the faders from sound alone (setup A) and 0.87 for setup C, which takes the opening from the video. Its lips seal poorly at M: 12 to 26% of the width touches at the first four, 75 and 83% at the last two, against 38 to 47% for the faders without contact. At F the lower lip stays 2.4 to 4.8 mm from the upper teeth (faders 0.5 to 1.3). It runs at 0.5 s per second of audio on the CPU. Video in `G:\\mocap-studio-downloads\\review\\2026-11-12\\rosto\\audio2face\\`; awaiting Rafael.
+
 ## Decided by Rafael (2026-11-12)
 
 - Start with the recordings we already have; then record videos aimed at the problems found.
