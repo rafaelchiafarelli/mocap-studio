@@ -62,3 +62,17 @@ def test_the_skin_sinks_under_a_hand_and_not_elsewhere():
     assert 0.004 < dent[0, middle] <= 0.015
     assert dent[0, 0] == 0.0
     assert dent[1].max() == 0.0
+
+
+def test_face_regions_follow_their_bones_and_never_add_past_one():
+    v, t = grid(n=11, spacing=0.01)
+    n = len(v)
+    adjacency = sw.dm.neighbours(t, n)
+    cheek, lip, nose = np.zeros(n), np.zeros(n), np.zeros(n)
+    cheek[:33], lip[33:88], nose[99:] = 1.0, 1.0, 1.0
+    masks = sw.face_regions({"cheek.B.L": cheek, "lip.T.L.001": lip, "nose.001": nose}, adjacency, n)
+    total = sum(masks.values())
+    assert total.max() <= 1.0 + 1e-9
+    assert masks["cheek"][5] > 0.9 and masks["lips"][60] > 0.9
+    assert masks["jowl"].max() == 0.0
+    assert total[115] < 0.05  # the nose isn't soft
