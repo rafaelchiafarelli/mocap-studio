@@ -93,6 +93,30 @@ def regions(rest, normals, bone_weights, marks, adjacency, smoothing=10):
     return {name: dm.smooth(mask[:, None].astype(float), adjacency, smoothing)[:, 0] for name, mask in masks.items()}
 
 
+FACE_REGIONS = {  # the soft parts of the face, by the rig's face bones: what sways when the head turns or nods and the jaw moves (initiative animation-face)
+    "cheek": ("cheek.B.", "cheek.T."),
+    "jowl": ("jaw.L.001", "jaw.R.001", "chin.L", "chin.R"),
+    "lips": ("lip.",),
+}
+
+
+def face_regions(bone_weights, adjacency, n, smoothing=4):
+    """Named masks from 0 to 1 over the face's soft parts, from the bones whose names start as in FACE_REGIONS, softened along the mesh.
+    Where two overlap, the earlier region gives way to the later one, so each vertex's shares add to 1 at most."""
+    masks = {}
+    for name, prefixes in FACE_REGIONS.items():
+        w = np.zeros(n)
+        for bone, weights in bone_weights.items():
+            if bone.startswith(prefixes):
+                w = np.maximum(w, weights)
+        masks[name] = dm.smooth(np.clip(w * 2.0, 0, 1)[:, None], adjacency, smoothing)[:, 0]
+    taken = np.zeros(n)
+    for name in reversed(list(masks)):
+        masks[name] = np.minimum(masks[name], 1.0 - taken)
+        taken += masks[name]
+    return masks
+
+
 def values_from(masks, table, n):
     """The vertex values from the masks: each mask's table row, weighted by the mask; where no mask reaches, the table's base."""
     names = ("gain", "hz", "damping", "speed")

@@ -1,0 +1,8 @@
+{
+ "_about": "How the face's soft parts sway, for tools/face_tissue.py with hmcore/skin_waves.py (initiative animation-face, epic face-soft-tissue), by eye, to be tuned against recordings. gain: how much of the inertia reaches the skin, 0 to 1; hz: its natural frequency; damping: its damping ratio; speed: how fast a wave crosses it, m/s; limit_m: the most any point leaves its place. Lips are kept light, so the sway doesn't open what lip_contact.py seals. The base is the rest of the face and body, which doesn't sway.",
+ "limit_m": 0.004,
+ "base": {"gain": 0.0, "hz": 14.0, "damping": 0.6, "speed": 2.0},
+ "cheek": {"gain": 0.7, "hz": 6.0, "damping": 0.3, "speed": 1.0},
+ "jowl": {"gain": 0.9, "hz": 5.0, "damping": 0.25, "speed": 1.0},
+ "lips": {"gain": 0.25, "hz": 9.0, "damping": 0.4, "speed": 1.0}
+}
