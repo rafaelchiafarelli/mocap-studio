@@ -21,6 +21,7 @@
 - `verify_faders.py`: measures the presets, tests a fader, saves curves, renders stills.
 - `measure_mouth.py`: measures the lip gap per `jawOpen` and the eye distance on a character.
 - `render_poses.py`: renders each pose close up.
+- `apply_a2f_mouth.py`: puts an Audio2Face-3D mouth (from `experiments/face-history/audio2face/a2f_solve.py`) on a faders file, keeping its eyes, brows and head, to compare the two on one face.
 - `poses.json`: the 13 mouth poses. `presets/`: fader settings A, B, C. `take_files/`: known words and timing for a recording.
 - `face-mouth-experiment.drawio`: the process as a diagram.
 - `config.example.json`: template for the local config; real paths stay out of git. `requirements.txt`: pinned versions used.
