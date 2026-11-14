@@ -4,7 +4,8 @@
 
 OUT.npz holds, per frame t: `image` (T, 33, 4) pixel x, y, z (MediaPipe's relative depth, in pixels) and visibility;
 `world` (T, 33, 3) MediaPipe's world landmarks in metres, origin between the hips, x to the person's left in the image,
-y down, z away from the camera; `found` (T,) whether a person was found; `fps`, `width`, `height`.
+y down, z away from the camera; `found` (T,) whether a person was found; `times` (T,) each frame's time in the video, in seconds (phones record at a variable
+frame rate, so this, not frame / fps, is when the frame was taken); `fps`, `width`, `height`.
 A frame with no person has NaN.
 
 OVERLAY.mp4 is the clip with the 2D skeleton drawn on it and, on the right, the world landmarks seen from the front and
@@ -65,15 +66,20 @@ def draw_3d(world, axes, title):
 def main(clip, out_npz, overlay):
     cap = cv2.VideoCapture(clip)
     fps = cap.get(cv2.CAP_PROP_FPS)
-    w, h = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    ok, first = cap.read()  # size from a decoded frame: phone videos carry a rotation that OpenCV applies, so the stream's size can be the other way round
+    if not ok:
+        raise SystemExit(f"can't read {clip}")
+    h, w = first.shape[:2]
+    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
     out_w = w * PANEL * 2 // h + PANEL  # the clip scaled to 2 panels tall, then the two views stacked
     writer = cv2.VideoWriter(overlay, cv2.VideoWriter_fourcc(*"mp4v"), fps, (out_w, PANEL * 2))
-    images, worlds, found = [], [], []
+    images, worlds, found, times = [], [], [], []
     with mp_pose.Pose(static_image_mode=False, model_complexity=COMPLEXITY, smooth_landmarks=True, enable_segmentation=False) as pose:
         while True:
             ok, bgr = cap.read()
             if not ok:
                 break
+            times.append(cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0)
             r = pose.process(cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB))
             if r.pose_landmarks is None:
                 lm, world = np.full((33, 4), np.nan), np.full((33, 3), np.nan)
@@ -89,7 +95,7 @@ def main(clip, out_npz, overlay):
             right = np.vstack([draw_3d(world, (0, 1), "3D frente"), draw_3d(world, (2, 1), "3D lado (camera a esquerda)")])
             writer.write(np.hstack([left, right]))
     writer.release()
-    np.savez_compressed(out_npz, image=np.array(images), world=np.array(worlds), found=np.array(found), fps=fps, width=w, height=h)
+    np.savez_compressed(out_npz, image=np.array(images), world=np.array(worlds), found=np.array(found), times=np.array(times), fps=fps, width=w, height=h)
     print(f"frames {len(found)}, with person {int(np.sum(found))}, fps {fps:.3f}")
 
 
