@@ -72,7 +72,7 @@ def test_solve():
     ok = np.setdiff1d(np.arange(T), swap_frames)
     cams, cal = tc.calibrate(la[:, :, :2][both], lb[:, :, :2][both], size, size, 26, la[ok, :, :2], lb[ok, :, :2], refine_focal=os.environ.get("FIXED_FOCAL") != "1")
     print("cameras:", {k: (round(v, 2) if isinstance(v, float) else v) for k, v in cal.items()}, "true f", round(f_true, 1))
-    X, swapped = tc.solve_frames(cams, la, lb)
+    X, swapped, _, _ = tc.solve_frames(cams, la, lb)
     P, metric = tc.to_metric(X, 1.70)
     # rigid alignment without reflection: a mirrored result (left for right) can't fit
     A, B = P.reshape(-1, 3), true.reshape(-1, 3)

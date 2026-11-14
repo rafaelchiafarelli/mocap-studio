@@ -65,8 +65,9 @@ def draw_3d(world, axes, title):
 
 def main(clip, out_npz, overlay):
     cap = cv2.VideoCapture(clip)
+    cap.set(cv2.CAP_PROP_ORIENTATION_AUTO, 1)  # off by default in this OpenCV: phone videos came lying on their side
     fps = cap.get(cv2.CAP_PROP_FPS)
-    ok, first = cap.read()  # size from a decoded frame: phone videos carry a rotation that OpenCV applies, so the stream's size can be the other way round
+    ok, first = cap.read()  # size from a decoded, rotated frame: the stream's own size is before the rotation
     if not ok:
         raise SystemExit(f"can't read {clip}")
     h, w = first.shape[:2]

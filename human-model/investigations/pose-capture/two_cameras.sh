@@ -1,5 +1,5 @@
 #!/bin/sh
-# Joins two videos of one person into a 3D capture: two_cameras.sh A.mp4 B.mp4 OUT_DIR [--height 1.70] [--focal-mm 26] [--offset S] [--fixed-focal]
+# Joins two videos of one person into a 3D capture: two_cameras.sh A.mp4 B.mp4 OUT_DIR [--height 1.70] [--focal-mm 26] [--offset S] [--fixed-focal] [--scale-shoulders] [--no-skeleton] [--from S] [--to S]
 # OUT_DIR and the videos must be under /mnt/g or /tmp (the reference image mounts those). See two_cameras.py.
 # Uses the host's ffmpeg and ffprobe for the sound and the H.264 videos; MediaPipe and the solve run in hm.sh --ref.
 set -e
@@ -7,7 +7,7 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 HM="$HERE/../../hm.sh"
 A=$(realpath "$1"); B=$(realpath "$2"); OUT=$(realpath -m "$3"); shift 3
 mkdir -p "$OUT"
-start() { v=$(ffprobe -v error -select_streams "$2" -show_entries stream=start_time -of csv=p=0 "$1" | head -1); echo "${v:-null}"; }
+start() { v=$(ffprobe -v error -select_streams "$2" -show_entries stream=start_time -of csv=p=0 "$1" | head -1 | cut -d, -f1); echo "${v:-null}"; }
 printf '{"a": {"video_start": %s, "audio_start": %s}, "b": {"video_start": %s, "audio_start": %s}}\n' \
     "$(start "$A" v:0)" "$(start "$A" a:0)" "$(start "$B" v:0)" "$(start "$B" a:0)" > "$OUT/meta.json"
 # a video without sound gets no .wav; two_cameras.py then needs --offset

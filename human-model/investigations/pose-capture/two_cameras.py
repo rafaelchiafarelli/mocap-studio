@@ -7,8 +7,9 @@ Run through two_cameras.sh, which extracts the audio with the host's ffmpeg and 
 
 Directly, in the reference image (hm.sh --ref):
 
-    python two_cameras.py A.npz B.npz A.wav B.wav meta.json A.mp4 B.mp4 OUT_DIR [--height M] [--focal-mm MM] [--offset S] [--fixed-focal]
+    python two_cameras.py A.npz B.npz A.wav B.wav meta.json A.mp4 B.mp4 OUT_DIR [--height M] [--focal-mm MM] [--offset S] [--fixed-focal] [--scale-shoulders] [--no-skeleton] [--from S] [--to S]
 
+--from and --to keep only A's video time between them (both_views.py lists where the body is whole in both cameras).
 meta.json: {"a": {"video_start": s, "audio_start": s}, "b": {...}} from ffprobe, since a phone's audio and video streams
 don't start at the same instant.
 
@@ -25,8 +26,12 @@ Steps:
 4. Left and right: MediaPipe sometimes swaps sides in one view. Per frame and per group (face, arms, legs), B's labels are
    tried swapped; the labelling that reprojects better wins, and which camera was wrong is decided by which keeps the 3D
    left nearest to the last frame's left.
-5. Metric: up is the median direction from mid-ankle to mid-shoulder; the floor is the 2nd percentile of heels and toes
-   along it; the scale makes the ears' height (75th percentile over frames) `EAR_RATIO` of the given height.
+5. Skeleton (unless --no-skeleton): the landmarks from the shoulders down are fitted per frame as a body with rigid
+   bones (lengths from the frames where both views see a bone's ends well), each landmark weighted by its visibility in
+   each view, the pose held near the last frame's. The head stays triangulated.
+6. Metric: up is the median direction from mid-ankle to mid-shoulder; the floor is the 2nd percentile of heels and toes
+   along it; the scale makes the ears' height (75th percentile over frames) `EAR_RATIO` of the given height, or with
+   --scale-shoulders the shoulders' `SHOULDER_RATIO` (when a view cuts the head off).
    X is the person's left, from the hips in the first second, so the person starts facing -Y, as the Blender body does.
 
 OUT_DIR gets:
@@ -51,6 +56,7 @@ import cv2  # noqa: E402
 from scipy.optimize import least_squares  # noqa: E402
 
 EAR_RATIO = 0.93  # ear (tragion) height over stature, by eye from anthropometric tables
+SHOULDER_RATIO = 0.82  # shoulder (acromion) height over stature, the same way; for when one view loses the head
 VIS_MIN = 0.6  # landmarks below this visibility in either view don't count for the cameras
 ENV_RATE = 2000  # sound envelope samples per second for the sync
 FULL_FRAME_DIAGONAL_MM = 43.27
@@ -225,9 +231,11 @@ def frame_error(cams, xa, xb, idx):
 
 
 def solve_frames(cams, la, lb):
-    """3D per frame with left/right swaps resolved. la, lb: (T, 33, 3) pixels and visibility, B already at A's times."""
+    """3D per frame with left/right swaps resolved. la, lb: (T, 33, 3) pixels and visibility, B already at A's times.
+    Returns the points, which groups were swapped, and la, lb relabelled."""
     T = len(la)
     X = np.full((T, 33, 3), np.nan)
+    LA, LB = la.copy(), lb.copy()
     swapped = np.zeros((T, len(GROUPS), 2), bool)
     prev = None
     for t in range(T):
@@ -256,12 +264,93 @@ def solve_frames(cams, la, lb):
                     vb = vb[perm]
                     swapped[t, gi, 1] = True
         X[t] = triangulate(cams.Pa, cams.Pb, xa, xb)
+        LA[t, :, :2], LA[t, :, 2], LB[t, :, :2], LB[t, :, 2] = xa, va, xb, vb
         prev = X[t]
-    return X, swapped
+    return X, swapped, LA, LB
 
 
-def to_metric(X, height):
-    """Upright, on the floor, in metres, Blender axes; returns points and a report."""
+# A body with rigid bones fitted to both views: each landmark pulls by its visibility, so a view that only guesses a
+# hidden limb gives way to the one that sees it; bones keep their length; the pose moves little from the last frame.
+SKELETON = [(11, 12), (23, 24), (11, 23), (12, 24), (11, 24), (12, 23),  # trunk, braced so it can't shear
+            (11, 13), (13, 15), (12, 14), (14, 16), (15, 17), (15, 19), (17, 19), (16, 18), (16, 20), (18, 20),
+            (23, 25), (25, 27), (24, 26), (26, 28), (27, 29), (29, 31), (27, 31), (28, 30), (30, 32), (28, 32)]
+FIT = np.arange(11, 33)  # the head is left to the triangulation (Rafael: ignore it for now)
+FIT_REPROJ_SCALE = 5.0  # px: Huber's knee for a landmark's reprojection
+FIT_BONE_WEIGHT = 300.0  # a bone 1% off its length weighs 3 px
+FIT_STILL_WEIGHT = 0.3  # moving a thigh's length from the last frame weighs 30 px
+VIS_FLOOR = 0.05
+
+
+def bone_lengths(X, la, lb, vis=0.8):
+    """Each bone's median length over the frames where both views see both its ends well."""
+    out = {}
+    for a, b in SKELETON:
+        ok = (la[:, a, 2] > vis) & (la[:, b, 2] > vis) & (lb[:, a, 2] > vis) & (lb[:, b, 2] > vis)
+        d = np.linalg.norm(X[ok, a] - X[ok, b], axis=1)
+        d = d[np.isfinite(d)]
+        if len(d) < 5:
+            d = np.linalg.norm(X[:, a] - X[:, b], axis=1)
+            d = d[np.isfinite(d)]
+        out[(a, b)] = (float(np.median(d)), int(ok.sum()))
+    return out
+
+
+def fit_sparsity(n, ia, ib, still):
+    """Which residuals each coordinate moves: its own reprojections, its bones, its own stillness. Without it the
+    numerical Jacobian costs a residual evaluation per coordinate (the first full run took over 10 minutes)."""
+    cols = lambda j: [3 * j, 3 * j + 1, 3 * j + 2]
+    rows = 4 * n + len(ia) + (3 * n if still else 0)
+    S = np.zeros((rows, 3 * n), bool)
+    for j in range(n):
+        S[2 * j:2 * j + 2, cols(j)] = True
+        S[2 * n + 2 * j:2 * n + 2 * j + 2, cols(j)] = True
+        if still:
+            S[4 * n + len(ia) + 3 * j:4 * n + len(ia) + 3 * j + 3, cols(j)] = True
+    for k, (a, b) in enumerate(zip(ia, ib)):
+        S[4 * n + k, cols(a) + cols(b)] = True
+    return S
+
+
+def fit_skeleton(cams, X0, la, lb, lengths):
+    """Per frame, the landmarks FIT as a body with rigid bones, from the triangulated start. Returns points and per-frame
+    reprojection error (px, visibility-weighted mean over FIT, per view)."""
+    T = len(X0)
+    X = X0.copy()
+    err = np.full((T, 2), np.nan)
+    pairs = np.array(list(lengths))
+    L = np.array([lengths[tuple(p)][0] for p in pairs])
+    ref = lengths[(23, 25)][0]
+    prev = None
+    for t in range(T):
+        if not np.isfinite(X0[t, FIT]).all() or not np.isfinite(la[t, FIT, :2]).all() or not np.isfinite(lb[t, FIT, :2]).all():
+            continue
+        wa = np.sqrt(np.clip(la[t, FIT, 2], VIS_FLOOR, 1))[:, None]
+        wb = np.sqrt(np.clip(lb[t, FIT, 2], VIS_FLOOR, 1))[:, None]
+        start = X0[t, FIT]  # from this frame's triangulation: starting from the last fit, the fit fell behind the motion (2026-11-14)
+        idx = {j: k for k, j in enumerate(FIT)}
+        ia, ib = np.array([idx[a] for a, _ in pairs]), np.array([idx[b] for _, b in pairs])
+
+        def fun(p):
+            Y = p.reshape(-1, 3)
+            ra = (project(cams.Pa, Y) - la[t, FIT, :2]) * wa
+            rb = (project(cams.Pb, Y) - lb[t, FIT, :2]) * wb
+            rl = (np.linalg.norm(Y[ia] - Y[ib], axis=1) / L - 1) * FIT_BONE_WEIGHT
+            rs = ((Y - prev) / ref * 100 * FIT_STILL_WEIGHT).ravel() if prev is not None else np.zeros(0)
+            return np.concatenate([ra.ravel(), rb.ravel(), rl, rs])
+
+        sol = least_squares(fun, start.ravel(), loss="huber", f_scale=FIT_REPROJ_SCALE, max_nfev=200, x_scale="jac",
+                            jac_sparsity=fit_sparsity(len(FIT), ia, ib, prev is not None))
+        Y = sol.x.reshape(-1, 3)
+        X[t, FIT] = Y
+        w_a, w_b = np.clip(la[t, FIT, 2], VIS_FLOOR, 1), np.clip(lb[t, FIT, 2], VIS_FLOOR, 1)
+        err[t] = [np.sum(np.linalg.norm(project(cams.Pa, Y) - la[t, FIT, :2], axis=1) * w_a) / w_a.sum(),
+                  np.sum(np.linalg.norm(project(cams.Pb, Y) - lb[t, FIT, :2], axis=1) * w_b) / w_b.sum()]
+        prev = Y
+    return X, err
+
+
+def to_metric(X, height, scale_from="ears"):
+    """Upright, on the floor, in metres, Blender axes; returns points and a report. scale_from: ears or shoulders."""
     mid = lambda a, b: (X[:, a] + X[:, b]) / 2
     up_dirs = mid(11, 12) - mid(27, 28)
     up_dirs = up_dirs[np.isfinite(up_dirs).all(1)]
@@ -270,9 +359,9 @@ def to_metric(X, height):
     feet = X[:, [29, 30, 31, 32]].reshape(-1, 3)
     feet = feet[np.isfinite(feet).all(1)]
     floor = np.percentile(feet @ up, 2)
-    ears = mid(7, 8) @ up - floor
-    ear_h = np.nanpercentile(ears, 75)
-    scale = height * EAR_RATIO / ear_h
+    ref, ratio = (mid(7, 8), EAR_RATIO) if scale_from == "ears" else (mid(11, 12), SHOULDER_RATIO)
+    ref_h = np.nanpercentile(ref @ up - floor, 75)
+    scale = height * ratio / ref_h
     first = X[: max(1, min(len(X), 30))]
     lr = np.nanmedian(first[:, 23] - first[:, 24], axis=0)
     x = lr - (lr @ up) * up
@@ -282,7 +371,7 @@ def to_metric(X, height):
     origin = hips0 - (hips0 @ up - floor) * up
     M = np.stack([x, y, up])
     P = (X - origin) @ M.T * scale
-    return P, {"scale_to_m": float(scale), "up_in_camera_a": up.tolist(), "ear_height_m": float(height * EAR_RATIO)}
+    return P, {"scale_to_m": float(scale), "up_in_camera_a": up.tolist(), "scale_from": scale_from, "reference_height_m": float(height * ratio)}
 
 
 def bone_variation(P):
@@ -334,8 +423,12 @@ def panel(P, axes, title, size=480, scale=200):
     return img
 
 
-def write_overlay(path, video_a, video_b, la_full, lb_at_a, X, P, cams, times_a, times_b_at_a, times_b, fps):
+def write_overlay(path, video_a, video_b, la_full, lb_at_a, X, P, cams, times_a, times_b_at_a, times_b, fps, first_frame=0):
     ca, cb = cv2.VideoCapture(video_a), cv2.VideoCapture(video_b)
+    for c in (ca, cb):
+        c.set(cv2.CAP_PROP_ORIENTATION_AUTO, 1)  # as capture_pose.py: phone videos' rotation
+    for _ in range(first_frame):  # read, not seek: seeking a variable-frame-rate video can land off by a frame
+        ca.read()
     H = 960
     writer = None
     bi, fb = -1, None
@@ -371,7 +464,11 @@ def write_overlay(path, video_a, video_b, la_full, lb_at_a, X, P, cams, times_a,
 # ---------- main ----------
 
 def main(argv):
-    opts = {"--height": 1.70, "--focal-mm": 26.0, "--offset": None}
+    opts = {"--height": 1.70, "--focal-mm": 26.0, "--offset": None, "--from": None, "--to": None}
+    scale_from = "shoulders" if "--scale-shoulders" in argv else "ears"
+    argv = [a for a in argv if a != "--scale-shoulders"]
+    fit = "--no-skeleton" not in argv
+    argv = [a for a in argv if a != "--no-skeleton"]
     refine = "--fixed-focal" not in argv
     argv = [a for a in argv if a != "--fixed-focal"]
     rest = []
@@ -406,7 +503,14 @@ def main(argv):
         d = opts["--offset"]
     report["video_offset_s"] = d
     ta, tb = A["times"], B["times"]
-    la = A["image"][:, :, [0, 1, 3]]
+    image_a = A["image"]
+    lo = opts["--from"] if opts["--from"] is not None else -np.inf
+    hi = opts["--to"] if opts["--to"] is not None else np.inf
+    sel = np.flatnonzero((ta >= lo) & (ta <= hi))
+    first_frame = int(sel[0])
+    ta, image_a = ta[sel], image_a[sel]
+    report["from_s"], report["to_s"], report["first_frame_a"] = float(ta[0]), float(ta[-1]), first_frame
+    la = image_a[:, :, [0, 1, 3]]
     lb = resample(B["image"], tb, ta + d)
     size_a, size_b = (int(A["width"]), int(A["height"])), (int(B["width"]), int(B["height"]))
 
@@ -419,8 +523,16 @@ def main(argv):
     report["cameras"]["t_b_unit"] = cams.t.tolist()
     report["cameras"]["angle_between_deg"] = float(np.degrees(np.arccos(np.clip((np.trace(cams.R) - 1) / 2, -1, 1))))
 
-    X, swapped = solve_frames(cams, la, lb)
-    P, metric = to_metric(X, opts["--height"])
+    X_dlt, swapped, la_r, lb_r = solve_frames(cams, la, lb)
+    if fit:
+        lengths = bone_lengths(X_dlt, la_r, lb_r)
+        X, fit_err = fit_skeleton(cams, X_dlt, la_r, lb_r, lengths)
+        report["skeleton_fit"] = {"bone_frames_seen_well": {f"{a}-{b}": n for (a, b), (_, n) in lengths.items()},
+                                  "reprojection_px_median": [float(np.nanmedian(fit_err[:, i])) for i in range(2)],
+                                  "reprojection_px_p95": [float(np.nanpercentile(fit_err[:, i], 95)) for i in range(2)]}
+    else:
+        X = X_dlt
+    P, metric = to_metric(X, opts["--height"], scale_from)
     report["metric"] = metric
     report["cameras"]["baseline_m"] = metric["scale_to_m"]
     report["frames"] = int(len(ta))
@@ -437,10 +549,10 @@ def main(argv):
     world_mp = np.stack([world_mp[..., 0], -world_mp[..., 2], world_mp[..., 1]], -1)  # inverse of drive_capture's (x, z, -y)
     found = np.isfinite(P).all(axis=(1, 2))
     np.savez_compressed(os.path.join(out, "two_cameras.npz"), points_m=P, world=world_mp, found=found, times=ta, fps=float(A["fps"]),
-                        swapped=swapped, image=A["image"])
+                        swapped=swapped, image=image_a)
     json.dump(report, open(os.path.join(out, "two_cameras.json"), "w"), indent=1)
     print(json.dumps({k: v for k, v in report.items() if k not in ("bones",)}, indent=1)[:2500])
-    write_overlay(os.path.join(out, "two_cameras_overlay.mp4"), video_a, video_b, A["image"], lb, X, P, cams, ta, ta + d, tb, float(A["fps"]))
+    write_overlay(os.path.join(out, "two_cameras_overlay.mp4"), video_a, video_b, image_a, lb, X, P, cams, ta, ta + d, tb, float(A["fps"]), first_frame)
 
 
 if __name__ == "__main__":

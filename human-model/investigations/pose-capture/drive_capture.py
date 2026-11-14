@@ -1,6 +1,9 @@
 """Step 3 of the pose-capture investigation: keys MediaPipe's world landmarks onto the rigged body, with no physics.
 
-    python3 human-model/blender_run.py --blend 02_corpo_com_rig.blend human-model/investigations/pose-capture/drive_capture.py LANDMARKS.npz OUT.blend REPORT.json [SIGMA_FRAMES]
+    python3 human-model/blender_run.py --blend 02_corpo_com_rig.blend human-model/investigations/pose-capture/drive_capture.py LANDMARKS.npz OUT.blend REPORT.json [SIGMA_FRAMES] [--no-head]
+
+LANDMARKS.npz is capture_pose.py's (one camera) or two_cameras.py's (two). With two, the root's path on the floor is the
+captured hips', scaled by hip height to this body; --no-head keeps the head on the chest.
 
 Motion is carried as directions and frames, never positions, so the body keeps its own proportions.
 
@@ -18,8 +21,10 @@ Per frame:
   in the captured plane (faded in from 10 to 30 degrees of bend, since a straight limb has no plane);
 - shin and forearm: shortest swing; foot: the sole (heel to toe) onto the captured heel to toe; hand: onto wrist to the
   middle of index and pinky, turned so index and pinky lie across it. Fingers, toes and shoulders stay at rest.
-- root: lowered or raised so the lowest point of either foot stays on the floor; horizontally, the lower foot is held still
-  while it is the lower one (a contact, not a rule per pose), so the body travels as its feet allow.
+- root: lowered or raised so the lowest point of either foot stays on the floor; horizontally, with one camera, the lower
+  foot is held still while it is the lower one (a contact, not a rule per pose), so the body travels as its feet allow;
+  with two cameras, it follows the captured hips.
+Gaps (frames with no capture) are filled by interpolation before smoothing.
 Landmarks are smoothed in time first by a gaussian of SIGMA_FRAMES (default 2 frames, at 60 fps).
 """
 import json, math, os, sys
@@ -28,6 +33,8 @@ import numpy as np
 from mathutils import Matrix, Quaternion, Vector
 
 argv = sys.argv[sys.argv.index("--") + 1:]
+NO_HEAD = "--no-head" in argv  # the head follows the chest (a view that loses the head guesses it badly)
+argv = [a for a in argv if a != "--no-head"]
 npz, out, report_path = argv[0], argv[1], argv[2]
 SIGMA = float(argv[3]) if len(argv) > 3 else 2.0
 NOSE_PITCH_DEG = 10.0  # by eye: on a level head the nose tip is a little below the ears
@@ -48,7 +55,24 @@ def smooth(x, sigma):
     return np.stack([np.tensordot(k, pad[i:i + 2 * r + 1], axes=(0, 0)) for i in range(len(x))])
 
 
-mp = smooth(mp, SIGMA)
+def fill_gaps(x):
+    """Frames with no capture take the line between their neighbours, so smoothing doesn't spread NaN."""
+    x = x.copy()
+    t = np.arange(len(x))
+    flat = x.reshape(len(x), -1)
+    for k in range(flat.shape[1]):
+        ok = np.isfinite(flat[:, k])
+        if ok.any() and not ok.all():
+            flat[:, k] = np.interp(t, t[ok], flat[ok, k])
+    return flat.reshape(x.shape)
+
+
+mp = smooth(fill_gaps(mp), SIGMA)
+# two cameras give where the hips really went (two_cameras.py's points_m, metres, Blender axes)
+HIPS_M = None
+if "points_m" in d.files:
+    pm = smooth(fill_gaps(d["points_m"].astype(float)), SIGMA)
+    HIPS_M = (pm[:, 23] + pm[:, 24]) / 2
 B = np.stack([mp[..., 0], mp[..., 2], -mp[..., 1]], -1)  # (x, z, -y): proper rotation, no mirror
 NAMES = dict(nose=0, ear_l=7, ear_r=8, sh_l=11, sh_r=12, el_l=13, el_r=14, wr_l=15, wr_r=16, pinky_l=17, pinky_r=18,
              index_l=19, index_r=20, hip_l=23, hip_r=24, knee_l=25, knee_r=26, ank_l=27, ank_r=28, heel_l=29, heel_r=30,
@@ -154,7 +178,10 @@ def foot_low(s):
     return min(pts, key=lambda p: p.z)
 
 
-report = {"frames": len(B), "fps": fps, "sigma_frames": SIGMA, "side_check_failures": [], "stance": []}
+BODY_HIP_H = (R["thigh.L"].head_local.z + R["thigh.R"].head_local.z) / 2
+CAPTURED_HIP_H = float(np.median(HIPS_M[:, 2])) if HIPS_M is not None else None
+report = {"no_head": NO_HEAD, "root_from": "two cameras' hips" if HIPS_M is not None else "lower foot held still",
+          "frames": len(B), "fps": fps, "sigma_frames": SIGMA, "side_check_failures": [], "stance": []}
 root = Vector((0, 0, 0))
 anchor = None  # (side, world xy of its lowest point)
 for t in range(len(B)):
@@ -179,7 +206,7 @@ for t in range(len(B)):
     for i, name in enumerate(CHAIN_CHEST):
         set_world_rot(name, qp.slerp(qc, (i + 1) / len(CHAIN_CHEST)).to_matrix())
     for i, name in enumerate(CHAIN_HEAD):
-        set_world_rot(name, qc.slerp(qh, (i + 1) / len(CHAIN_HEAD)).to_matrix())
+        set_world_rot(name, (qc if NO_HEAD else qc.slerp(qh, (i + 1) / len(CHAIN_HEAD))).to_matrix())
 
     for s in "LR":
         k = L2[s]
@@ -214,7 +241,11 @@ for t in range(len(B)):
     if os.environ.get("HM_DEBUG") or t % 20 == 0:
         print("DBG", t + 1, tuple(round(x, 3) for x in rig.matrix_world.translation), {s: round(low[s].z, 3) for s in "LR"}, stance)
     root.z = rest_floor - low[stance].z
-    if anchor is not None and anchor[0] == stance:
+    if HIPS_M is not None:
+        # the hips' captured path on the floor, scaled from the captured person to this body by hip height
+        k = BODY_HIP_H / CAPTURED_HIP_H
+        root.x, root.y = (HIPS_M[t, 0] - HIPS_M[0, 0]) * k, (HIPS_M[t, 1] - HIPS_M[0, 1]) * k
+    elif anchor is not None and anchor[0] == stance:
         root.x += anchor[1].x - low[stance].x - root.x
         root.y += anchor[1].y - low[stance].y - root.y
     rig.location = root
