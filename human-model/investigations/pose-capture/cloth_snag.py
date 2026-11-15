@@ -46,7 +46,12 @@ def main(tissue, cloth, sim_dir, piece="blusinha", out=None):
         row = {"quadro": f + 1}
         for s, sel in sides.items():
             ids = np.flatnonzero(sel)
-            d, j = cKDTree(skin[f, ids]).query(cx[f], distance_upper_bound=0.05)
+            ok = np.isfinite(cx[f]).all(axis=1)
+            if not np.isfinite(skin[f, ids]).all() or not ok.any():  # the simulation blew up (NaN): nothing to measure in this frame
+                row[s] = {"vertices": 0, "volta_graus": 0, "invalido": True}
+                continue
+            d = np.full(len(cx[f]), np.inf)
+            d[ok] = cKDTree(skin[f, ids]).query(cx[f][ok], distance_upper_bound=0.05)[0]
             caught = far[s] & (d < PERTO_MM / 1000)
             ang = 0.0
             if caught.sum() >= 3:
@@ -70,6 +75,8 @@ def main(tissue, cloth, sim_dir, piece="blusinha", out=None):
                    "quadros_volta_maior_que_180": int(sum(r[s]["volta_graus"] > 180 for r in rows)),
                    "vertices_max": int(max(r[s]["vertices"] for r in rows)),
                    "pior_quadro": worst[s]["quadro"], "pior_volta_graus": worst[s][s]["volta_graus"]} for s in sides}
+    bad = [r["quadro"] for r in rows if any(r[s].get("invalido") for s in sides) or not np.isfinite(cx[r["quadro"] - 1]).all()]
+    summary["primeiro_quadro_invalido"] = bad[0] if bad else None
     print(json.dumps(summary))
     if out:
         Path(out).write_text(json.dumps({"resumo": summary, "quadros": rows}, indent=1), encoding="utf-8")

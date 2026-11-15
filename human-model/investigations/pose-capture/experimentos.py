@@ -218,6 +218,7 @@ def measure(v, body, mesh, sim):
         gpu("cloth_snag.py", mesh, body["cloth"], f, "blusinha", snag, log=sim / "log.txt", etapa="medida: enrosco (cloth_snag.py)")
     s = json.loads(snag.read_text(encoding="utf-8"))["resumo"]
     out["meia_volta_antebraco_E_D"] = [s["esq"]["quadros_volta_maior_que_180"], s["dir"]["quadros_volta_maior_que_180"]]
+    out["blusa_explodiu_no_quadro"] = s.get("primeiro_quadro_invalido")
     return out
 
 
@@ -258,7 +259,8 @@ def summary(variations):
             lines.append(f"{v['nome']:24s} FALHOU em: {r['falhou_em']}")
             continue
         m = r["medidas"]
-        lines.append(f"{v['nome']:24s} esticado {m['blusa_esticado_p95_pct']:5.1f} / {m['blusa_esticado_max_pct']:6.1f}  "
+        boom = f"  BLUSA EXPLODIU no quadro {m['blusa_explodiu_no_quadro']}" if m.get("blusa_explodiu_no_quadro") else ""
+        lines.append(boom and f"{v['nome']:24s}{boom}" or f"{v['nome']:24s} esticado {m['blusa_esticado_p95_pct']:5.1f} / {m['blusa_esticado_max_pct']:6.1f}  "
                      f"meia volta {m['meia_volta_antebraco_E_D'][0]:3d} / {m['meia_volta_antebraco_E_D'][1]:3d}  "
                      f"invertidos {m['tetraedros_invertidos']:6d}  ms {m['ms_por_quadro']:5.0f}  {r['blend']}")
     (OUT / "resumo.txt").write_bytes(("\r\n".join(lines) + "\r\n").encode("utf-8"))
