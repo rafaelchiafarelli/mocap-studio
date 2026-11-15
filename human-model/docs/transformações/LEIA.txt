@@ -1,0 +1,11 @@
+Transformações dos dados do pose-capture, das duas câmeras ao tecido (15/11/2026)
+
+transformacoes_pose_capture.drawio   o diagrama (abre no draw.io / diagrams.net)
+typst\NN_*.typ                       a matemática de cada etapa, um arquivo por transformação
+                                     (estilo.typ = formatação comum; todas.typ junta tudo)
+pdf\                                 os mesmos arquivos compilados (todas.pdf = tudo junto)
+_scripts\gera_drawio.py              gera o diagrama (python3 gera_drawio.py SAIDA.drawio)
+
+Etapas: 00 notação · 01 sincronia · 02 câmeras · 03 triangulação · 04 esqueleto rígido · 05 métrico ·
+06 chão e contatos · 07 ganho · 08 retarget · 09 pés presos (IK) · 10 ossos e malha · 11 simulação e montagem.
+Os quadros vermelhos ("ponto de atenção") são o que achei suspeito ao reler o código; o mais forte está na etapa 07.

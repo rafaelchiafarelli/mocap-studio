@@ -1,0 +1,30 @@
+{
+ "_sobre": "Hands as pendulums (hand_pendulum.py; Rafael, 2026-11-15: hands and fingers as pendulums following the armature, the wrist mixed, a spring towards the captured hand, with anatomical limits; nothing non-anatomical). Angles in degrees. Where sources disagree the smaller range is used.",
+ "limites": {
+  "_fontes": "Wrist flexion/extension: eatonhand.com/clf/clf218.htm (75/70); radial/ulnar deviation: AAOS as quoted by Queen's University (20/30). Fingers and thumb: the AAOS-based table in Hendriks et al. 2020, PRS Global Open, supplementary (MCP 80, PIP 90, DIP 65, extension 0; thumb MCP 50, IP 80). Forearm rotation 80 each way: textbook order, not checked in a source this session.",
+  "punho_flexao": 75,
+  "punho_extensao": 70,
+  "punho_radial": 20,
+  "punho_ulnar": 30,
+  "antebraco_rotacao": 80,
+  "mcp": [0, 80],
+  "pip": [0, 90],
+  "dip": [0, 65],
+  "polegar_mcp": [0, 50],
+  "polegar_ip": [0, 80]
+ },
+ "repouso": {
+  "_sobre": "the relaxed hand the fingers return to, by eye",
+  "mcp": 20, "pip": 30, "dip": 15, "polegar_mcp": 10, "polegar_ip": 15
+ },
+ "punho": {
+  "_sobre": "a damped spring towards the captured hand (by eye): its frequency sets how closely it follows, gravity and the forearm's acceleration bend it away",
+  "frequencia_hz": 3.0, "amortecimento": 0.7, "centro_de_massa_da_mao": 0.5
+ },
+ "dedos": {
+  "_sobre": "each joint a damped pendulum towards the relaxed hand (by eye); segment masses in grams, proximal, middle, distal (by eye; only their ratio matters)",
+  "frequencia_hz": 6.0, "amortecimento": 0.4, "massas_g": [8, 5, 3]
+ },
+ "subpassos": 10,
+ "aquecimento_quadros": 30
+}

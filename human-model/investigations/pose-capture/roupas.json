@@ -46,6 +46,8 @@
     "_sobre": "the cloth inside the tetrahedral solver (tissue_cloth_sim.py), step 17. Real mass; stiffness of the sheet in N/m, by eye: a T-shirt jersey stretches easily, denim hardly. Contact: the cloth keeps `espessura_mm` from the skin, skin keeps `pele_pele_mm` from skin of another part (arm, trunk, each leg), counted only between points at least `pele_pele_longe_em_repouso_mm` apart at rest (neighbours across a part's border are not contact).",
     "pele_pele_mm": 1.0,
     "pele_pele_longe_em_repouso_mm": 30.0,
+    "pano_pano_longe_em_repouso_mm": 25.0,
+    "_pano_pano": "Rafael, 2026-11-15: the cloth has a thickness: each piece's espessura_mm (2 mm for top and jeans) is also kept between cloth and cloth, the top through itself and the top against the jeans. A piece's own triangles within pano_pano_longe_em_repouso_mm of a vertex at rest are its neighbourhood, not contact (by eye, a few of the cloth's edges).",
     "pecas": {
       "blusinha": {
         "gramatura_g_m2": 160,
