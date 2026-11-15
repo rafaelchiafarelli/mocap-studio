@@ -17,6 +17,8 @@
 - `Dockerfile.reference`, `requirements-reference.in`, `requirements-reference.txt`: the image of `tools/check_reference.py`, with MediaPipe Pose and OpenCV. `hm.sh --ref` builds and runs it, with C: mounted read-only.
 - `ATTRIBUTION.md`: the credits a film has to carry.
 - `clothing-handoff.md`: where the clothes on the pose-capture body stand (tissue and cloth simulated together, step 17), how to merge them with the soft-tissue work, and what is open (2026-11-15).
+- `handoff.md`: where the pose-capture body stands (seams, cloth snags, thick shell, gain with planted feet; 2026-11-15 afternoon) and what is open.
+- `handoff-2026-11-15-maos.md`: the morning before it: pendulum hands, colliding hands, cloth against every part (tet_v8–v10), and Rafael's decisions.
 - `INTEGRATION-motion-filter.md`: for the soft-tissue session, how to put `investigations/pose-capture/`'s floor, foot-contact and motion-gain filter in front of its tissue chain (2026-11-14).
 - `human-model.process.md`: the stages.
 - `docs/`: written to be read: `README.md`, `running.md`, `animation-body.md`, `character-editor.md`, `character-controls.md`, `morphology.md`, `skeleton.md`, `muscles.md`, `skin.md`, `drive.md`, `muscle-physics.md`, `status.md`, `decisions.md`, `sources-and-validation.md`; and `diagrams/`, the walking simulation's stages and sequences, in draw.io and Portuguese.
