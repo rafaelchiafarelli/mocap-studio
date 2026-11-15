@@ -153,6 +153,27 @@ def _cloth_contact(mesh: wp.uint64, x: wp.array(dtype=wp.vec3), x_prev: wp.array
 
 
 @wp.kernel
+def _bend(x: wp.array(dtype=wp.vec3), inv_mass: wp.array(dtype=float), hinge: wp.array(dtype=wp.vec4i), K: wp.array(dtype=wp.vec4),
+          compliance: wp.array(dtype=float), inv_h2: float, dx: wp.array(dtype=wp.vec3), cnt: wp.array(dtype=float)):
+    """The thick shell's bending (Bergou et al. 2006, isometric quadratic bending): per hinge (edge x0 x1, opposite x2 x3), the
+    vector C = sum K_i x_i (cotangent weights at rest) is zero on a flat or cylindrical rest and grows with the bend from the
+    first degree, energy 1/2 C^2 / compliance, compliance 2 A / D (A both triangles' area, D the fabric's bending rigidity)."""
+    e = wp.tid()
+    h = hinge[e]
+    k = K[e]
+    C = k[0] * x[h[0]] + k[1] * x[h[1]] + k[2] * x[h[2]] + k[3] * x[h[3]]
+    W = float(0.0)
+    for i in range(4):
+        W += k[i] * k[i] * inv_mass[h[i]]
+    if W > 0.0:
+        s = 1.0 / (W + compliance[e] * inv_h2)
+        # not counted in the Jacobi mean: each hinge's correction is tiny (a limp fabric), and counted it diluted the edges'
+        # (the top stretched 19.8% p95 against 11.9%, teste_casca_170)
+        for i in range(4):
+            wp.atomic_add(dx, h[i], -C * (inv_mass[h[i]] * k[i] * s))
+
+
+@wp.kernel
 def _remember_outside(x: wp.array(dtype=wp.vec3), c0: int, depth: wp.array(dtype=float), in_hand: wp.array(dtype=float),
                       x_out: wp.array(dtype=wp.vec3)):
     i = wp.tid()
@@ -473,7 +494,8 @@ class ClothTissueSolver(GradedSolver):
                  cloth_x, cloth_mass, pairs, rest, compliance, cloth_damping, cloth_thick, cloth_mu,
                  sn, sw, sub_rest, tris, part, vertex_part, skin_thick, far_rest, cloth_tris=None, covered=None, cloth_tri_part=None, cloth_passes=2,
                  cloth_piece=None, far_rest_cloth=0.0, hand_rest=None, hand_tris=None, hand_side=None,
-                 cap_ids=None, cap_bones=None, cap_w=None, entry=True, entry_reach=0.02, hand_covered=None, device="cuda:0"):
+                 cap_ids=None, cap_bones=None, cap_w=None, entry=True, entry_reach=0.02, hand_covered=None,
+                 hinges=None, hinge_K=None, hinge_compliance=None, device="cuda:0"):
         self.c0 = len(nodes)
         all_nodes = np.concatenate([np.asarray(nodes, float), np.asarray(cloth_x, float)])
         damping = np.concatenate([np.asarray(node_damping, np.float32), np.asarray(cloth_damping, np.float32)])
@@ -487,6 +509,10 @@ class ClothTissueSolver(GradedSolver):
         self.rest_len, self.compliance = a(rest, float), a(compliance, float)
         self.cloth_thick, self.cloth_mu = a(cloth_thick, float), a(cloth_mu, float)
         self.cloth_passes = cloth_passes
+        # the thick shell's bending, per hinge (indices into cloth_x); None: bending only by the pairs (distances)
+        self.hinges = None
+        if hinges is not None and len(hinges):
+            self.hinges = (a(np.asarray(hinges) + len(nodes), wp.vec4i, np.int32), a(hinge_K, wp.vec4), a(hinge_compliance, float))
         self.sn, self.sw = a(sn, wp.vec4i, np.int32), a(sw, wp.vec4)
         self.sub_rest = a(sub_rest, wp.vec3)
         self.ns = len(sn)
@@ -679,6 +705,9 @@ class ClothTissueSolver(GradedSolver):
                 wp.launch(_distance, len(self.rest_len), [self.x, self.inv_mass, self.pairs, self.rest_len, self.compliance, 1.0 / (h * h), self.dxc],
                           device=self.device)
                 wp.launch(_count_pairs, len(self.rest_len), [self.pairs, self.cnt], device=self.device)
+                if self.hinges is not None:
+                    wp.launch(_bend, len(self.hinges[0]), [self.x, self.inv_mass, *self.hinges, 1.0 / (h * h), self.dxc, self.cnt],
+                              device=self.device)
                 wp.launch(_apply_mean, self.n, [self.x, self.dxc, self.cnt], device=self.device)
             wp.launch(_skin_points, self.ns, [self.x, self.x_prev, self.sn, self.sw, self.sx, self.sx_prev], device=self.device)
             self.body_mesh.refit()

@@ -52,6 +52,27 @@ def cloth_pairs(tris):
     return edges, bend
 
 
+def hinge_weights(V, F):
+    """Each interior edge as a hinge (x0, x1 the edge, x2, x3 opposite) with Bergou 2006's cotangent weights at rest and the two
+    triangles' area. Calibrated on a cylinder: sum |K x|^2 / A = 2 x the integral of curvature^2 / 2, so energy = D/(2A) |K x|^2 / 2."""
+    e = {}
+    for f in F:
+        for k in range(3):
+            a, b, c = int(f[k]), int(f[(k + 1) % 3]), int(f[(k + 2) % 3])
+            e.setdefault((min(a, b), max(a, b)), []).append(c)
+    H = np.array([[a, b, o[0], o[1]] for (a, b), o in e.items() if len(o) == 2], np.int64)
+    x0, x1, x2, x3 = (V[H[:, i]] for i in range(4))
+    e0, e1, e2, e3, e4 = x1 - x0, x2 - x0, x3 - x0, x2 - x1, x3 - x1
+
+    def cot(u, v):
+        return np.einsum("ij,ij->i", u, v) / np.maximum(np.linalg.norm(np.cross(u, v), axis=1), 1e-12)
+
+    c01, c02, c03, c04 = cot(e0, e1), cot(e0, e2), cot(-e0, e3), cot(-e0, e4)
+    K = np.stack([c03 + c04, c01 + c02, -c01 - c03, -c02 - c04], 1)
+    A = 0.5 * (np.linalg.norm(np.cross(e0, e1), axis=1) + np.linalg.norm(np.cross(e0, e2), axis=1))
+    return H, K, A
+
+
 def boundary_loops(F):
     e = np.sort(np.concatenate([F[:, [0, 1]], F[:, [1, 2]], F[:, [2, 0]]]), axis=1)
     u, c = np.unique(e, axis=0, return_counts=True)
@@ -80,10 +101,11 @@ def main(tissue_npz, bones_npz, cloth_npz, params_json, out_dir, opts):
     o = {"frames": 0, "substeps": 160, "ramp": 30, "hold": 15, "pecas": "blusinha,jeans", "sob_pano": "tronco", "pano_pano": 1}
     for item in opts:
         k, v = item.split("=")
-        o[k] = v if k in ("pecas", "sob_pano", "corpo") else int(v)
+        o[k] = v if k in ("pecas", "sob_pano", "corpo", "flexao") else int(v)
     o.setdefault("costura_rigida", 0)
     o.setdefault("entrada", 1)
     o.setdefault("mao_folga", 1)
+    o.setdefault("flexao", "isometrica")
     m, mo, cl = np.load(tissue_npz), np.load(bones_npz), np.load(cloth_npz)
     P = json.load(open(params_json, encoding="utf-8"))["solver_tetraedros"]
     assert int(m["pose_frame"]) < 1, "the mesh must be built at rest (tissue_mesh.py without pose=)"
@@ -97,6 +119,7 @@ def main(tissue_npz, bones_npz, cloth_npz, params_json, out_dir, opts):
 
     # cloth: vertices, mass, edges and bending pairs, per piece
     xs, mass, pairs, rest, comp, damp, thick, mu, spans, piece_ids = [], [], [], [], [], [], [], [], {}, []
+    hinges, hinge_K, hinge_c, shell, edge_start = [], [], [], {}, {}
     ctris, vns, band_n = [], [], {}
     base = 0
     for name in pieces:
@@ -111,7 +134,17 @@ def main(tissue_npz, bones_npz, cloth_npz, params_json, out_dir, opts):
         if "encolhimento_cos" in q:
             top = max(boundary_loops(F), key=lambda l: V[l, 2].mean())
             band = cKDTree(V[top]).query(V)[0] <= q["cos_mm"] / 1000
-        for pr, k in ((edges, q["tracao_N_m"]), (bend, q["flexao_N_m"])):
+        bending = [(bend, q["flexao_N_m"])] if o["flexao"] == "distancia" else []
+        if o["flexao"] == "isometrica":
+            # thick shell (Rafael, 2026-11-15): the fabric's measured bending rigidity B (Kawabata), D = B in N m; the modulus a
+            # solid sheet of espessura_mm would need for that D, E = 12 (1 - nu^2) D / t^3, is reported, not used
+            D = q["flexao_B_gf_cm2_cm"] * 9.80665e-5
+            H, Kh, Ah = hinge_weights(V, F)
+            hinges.append(H + base), hinge_K.append(Kh), hinge_c.append(2 * Ah / D)
+            t = q["espessura_mm"] / 1000
+            shell[name] = {"D_N_m": D, "E_efetivo_Pa": round(12 * (1 - 0.3 ** 2) * D / t ** 3), "dobradicas": len(H)}
+        edge_start[name] = int(sum(len(p) for p in pairs))
+        for pr, k in [(edges, q["tracao_N_m"])] + bending:
             shrink = np.where(band[pr[:, 0]] & band[pr[:, 1]], 1 - q.get("encolhimento_cos", 0.0), 1 - q["encolhimento"])
             pairs.append(pr + base)
             rest.append(np.linalg.norm(V[pr[:, 0]] - V[pr[:, 1]], axis=1) * shrink)
@@ -234,7 +267,11 @@ def main(tissue_npz, bones_npz, cloth_npz, params_json, out_dir, opts):
                                far_rest_cloth=P.get("pano_pano_longe_em_repouso_mm", 25.0) / 1000,
                                hand_rest=hand_rest, hand_tris=hand_tris, hand_side=hand_side,
                                cap_ids=cap_ids, cap_bones=cap_bones, cap_w=cap_w, entry=bool(o["entrada"]),
-                               hand_covered=np.flatnonzero(under) if o["mao_folga"] else None)
+                               hand_covered=np.flatnonzero(under) if o["mao_folga"] else None,
+                               hinges=np.concatenate(hinges) if hinges else None, hinge_K=np.concatenate(hinge_K) if hinges else None,
+                               hinge_compliance=np.concatenate(hinge_c) if hinges else None)
+    if shell:
+        print("thick shell:", json.dumps(shell), flush=True)
     all_rest = np.concatenate([nodes, cloth_x])
     all_bone = np.concatenate([m["node_bone"], cloth_bone])
     solver.drive(m["driven"], nodes[m["driven"]], all_rest=all_rest, bone=m["drive_bone"], all_bone=all_bone, n_bones=T.shape[1])
@@ -264,7 +301,7 @@ def main(tissue_npz, bones_npz, cloth_npz, params_json, out_dir, opts):
         for name in pieces:
             a, b, ne = spans[name]
             d = cd[a:b]
-            e0 = int(sum(len(p) for p in pairs[: 2 * pieces.index(name)]))
+            e0 = edge_start[name]
             pe = pr_all[e0: e0 + ne]
             stretch = np.linalg.norm(cx[pe[:, 0]] - cx[pe[:, 1]], axis=1) / (rest_all[e0: e0 + ne] / (1 - P["pecas"][name]["encolhimento"]))
             row[name] = {"dentro_da_pele": int((d < 0).sum()), "mais_fundo_mm": round(float(max(0.0, -d.min())) * 1000, 1),
@@ -310,7 +347,7 @@ def main(tissue_npz, bones_npz, cloth_npz, params_json, out_dir, opts):
     write_pc2(out / "pele.pc2", skins, fps)
     for name in pieces:
         write_pc2(out / f"{name}.pc2", cloths[name], fps)
-    rep = {"setup_s": round(setup_s, 1), "substeps": o["substeps"], "ramp": o["ramp"], "hold": o["hold"], "dance_frames": len(skins), "fps": fps,
+    rep = {"setup_s": round(setup_s, 1), "opcoes": o, "casca_grossa": shell, "substeps": o["substeps"], "ramp": o["ramp"], "hold": o["hold"], "dance_frames": len(skins), "fps": fps,
            "pecas": pieces, "parametros": P, "ms_per_frame_median": round(float(np.median(times[2:]) * 1000), 1),
            "ms_per_frame_max": round(float(np.max(times[2:]) * 1000), 1), "frames": report_frames}
     (out / "relatorio.json").write_text(json.dumps(rep, indent=1, ensure_ascii=False), encoding="utf-8")

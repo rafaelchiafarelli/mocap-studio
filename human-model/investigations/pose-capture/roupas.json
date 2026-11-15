@@ -56,7 +56,8 @@
         "encolhimento": 0.02,
         "espessura_mm": 2.0,
         "atrito": 0.4,
-        "amortecimento_1_s": 1.0
+        "amortecimento_1_s": 1.0,
+        "flexao_B_gf_cm2_cm": 0.02
       },
       "jeans": {
         "gramatura_g_m2": 400,
@@ -68,8 +69,10 @@
         "amortecimento_1_s": 1.0,
         "encolhimento_cos": 0.06,
         "cos_mm": 40.0,
-        "_cos": "the waistband (within cos_mm of the waist opening) is tighter: it holds the jeans on the hips; with 2% everywhere they slid 23 mm down in 10 frames (teste_2)"
+        "_cos": "the waistband (within cos_mm of the waist opening) is tighter: it holds the jeans on the hips; with 2% everywhere they slid 23 mm down in 10 frames (teste_2)",
+        "flexao_B_gf_cm2_cm": 0.273
       }
-    }
+    },
+    "_flexao": "Thick shell (Rafael, 2026-11-15; tissue_cloth_sim.py flexao=isometrica): bending by Bergou 2006's isometric model with the fabric's measured bending rigidity B (Kawabata KES-FB2, gf cm2/cm; D = B x 9.80665e-5 N m). Knit cotton: 0.002 to 0.050 (US patent 5427156, its range for knit cotton fabric; 0.02 taken, the middle of its preferred 0.003-0.045). Denim: 0.273 (a finished denim of 354 g/m2, Thai Textile journal, li05.tci-thaijo.org article 1056). D = E t^3 / 12(1 - nu^2) with the fabric's tensile modulus would make the jersey ~50 times stiffer than measured: a fabric is yarns, not a solid sheet; the report gives the modulus a solid 2 mm sheet would need. flexao_N_m is used only with flexao=distancia (the way until tet_v10)."
   }
 }
