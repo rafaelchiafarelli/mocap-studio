@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parâmetros ajustáveis</title>
+<style>
+:root {
+  --bg: #fbfaf7; --ink: #1f2328; --muted: #5d6670; --line: #d9d5cc; --card: #ffffff; --hl: #d2452f; --hl-fill: rgba(210,69,47,.16);
+  --chip: #eeeae2; --chip-on: #1f2328; --chip-on-ink: #fbfaf7;
+  --tag-eye: #fff1d6; --tag-eye-ink: #7a4b00; --tag-model: #e3f0e5; --tag-model-ink: #24572e;
+  --tag-phys: #e4edf9; --tag-phys-ink: #1f4f86; --tag-meas: #efe7f8; --tag-meas-ink: #5b3591; --tag-rafa: #fde4e1; --tag-rafa-ink: #8a2a1c;
+  --mp: #1f6fb2; --fis: #a2522a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17191c; --ink: #e8e6e1; --muted: #a1a7ae; --line: #343840; --card: #1f2226; --hl: #ff7a62; --hl-fill: rgba(255,122,98,.2);
+    --chip: #2a2e34; --chip-on: #e8e6e1; --chip-on-ink: #17191c;
+    --tag-eye: #3d3020; --tag-eye-ink: #f2c77a; --tag-model: #1f3524; --tag-model-ink: #9fd8aa;
+    --tag-phys: #1d2d42; --tag-phys-ink: #9cc3f0; --tag-meas: #2e2440; --tag-meas-ink: #c9adf0; --tag-rafa: #43231e; --tag-rafa-ink: #f5b3a6;
+    --mp: #7db7ea; --fis: #e39a72;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17191c; --ink: #e8e6e1; --muted: #a1a7ae; --line: #343840; --card: #1f2226; --hl: #ff7a62; --hl-fill: rgba(255,122,98,.2);
+  --chip: #2a2e34; --chip-on: #e8e6e1; --chip-on-ink: #17191c;
+  --tag-eye: #3d3020; --tag-eye-ink: #f2c77a; --tag-model: #1f3524; --tag-model-ink: #9fd8aa;
+  --tag-phys: #1d2d42; --tag-phys-ink: #9cc3f0; --tag-meas: #2e2440; --tag-meas-ink: #c9adf0; --tag-rafa: #43231e; --tag-rafa-ink: #f5b3a6;
+  --mp: #7db7ea; --fis: #e39a72;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { max-width: 1280px; margin: 0 auto; padding: 24px 16px 4px; }
+h1 { font-size: 25px; margin: 0 0 6px; }
+.lead { color: var(--muted); margin: 0 0 10px; max-width: 900px; }
+.layout { max-width: 1280px; margin: 0 auto; padding: 8px 16px 60px; display: grid; grid-template-columns: 380px 1fr; gap: 22px; align-items: start; }
+@media (max-width: 860px) { .layout { grid-template-columns: 1fr; } .side { position: static !important; } }
+.side { position: sticky; top: 10px; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.bodywrap { background: #fff; border-radius: 8px; }
+svg { width: 100%; height: auto; display: block; }
+.hot { cursor: pointer; }
+.hot circle.dot { fill: #fff; stroke: #1f2328; stroke-width: 2; }
+.hot text { font: 600 17px system-ui, sans-serif; fill: #1f2328; paint-order: stroke; stroke: #fff; stroke-width: 4px; pointer-events: none; }
+.hot.on circle.dot, .hot.lit circle.dot { fill: #d2452f; stroke: #d2452f; }
+.hot.on text, .hot.lit text { fill: #b23520; }
+.extra { fill: #c9c4b8; stroke: #8f897b; stroke-width: 1.5; }
+.ring { fill: none; stroke: #d2452f; stroke-width: 3; opacity: 0; }
+.hot.lit .ring, .hot.on .ring { opacity: 1; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; }
+.chip { border: 0; border-radius: 999px; padding: 4px 11px; font: 13px system-ui, sans-serif; background: var(--chip); color: var(--ink); cursor: pointer; }
+.chip.on { background: var(--chip-on); color: var(--chip-on-ink); }
+.state { font-size: 13px; color: var(--muted); margin: 6px 2px 0; }
+.legend { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+.tag { display: inline-block; border-radius: 999px; padding: 0 8px; font-size: 11.5px; white-space: nowrap; margin: 1px 2px 1px 0; }
+.eye { background: var(--tag-eye); color: var(--tag-eye-ink); } .model { background: var(--tag-model); color: var(--tag-model-ink); }
+.phys { background: var(--tag-phys); color: var(--tag-phys-ink); } .meas { background: var(--tag-meas); color: var(--tag-meas-ink); }
+.rafa { background: var(--tag-rafa); color: var(--tag-rafa-ink); }
+h2 { font-size: 19px; margin: 20px 0 4px; display: flex; align-items: center; gap: 8px; }
+h2 .bar { width: 6px; height: 20px; border-radius: 3px; }
+h3 { font-size: 14px; margin: 18px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.p { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: 10px; padding: 10px 12px; margin: 8px 0; }
+.p.hide { display: none; }
+.p:hover { box-shadow: 0 0 0 2px var(--hl-fill); }
+.p .top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; }
+.p .name { font-weight: 650; }
+.p .key { font: 12.5px ui-monospace, Consolas, monospace; color: var(--muted); }
+.vals { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 13.5px; margin: 6px 0 2px; }
+.vals b { color: var(--muted); font-weight: 600; }
+.rng { font-variant-numeric: tabular-nums; }
+.eff { font-size: 13.5px; margin: 4px 0 0; }
+.foot { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+code { font-size: 12.5px; }
+.empty { color: var(--muted); font-size: 14px; padding: 8px 2px; }
+</style>
+</head>
+<body>
+<header>
+<h1>Parâmetros ajustáveis: da captura à física</h1>
+<p class="lead">Tudo o que se pode mudar no processo do <code>pose-capture</code>, das duas câmeras do MediaPipe até o tecido e a roupa, com o valor em uso e a faixa possível. Clique numa região do corpo para ver só o que age nela; passe o mouse num parâmetro para ver onde ele age. A faixa "possível" é onde o processo ainda funciona ou o que a física e a literatura dão; fora dela, ou explode, ou deixa de fazer sentido. A coluna "testado" aponta a variação do experimento 2 (<code>variacoes.json</code>) que muda aquele número.</p>
+</header>
+<div class="layout">
+  <aside class="side">
+    <div class="panel">
+      <div class="bodywrap">
+        <svg id="corpo" viewBox="-30 -80 476 740" role="img" aria-label="O corpo por região; clique numa região">
+          <image href="13_parametros_imagens/mapa_frente.png" x="0" y="0" width="416" height="601"/>
+          <ellipse class="extra" cx="208" cy="-38" rx="34" ry="42"/>
+          <rect class="extra" x="-12" y="208" width="34" height="40" rx="14" transform="rotate(-20 5 228)"/>
+          <rect class="extra" x="394" y="208" width="34" height="40" rx="14" transform="rotate(20 411 228)"/>
+          <ellipse class="extra" cx="142" cy="616" rx="28" ry="14"/>
+          <ellipse class="extra" cx="276" cy="616" rx="28" ry="14"/>
+          <g id="hots"></g>
+        </svg>
+      </div>
+      <div class="chips" id="regchips"></div>
+      <div class="chips" id="stagechips"></div>
+      <p class="state" id="state"></p>
+      <p class="legend">Cinza: cabeça, mãos e pés seguem o esqueleto (não são simulados). As cores são os grupos de tecido de <code>tissue_groups.json</code>.<br>
+        <span class="tag eye">a olho</span><span class="tag model">do modelo</span><span class="tag phys">física / literatura</span><span class="tag meas">medido aqui</span><span class="tag rafa">decisão do Rafael</span></p>
+    </div>
+  </aside>
+  <main id="lista"></main>
+</div>
+<script>
+const REG = {
+  todo: {n: "Corpo inteiro", x: null},
+  cabeca: {n: "Cabeça", x: 208, y: -38},
+  tronco: {n: "Tronco", x: 208, y: 95},
+  seios: {n: "Seios", x: 250, y: 150},
+  braco: {n: "Braço", x: 330, y: 110},
+  antebraco: {n: "Antebraço", x: 45, y: 185},
+  maos: {n: "Mãos", x: 411, y: 230, left: true},
+  barriga: {n: "Barriga", x: 208, y: 240},
+  quadril: {n: "Quadril", x: 208, y: 300},
+  bumbum: {n: "Bumbum", x: 128, y: 262},
+  coxa: {n: "Coxa", x: 290, y: 345},
+  joelho: {n: "Joelho", x: 160, y: 425},
+  perna: {n: "Perna", x: 270, y: 500},
+  pes: {n: "Pés", x: 142, y: 616},
+  roupa: {n: "Roupa", x: 92, y: 330}
+};
+const ALLSOFT = ["tronco","seios","braco","antebraco","barriga","bumbum","coxa","perna"];
+const T = {eye:'<span class="tag eye">a olho</span>', model:'<span class="tag model">do modelo</span>', phys:'<span class="tag phys">física / literatura</span>', meas:'<span class="tag meas">medido aqui</span>', rafa:'<span class="tag rafa">Rafael</span>'};
+// etapa: mp (MediaPipe e filtragem) ou fis (física); grupo: subtítulo
+const P = [
+// ---------------- MediaPipe e filtragem ----------------
+{e:"mp", g:"1. MediaPipe em cada vídeo", n:"Modelo do MediaPipe", k:"capture_pose.py COMPLEXITY", v:"1 ('full')", r:"0 (lite), 1 (full), 2 (heavy)", f:"O 'heavy' erra menos, mas é baixado na hora e a imagem não tem permissão de gravar: hoje só 0 ou 1. Mais pesado = mais lento.", o:"meas", reg:["todo"]},
+{e:"mp", g:"1. MediaPipe em cada vídeo", n:"Suavização do próprio MediaPipe", k:"capture_pose.py smooth_landmarks", v:"ligada", r:"ligada / desligada", f:"Filtro de tempo interno do MediaPipe, antes de qualquer coisa nossa. Desligado: mais detalhe e mais tremor; nosso filtro depois compensa.", o:"model", reg:["todo"]},
+{e:"mp", g:"2. Sincronia e trecho", n:"Defasagem entre câmeras", k:"two_cameras.sh --offset", v:"achada pela palma (0,126 s)", r:"medida; manual se a palma falhar", f:"Erro de um quadro já entorta a triangulação dos membros rápidos (mãos, pés).", o:"meas", reg:["todo"]},
+{e:"mp", g:"2. Sincronia e trecho", n:"Trecho usado", k:"--from / --to (s)", v:"31,46 a 42,85 s", r:"onde as duas câmeras veem o corpo (both_views.py)", f:"Fora disso uma das vistas perde o corpo e a reconstrução cai para uma câmera só.", o:"rafa", reg:["todo"]},
+{e:"mp", g:"3. Câmeras e escala", n:"Distância focal", k:"--focal-mm (equivalente 35 mm)", v:"26 mm, refinada", r:"13 a 77 mm (lentes de celular); --fixed-focal para não refinar", f:"Duas vistas só de pontos não dizem a focal; errada, a reconstrução cisalha (o chão inclinado de 9,9° veio provavelmente daqui).", o:"eye", reg:["todo","pes"]},
+{e:"mp", g:"3. Câmeras e escala", n:"Altura da pessoa capturada", k:"--height", v:"1,70 m", r:"a altura real da pessoa (1,40 a 2,00)", f:"Escala todo o caminho: quanto o quadril anda em metros. Os ângulos não mudam.", o:"rafa", reg:["todo","quadril"]},
+{e:"mp", g:"3. Câmeras e escala", n:"Escala pelas orelhas ou pelos ombros", k:"EAR_RATIO 0,93 / SHOULDER_RATIO 0,82, --scale-shoulders", v:"orelhas", r:"orelhas, ou ombros quando uma vista corta a cabeça", f:"Altura da orelha e do ombro sobre a estatura, de tabelas antropométricas.", o:"eye", reg:["cabeca","tronco"]},
+{e:"mp", g:"3. Câmeras e escala", n:"Visibilidade mínima para calibrar", k:"VIS_MIN", v:"0,6", r:"0,3 a 0,9", f:"Pontos com menos confiança que isso não entram no cálculo das câmeras. Mais alto: menos pontos, mais confiáveis.", o:"eye", reg:["todo"]},
+{e:"mp", g:"4. Esqueleto de ossos rígidos", n:"Tolerância da reprojeção", k:"FIT_REPROJ_SCALE (Huber)", v:"5 px", r:"2 a 10 px", f:"Até aqui, o erro do ponto conta inteiro; acima, conta menos (ponto errado puxa menos). Menor: ignora mais o MediaPipe quando ele erra.", o:"eye", reg:["todo"]},
+{e:"mp", g:"4. Esqueleto de ossos rígidos", n:"Peso dos ossos de comprimento fixo", k:"FIT_BONE_WEIGHT", v:"300 (1% de osso = 3 px)", r:"50 a 1.000", f:"Mais alto: braços e pernas não esticam nem encolhem, mesmo que a imagem peça. Mais baixo: os ossos variam (sem ele, 20 a 30%).", o:"eye", reg:["braco","antebraco","coxa","perna"]},
+{e:"mp", g:"4. Esqueleto de ossos rígidos", n:"Peso de ficar parado", k:"FIT_STILL_WEIGHT", v:"0,3", r:"0 a 1", f:"Puxa cada quadro para perto do anterior: tira tremor, mas amortece o movimento (o rebolado já ficou fraco por causa disto e da suavização).", o:"eye", reg:["todo","quadril"]},
+{e:"mp", g:"5. Chão e contatos dos pés", n:"Distância para contar como no chão", k:"foot_contacts.py --contact-mm", v:"40 mm", r:"20 a 60 mm", f:"Maior: o pé fica preso mais vezes (até pisando de leve). Menor: escorrega mais.", o:"eye", reg:["pes"]},
+{e:"mp", g:"5. Chão e contatos dos pés", n:"Velocidade máxima de um pé apoiado", k:"--speed", v:"0,3 m/s", r:"0,1 a 0,5 m/s", f:"Um ponto mais rápido que isso não está apoiado, mesmo perto do chão.", o:"eye", reg:["pes"]},
+{e:"mp", g:"5. Chão e contatos dos pés", n:"Contato mais curto aceito", k:"MIN_RUN", v:"3 quadros", r:"1 a 6", f:"Toques mais curtos são ignorados (ruído).", o:"eye", reg:["pes"]},
+{e:"mp", g:"6. Ganho do movimento", n:"Ganho por região", k:"amplify_capture.py --gain, --hips, --trunk, --head, --arms, --legs", v:"1 (neutro)", r:"0 a 3 (Rafael: acima de 3 a tomada se perde)", f:"Multiplica o movimento (não a pose). O caminho do quadril só cresce se as pernas alcançarem os pés presos; nesta tomada elas estão quase esticadas, e o ganho do caminho volta a 1.", o:"rafa", reg:["todo","quadril","tronco","braco","coxa"]},
+{e:"mp", g:"6. Ganho do movimento", n:"Frequência da base", k:"--base-hz", v:"0,3 Hz", r:"0,1 a 0,5 Hz", f:"Abaixo disso é pose e deslocamento: não é amplificado.", o:"eye", reg:["todo"]},
+{e:"mp", g:"6. Ganho do movimento", n:"Frequência do tremor e ganho do tremor", k:"--noise-hz, --noise", v:"6 Hz, 1", r:"3 a 10 Hz; 0 a 3", f:"Acima da frequência é tremor do MediaPipe. --noise 0 tira o tremor (só o que passa de 6 Hz, uns 55% dele).", o:"eye", reg:["todo"]},
+{e:"mp", g:"7. Retarget no corpo", n:"Suavização da captura", k:"drive_capture.py SIGMA", v:"2 quadros", r:"0 a 6 quadros", f:"Gaussiana no tempo antes de pôr no corpo. Mais: menos tremor, movimento mais macio e mais lento nos picos.", o:"eye", reg:["todo"], t:"mov_suave_1q, mov_suave_4q"},
+{e:"mp", g:"7. Retarget no corpo", n:"Cabeça segue o peito", k:"--no-head", v:"ligado", r:"ligado / desligado", f:"A câmera B corta a cabeça; com a cabeça capturada ela vira para onde não deve.", o:"rafa", reg:["cabeca"]},
+{e:"mp", g:"7. Retarget no corpo", n:"Abertura para torcer joelho e cotovelo", k:"HINGE_FADE_DEG", v:"10° a 30°", r:"5° a 40°", f:"Membro quase reto não tem plano de dobra: a torção entra aos poucos entre esses ângulos.", o:"eye", reg:["joelho","antebraco"]},
+{e:"mp", g:"8. Pés presos", n:"Pés presos no chão", k:"--no-pin", v:"presos", r:"presos / soltos", f:"Presos: o pé fica onde pousou e a perna alcança por IK. Soltos: o pé segue a captura e escorrega.", o:"rafa", reg:["pes","joelho","quadril"], t:"mov_pes_soltos"},
+{e:"mp", g:"8. Pés presos", n:"Quanto a perna presa estica", k:"REACH", v:"0,98 do comprimento", r:"0,95 a 0,995", f:"Joelho travado estala quando o quadril anda; mais perto de 1 deixa a perna mais reta.", o:"eye", reg:["joelho","pes"]},
+{e:"mp", g:"8. Pés presos", n:"Quanto o quadril pode descer", k:"MAX_DROP_M", v:"0,25 m", r:"0 a 0,30 m", f:"Se o pé preso estiver longe, o quadril desce (joelhos dobram) até isso; além, o pé escorrega e é contado. Com ganho no quadril, é o que deixaria o quadril andar mais.", o:"eye", reg:["quadril","joelho"]},
+{e:"mp", g:"9. Mãos (pêndulos)", n:"Mãos pêndulo ou capturadas", k:"hand_pendulum.py", v:"pêndulo", r:"pêndulo / como o MediaPipe viu", f:"Pêndulo: punho e dedos com peso, mola e limites anatômicos. Capturadas: a mão do MediaPipe, que erra muito nos dedos.", o:"rafa", reg:["maos"], t:"mov_maos_capturadas"},
+{e:"mp", g:"9. Mãos (pêndulos)", n:"Frequência e amortecimento do punho", k:"maos.json punho.frequencia_hz, amortecimento", v:"3 Hz, 0,7", r:"1 a 8 Hz; 0,3 a 1", f:"Mola para a mão capturada. Mais alto: segue a captura de perto. Mais baixo: a mão balança solta com o peso.", o:"eye", reg:["maos"], t:"mov_punho_2hz, mov_punho_5hz"},
+{e:"mp", g:"9. Mãos (pêndulos)", n:"Frequência e amortecimento dos dedos", k:"maos.json dedos.frequencia_hz, amortecimento", v:"6 Hz, 0,4", r:"3 a 12 Hz; 0,2 a 1", f:"Quanto os dedos balançam ao parar a mão.", o:"eye", reg:["maos"]},
+{e:"mp", g:"9. Mãos (pêndulos)", n:"Limites das articulações", k:"maos.json limites", v:"punho 75/70/20/30°, MCP 80, PIP 90, DIP 65, antebraço ±80", r:"os da literatura (a menor faixa onde discordam)", f:"A mão nunca passa disso. Antebraço ±80° ainda não conferido numa fonte.", o:"phys", reg:["maos","antebraco"]},
+// ---------------- Física ----------------
+{e:"fis", g:"Tecido por região (tissue_groups.json, um bloco por região)", n:"Elasticidade da gordura", k:"<região>.fat_young (Pa)", v:"4.000 (seios 2.000)", r:"1.000 a 10.000; abaixo de ~1.000 escorre", f:"Mais mole: cai mais e balança devagar e longe.", o:"phys", reg:ALLSOFT, t:"tec_gordura_mole, tec_gordura_firme"},
+{e:"fis", g:"Tecido por região (tissue_groups.json, um bloco por região)", n:"Elasticidade do músculo", k:"<região>.muscle_young (Pa)", v:"15.000", r:"10.000 a 50.000 (relaxado)", f:"Mais firme: só a gordura balança. Mais mole: a região inteira balança junto.", o:"phys", reg:ALLSOFT},
+{e:"fis", g:"Tecido por região (tissue_groups.json, um bloco por região)", n:"Elasticidade da pele", k:"<região>.skin_young (Pa)", v:"100.000", r:"50.000 a 300.000; sem pele a coxa estrangulou", f:"A primeira camada de 3 mm, que segura a gordura. Mais firme: menos queda, mais vinco nas dobras.", o:"meas", reg:ALLSOFT, t:"tec_pele_50kpa, tec_pele_300kpa"},
+{e:"fis", g:"Tecido por região (tissue_groups.json, um bloco por região)", n:"Densidade da gordura e do músculo", k:"<região>.fat_density, muscle_density (kg/m³)", v:"750 e 900 (seios 900)", r:"gordura 750 a 950 (real ~900); músculo 900 a 1.060 (real ~1.060)", f:"Mais pesado: cai mais e atrasa mais em relação ao osso. É a inércia de cada nó (massa = densidade × volume ÷ 4).", o:"phys", reg:ALLSOFT, t:"tec_densidade_real"},
+{e:"fis", g:"Tecido por região (tissue_groups.json, um bloco por região)", n:"Volume (Poisson)", k:"<região>.poisson", v:"0,45", r:"0,40 a 0,49 (real ~0,49); 0,5 trava", f:"Perto de 0,5, apertado, estufa para os lados em vez de afundar.", o:"phys", reg:ALLSOFT, t:"tec_volume_049"},
+{e:"fis", g:"Tecido por região (tissue_groups.json, um bloco por região)", n:"Amortecimento", k:"<região>.damping (1/s)", v:"20 (seios 10)", r:"5 a 60", f:"Quanto do balanço morre por segundo, em relação ao osso. Baixo: balança várias vezes. Alto: um tranco e para.", o:"eye", reg:ALLSOFT, t:"tec_amortecimento_10, tec_amortecimento_40"},
+{e:"fis", g:"Tecido por região (tissue_groups.json, um bloco por região)", n:"Densidade neutra", k:"densidade_neutra", v:"desligada", r:"desligada, ou um valor para todo o tecido mole", f:"Ignora as densidades por região (para comparar).", o:"rafa", reg:ALLSOFT},
+{e:"fis", g:"Anatomia reduzida", n:"Gordura por zona", k:"data/body_fat_female.json", v:"8 a 30 mm por zona", r:"a do corpo (2 a 50 mm)", f:"Até onde vai a gordura antes do músculo. Mais gordura = mais balanço naquela zona.", o:"eye", reg:ALLSOFT},
+{e:"fis", g:"Anatomia reduzida", n:"Cápsulas rígidas dos ossos", k:"anatomy.bone_radius_m", v:"braço 11, antebraço 9, coxa 14, perna 12, coluna 20, ombro 20 mm", r:"o osso real, ± metade", f:"A parte que segue o osso sem ceder. Maior: o membro fica mais firme.", o:"eye", reg:["braco","antebraco","coxa","perna","tronco"]},
+{e:"fis", g:"Anatomia reduzida", n:"Peitoral e parede do abdome", k:"anatomy.pectoral_m, abdominal_wall_m", v:"15 mm, 15 mm", r:"5 a 30 mm", f:"Músculo entre a gordura e a caixa torácica / a cavidade.", o:"eye", reg:["tronco","seios","barriga"]},
+{e:"fis", g:"Anatomia reduzida", n:"Pelve rígida", k:"anatomy.pelvis_below_hip_m, pelvis_tissue_m", v:"50 mm, 25 mm", r:"20 a 80 mm; 10 a 40 mm", f:"Bloco rígido do quadril e quanto tecido mole fica por cima.", o:"eye", reg:["bumbum","quadril"]},
+{e:"fis", g:"Anatomia reduzida", n:"Nós presos junto ao corte", k:"anatomy.cap_drive_m", v:"12 mm", r:"6 a 25 mm", f:"Perto do punho, tornozelo e pescoço, os nós seguem o osso. Maior: emenda mais firme, menos tecido livre ali.", o:"eye", reg:["antebraco","perna","tronco","maos","pes"], t:"cm_tampas_20mm"},
+{e:"fis", g:"Malha e passo", n:"Tamanho dos tetraedros", k:"mesh.bands_mm, skin_mm", v:"3×3, 3×6, 3×9 mm, depois 12; pele 3 mm", r:"pele 2 a 5 mm; o custo cresce ~10× ao passar de 6 para 3 mm", f:"Fino na pele: dobras e ondas aparecem; mais fino custa muito mais.", o:"rafa", reg:["todo"]},
+{e:"fis", g:"Malha e passo", n:"Passos por quadro", k:"tissue_cloth_sim.py substeps=", v:"160", r:"80 a 640 (160, 320 e 640 deram o mesmo no tecido)", f:"Poucos: tecido e pano mais moles que o pedido. Muitos: mais lento.", o:"meas", reg:["todo"], t:"cm_passos_80, cm_passos_320"},
+{e:"fis", g:"Malha e passo", n:"Rampa e assentamento", k:"ramp=, hold=", v:"30 e 15 quadros", r:"15 a 90; 0 a 60", f:"A malha nasce na pose A: a rampa baixa os braços, o assentamento deixa o tecido cair com o peso antes da dança.", o:"eye", reg:["todo","braco"], t:"cm_rampa_60"},
+{e:"fis", g:"Malha e passo", n:"Cola entre as camadas", k:"GLUE_COMPLIANCE", v:"1e-8 m/N", r:"1e-9 a 1e-7; zero explode", f:"Folga mínima entre camadas de tetraedros de tamanhos diferentes.", o:"meas", reg:["todo"]},
+{e:"fis", g:"Contato", n:"Quanto a pele cede", k:"tissue_sim.py cede_mm= (sem roupa)", v:"5 mm", r:"5 a 30 mm", f:"Contato entre partes: até isso a pele se amassa; além, a sobra fica visível e é contada como erro do esqueleto.", o:"rafa", reg:["braco","tronco","coxa","bumbum"]},
+{e:"fis", g:"Contato", n:"Distância entre peles de partes diferentes", k:"roupas.json pele_pele_mm (com roupa)", v:"1 mm", r:"0 a 5 mm", f:"Maior: braço e tronco ficam mais afastados, mais empurrão no tecido.", o:"eye", reg:["braco","tronco","coxa"], t:"cm_pele_pele_3mm"},
+{e:"fis", g:"Contato", n:"Vizinhos que não são contato", k:"pele_pele_longe_em_repouso_mm", v:"30 mm", r:"15 a 60 mm", f:"Pontos que já estavam perto em repouso (axila, virilha) não se empurram.", o:"eye", reg:["braco","tronco","coxa"]},
+{e:"fis", g:"Contato", n:"Folga para o pano entre duas peles e sob a mão", k:"pele_folga=, mao_folga=", v:"ligadas", r:"ligadas / desligadas", f:"Onde havia pano em repouso, as peles (e a mão) deixam a espessura dele dos dois lados. Sem isso a barra rasgava entre antebraço e barriga.", o:"meas", reg:["antebraco","barriga","maos","roupa"], t:"cm_sem_folga_pele"},
+{e:"fis", g:"Contato", n:"Pano sai por onde entrou", k:"entrada=", v:"ligado (até 2 cm)", r:"ligado / desligado", f:"Sem isso a blusa virava pulseira no punho (96 quadros no braço esquerdo).", o:"meas", reg:["antebraco","maos","roupa"]},
+{e:"fis", g:"Roupa (roupas.json, por peça)", n:"Gramatura (massa do pano)", k:"pecas.<peça>.gramatura_g_m2", v:"160 (malha), 400 (brim)", r:"100 a 500 g/m²", f:"Mais pesado: cai mais, atrasa e puxa a pele.", o:"phys", reg:["roupa"]},
+{e:"fis", g:"Roupa (roupas.json, por peça)", n:"Tração", k:"pecas.<peça>.tracao_N_m", v:"300, 3.000 N/m", r:"malha 100 a 1.000; brim 1.000 a 10.000", f:"Mais alto: estica menos e empurra mais a pele.", o:"eye", reg:["roupa"], t:"roupa_tracao_baixa, roupa_tracao_alta"},
+{e:"fis", g:"Roupa (roupas.json, por peça)", n:"Flexão (casca grossa)", k:"pecas.<peça>.flexao_B_gf_cm2_cm", v:"0,02 (malha), 0,273 (brim)", r:"malha 0,002 a 0,05 (medido); brim ~0,1 a 0,7", f:"Quanto resiste a dobrar. Mais alto: dobras largas. Mais baixo: amarrota.", o:"phys", reg:["roupa"], t:"roupa_flexao_baixa, roupa_flexao_alta"},
+{e:"fis", g:"Roupa (roupas.json, por peça)", n:"Espessura", k:"pecas.<peça>.espessura_mm", v:"2 mm", r:"0,5 a 4 mm", f:"Distância do pano à pele, a folga entre peles e o que se mostra (Solidify).", o:"rafa", reg:["roupa"], t:"roupa_1mm, roupa_3mm"},
+{e:"fis", g:"Roupa (roupas.json, por peça)", n:"Atrito com a pele", k:"pecas.<peça>.atrito", v:"0,4, 0,6", r:"0,1 a 1,2", f:"Baixo: o pano escorrega (sobe menos preso no braço). Alto: segue a pele.", o:"eye", reg:["roupa"], t:"roupa_atrito_baixo, roupa_atrito_alto"},
+{e:"fis", g:"Roupa (roupas.json, por peça)", n:"Aperto", k:"pecas.<peça>.encolhimento, encolhimento_cos, cos_mm", v:"2%; cós 6% em 40 mm", r:"0 a 8%", f:"Sem aperto o jeans escorregou 23 mm em 10 quadros.", o:"meas", reg:["roupa","quadril"], t:"roupa_sem_encolher"},
+{e:"fis", g:"Roupa (roupas.json, por peça)", n:"Amortecimento do pano", k:"pecas.<peça>.amortecimento_1_s", v:"1/s", r:"0,2 a 10", f:"Quanto o balanço do pano morre por segundo.", o:"eye", reg:["roupa"]},
+{e:"fis", g:"Roupa (roupas.json, por peça)", n:"Pano com pano", k:"pano_pano=, pano_pano_longe_em_repouso_mm", v:"desligado; 25 mm", r:"ligado / desligado", f:"A espessura também entre as peças e a própria peça. Ligado, até agora piorou (espeto no jeans).", o:"meas", reg:["roupa"], t:"roupa_pano_pano"}
+];
+let region = null, stage = null;
+const hots = document.getElementById("hots");
+for (const [id, r] of Object.entries(REG)) {
+  if (r.x === null) continue;
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  g.setAttribute("class", "hot"); g.dataset.r = id;
+  g.innerHTML = `<circle class="ring" cx="${r.x}" cy="${r.y}" r="17"/><circle class="dot" cx="${r.x}" cy="${r.y}" r="8"/><text x="${r.left ? r.x - 13 : r.x + 13}" y="${r.y + 5}" text-anchor="${r.left ? "end" : "start"}">${r.n}</text>`;
+  g.addEventListener("click", () => pick(region === id ? null : id));
+  hots.appendChild(g);
+}
+const rc = document.getElementById("regchips");
+for (const [id, r] of Object.entries(REG)) {
+  const b = document.createElement("button"); b.className = "chip"; b.textContent = r.n; b.dataset.r = id;
+  b.addEventListener("click", () => pick(region === id ? null : id)); rc.appendChild(b);
+}
+const sc = document.getElementById("stagechips");
+for (const [id, n] of [["mp", "MediaPipe e filtragem"], ["fis", "Física"]]) {
+  const b = document.createElement("button"); b.className = "chip"; b.textContent = n; b.dataset.s = id;
+  b.addEventListener("click", () => { stage = stage === id ? null : id; render(); }); sc.appendChild(b);
+}
+function pick(id) { region = id; render(); }
+function render() {
+  document.querySelectorAll(".hot").forEach(h => h.classList.toggle("on", h.dataset.r === region));
+  rc.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c.dataset.r === region));
+  sc.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c.dataset.s === stage));
+  const main = document.getElementById("lista");
+  main.innerHTML = "";
+  let shown = 0;
+  for (const [e, title, color] of [["mp", "MediaPipe e filtragem", "var(--mp)"], ["fis", "Física", "var(--fis)"]]) {
+    if (stage && stage !== e) continue;
+    const items = P.filter(p => p.e === e && (!region || p.reg.includes(region) || (region !== "todo" && p.reg.includes("todo") && region !== "roupa")));
+    if (!items.length) continue;
+    const h = document.createElement("h2"); h.innerHTML = `<span class="bar" style="background:${color}"></span>${title}`; main.appendChild(h);
+    let last = null;
+    for (const p of items) {
+      if (p.g !== last) { const h3 = document.createElement("h3"); h3.textContent = p.g; main.appendChild(h3); last = p.g; }
+      const d = document.createElement("div"); d.className = "p"; d.style.setProperty("--c", color);
+      d.innerHTML = `<div class="top"><span class="name">${p.n}</span><span class="key">${p.k}</span></div>
+        <div class="vals"><b>atual</b><span>${p.v}</span><b>possível</b><span class="rng">${p.r}</span></div>
+        <p class="eff">${p.f}</p>
+        <div class="foot">${T[p.o]} age em: ${p.reg.map(r => REG[r].n.toLowerCase()).join(", ")}${p.t ? ` · testado: <code>${p.t}</code>` : ""}</div>`;
+      d.addEventListener("mouseenter", () => document.querySelectorAll(".hot").forEach(hh => hh.classList.toggle("lit", p.reg.includes(hh.dataset.r))));
+      d.addEventListener("mouseleave", () => document.querySelectorAll(".hot").forEach(hh => hh.classList.remove("lit")));
+      main.appendChild(d); shown++;
+    }
+  }
+  if (!shown) main.innerHTML = '<p class="empty">Nenhum parâmetro age só nessa região com o filtro escolhido.</p>';
+  document.getElementById("state").textContent = (region ? `Região: ${REG[region].n}` : "Todas as regiões") + " · " + shown + " parâmetros" + (region && region !== "todo" ? " (inclui os que agem no corpo inteiro)" : "");
+}
+render();
+</script>
+</body>
+</html>
