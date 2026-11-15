@@ -12,6 +12,9 @@
     "quadros": "opcional: só os primeiros N quadros da dança (mais rápido)"
   },
   "variacoes": [
+    {"nome": "corpo_2nd_female", "area": "corpo", "o_que": "experimento 1: corpo novo do Rafael (MPFB, feminino), o processo inteiro com a dança, sem nenhum ajuste", "corpo": "G:\\mocap-studio-downloads\\review\\2026-11-15\\corpo_novo\\2nd_test_female.blend"},
+    {"nome": "corpo_2nd_male", "area": "corpo", "o_que": "experimento 1: corpo novo do Rafael (MPFB, masculino), o processo inteiro com a dança, sem nenhum ajuste (a roupa é a feminina)", "corpo": "G:\\mocap-studio-downloads\\review\\2026-11-15\\corpo_novo\\2nd_test_male.blend"},
+
     {"nome": "base_v11i", "area": "base", "o_que": "a base, refeita pelo executor, para comparar com as outras nas mesmas condições"},
 
     {"nome": "mov_suave_1q", "area": "movimento", "o_que": "captura menos suavizada (1 quadro): mais detalhe do movimento, mais tremor", "movimento": {"suavizacao_quadros": 1}},
