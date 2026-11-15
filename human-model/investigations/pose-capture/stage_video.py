@@ -1,10 +1,11 @@
 """A plain stage for judging motion: a floor in 0.5 m squares and a gridded wall behind the body, a fixed camera, frames
 for a video. Rafael (2026-11-14): the body needs a background as a reference for its motion.
 
-    python3 human-model/blender_run.py --blend IN.blend human-model/investigations/pose-capture/stage_video.py FRAMES_DIR [OUT.blend] [--view frente|lado|costas]
+    python3 human-model/blender_run.py --blend IN.blend human-model/investigations/pose-capture/stage_video.py FRAMES_DIR [OUT.blend] [--view frente|lado|costas] [--no-frames]
 
 The camera stands 3.6 m from where the hips are on average, at their mean height, and doesn't move, so travel, sway and
-bounce show against the grid. Workbench, as blender/simple_video.py. OUT.blend, if given, keeps the stage for Blender.
+bounce show against the grid. Workbench, as blender/simple_video.py. OUT.blend, if given, keeps the stage for Blender;
+--no-frames saves it without rendering (FRAMES_DIR is then ignored).
 Lines every 0.5 m, a darker one every metre; the wall stands 1.5 m behind the hips' mean position.
 """
 import os, sys
@@ -15,6 +16,8 @@ import hmblender as hb
 
 argv = sys.argv[sys.argv.index("--") + 1:]
 view = "frente"
+NO_FRAMES = "--no-frames" in argv
+argv = [a for a in argv if a != "--no-frames"]
 if "--view" in argv:
     i = argv.index("--view")
     view = argv[i + 1]
@@ -83,6 +86,9 @@ cam = hb.camera_look("HM_stage_cam", tuple(target + look * 3.6), tuple(target), 
 scene.camera = cam
 if out_blend:
     bpy.ops.wm.save_as_mainfile(filepath=out_blend, compress=True)
+if NO_FRAMES:
+    print("hips travel (m)", np.round(hips.max(0) - hips.min(0), 3).tolist())
+    sys.exit(0)
 os.makedirs(frames_dir, exist_ok=True)
 for f in range(scene.frame_start, scene.frame_end + 1):
     scene.frame_set(f)
