@@ -141,3 +141,15 @@ ROUPAS=$R/tet_v11_roupa/roupas_v11i.json $R/_scripts/monta_tet_v11.sh $R/tet_v11
 - **Blender's Solidify with Even Thickness** shoots needles at sharp folds.
 - **The seam measure** must use HM_body subdivided as the shown skin was built (`sub_ids` index into it), and `matrix_world` applied.
 - **Bergou's cotangent weights** assume the hinge's two triangles are not flipped. A test mesh with too much noise flipped some and broke the flat-is-zero check.
+
+## Experiments (2026-11-15, evening)
+
+Runner `investigations/pose-capture/experimentos.py`, catalogue `variacoes.json`, outputs and `resumo.txt` in `G:\mocap-studio-downloads\review\2026-11-15\experimentos\` (one `.blend` + `.bat` per variation). Run-to-run noise on the same settings: ~1 point of top stretch, ~500 inverted tetrahedra (GPU atomics).
+
+- **Experiment 1, Rafael's new bodies** (`2nd_test_female` 1.87 m, `2nd_test_male` 1.90 m): the whole chain runs with no code change. The female's top blows up (NaN) at frame ~90: arms retargeted by direction go ~5 cm into her chest after the ramp (833 skin points against 0 on the base). The male completes, but the casual suit is too short for his belly (tears, rides up), right-forearm snag in 213 frames, 4x the inverted tetrahedra. Break points: retarget ignores the body's width; MPFB clothes don't fit far bodies; no divergence guard in the sim. Fixes proposed, waiting for Rafael.
+- **Experiment 2, 31 variations against the base** (top stretch p95 8.1%, snags 0/10, 5,400 inverted):
+  - better: `mov_suave_4q` (5.0%, no snags, 4,200), `roupa_1mm` (4.9%, 4,200), `tec_gordura_firme` and `tec_volume_049` (fewer inverted: 3,700 and 2,800);
+  - worse: `mov_suave_1q` (snags 26/45), `cm_sem_folga_pele` (43 right), `tec_gordura_mole` (2x inverted), `tec_pele_50kpa` (11%, max 470%), `tec_pele_300kpa` (2x inverted), `cm_passos_80` (3x inverted), `roupa_3mm` (13.7%), `roupa_pano_pano` (9.3%);
+  - within noise: hands, wrist frequency, loose feet, ramp 60, caps 20 mm, skin gap 3 mm, damping, real density, cloth bending, traction, friction.
+  - **`cm_passos_320` blew up** (937,000 inverted, 6.7 s per frame): twice the substeps should be steadier. Likely a solver defect (something that scales with h); not investigated.
+- Next obvious run: `mov_suave_4q` + `roupa_1mm` together.
