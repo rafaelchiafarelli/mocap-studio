@@ -114,7 +114,7 @@ def stage_body(v):
     out = {"rig": f / "corpo_com_rig.blend", "rest": f / "corpo_repouso.npz", "dressed": f / "vestida_repouso.blend",
            "cloth": f / "roupa_repouso.npz"}
     if not done(f):
-        f.mkdir(parents=True, exist_ok=True)
+        (f / "verificacao_rig").mkdir(parents=True, exist_ok=True)  # rig_body.py writes its stills and report there
         blender(src, "rig_body.py", out["rig"], f / "verificacao_rig", log=log, etapa="corpo: rig (rig_body.py)")
         blender(out["rig"], "tissue_export.py", out["rest"], log=log, etapa="corpo: exportar repouso (tissue_export.py)")
         blender(out["rig"], "dress_rest.py", CLOTHES, out["dressed"], out["cloth"], 3, HERE / "roupas.json", log=log,
