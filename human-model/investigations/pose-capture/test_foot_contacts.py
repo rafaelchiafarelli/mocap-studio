@@ -41,7 +41,7 @@ def test_floor_found_and_levelled():
     v = fc.speeds(P, FPS)
     (a, b), resid, _ = fc.fit_floor(P, v, 0.3)
     assert abs(a - 0.03) < 0.01 and abs(b + 0.17) < 0.01, (a, b)
-    L = P @ fc.level_rotation(a, b).T
+    L = fc.level_shear(P, a, b)
     (a2, b2), _, _ = fc.fit_floor(L, fc.speeds(L, FPS), 0.3)
     assert abs(a2) < 0.005 and abs(b2) < 0.005, (a2, b2)
     assert resid < 0.01, resid
@@ -58,11 +58,13 @@ def test_contacts_follow_the_planted_foot():
     assert not C[205:235, 0].any()  # held in the air: still, but not on the floor
 
 
-def test_rotation_is_proper():
-    R = fc.level_rotation(0.2, -0.1)
-    assert np.allclose(R @ R.T, np.eye(3)) and np.isclose(np.linalg.det(R), 1)
-    n = np.array([-0.2, 0.1, 1.0]); n /= np.linalg.norm(n)
-    assert np.allclose(R @ n, [0, 0, 1])
+def test_shear_keeps_verticals():
+    """A vertical line (a standing body's axis) stays vertical; only heights change with position."""
+    P = np.zeros((1, 33, 3))
+    P[0, :, 0], P[0, :, 1], P[0, :, 2] = 0.3, -0.2, np.linspace(0, 1.7, 33)
+    L = fc.level_shear(P, 0.03, -0.17)
+    assert np.allclose(L[..., :2], P[..., :2])
+    assert np.allclose(np.diff(L[0, :, 2]), np.diff(P[0, :, 2]))
 
 
 if __name__ == "__main__":

@@ -7,19 +7,21 @@ IN.npz is two_cameras.py's (it needs points_m); its two_cameras.json, next to it
 is a VLC snapshot (.png) of either video, found by comparing it with every frame (--videos needed), or a time in seconds of
 video A. The marked foot must be flat on the floor and still at that moment; its shoe can be anything.
 
-1. Level the floor. two_cameras.py takes "up" as the body's median ankles-to-shoulders direction, so a body leaning through the
-   stretch tilts the floor. Here every frame where a heel, toe or ankle point is still is taken as standing on the floor, a
-   plane is fitted through them (one height per point, since a heel sits higher than a toe in a shoe, and points that sit
-   far above the plane dropped as feet held still in the air), and the whole capture is turned so the plane is level.
-   Every capture measures its own floor (Rafael: each take has other conditions); the plane assumes the cameras stayed
-   still and the floor is flat through the take, and the report warns when the points don't fit one plane.
+1. Level the floor. The floor of a capture is always level (Rafael, 2026-11-14), yet a two-camera reconstruction can put
+   the feet higher or lower with depth while the body stands upright. Every frame where a heel, toe or ankle point is still
+   is taken as standing on the floor, a plane is fitted through them (one height per point, since a heel sits higher than a
+   toe in a shoe, and points that sit far above the plane dropped as feet held still in the air), and that ramp is taken
+   out of every point's height (a shear: vertical lines stay vertical). Turning the capture instead levelled the floor but
+   leaned the body forward by the same 9.8 degrees on the 2026-11-14 take. The ramp differs per take (Rafael: each take has
+   other conditions); the report warns when the still points don't fit one plane (a camera moved during the take).
 2. Floor heights from the mark. Around the marked frame (+-0.1 s), each point of the marked foot gives the height it has when
    standing; the other foot takes the same, as it wears the same shoe. The marked foot's lowest point is put at z = 0.
 3. Contacts. A point is on the floor in a frame when it is within --contact-mm of its standing height and slower than --speed
    m/s; runs shorter than 3 frames are dropped.
 
 OUT.npz has IN.npz's keys with points_m levelled and world recomputed from it, plus contact (T, 2, 3) bool [left, right] x
-[ankle, heel, toe], floor_heights_m (2, 3), floor_rotation (3, 3) and floor_shift_m (3). OUT.json reports the tilt found, the
+[ankle, heel, toe], floor_heights_m (2, 3), floor_ramp (a, b: mm of height per mm of x and y, taken out) and floor_shift_m (3). OUT.json
+reports the ramp found, the
 mark (where it was found, how still the foot was, how far it sits from the fitted plane) and contacts per point; OUT.png
 plots each point's height with its contacts, before and after levelling.
 """
@@ -81,17 +83,11 @@ def fit_floor(P, v, speed):
     return coef[:2], float(np.std(res)), len(z)
 
 
-def level_rotation(a, b):
-    """Rotation turning the plane z = a x + b y + c level: its normal onto +z, by the shortest turn."""
-    n = np.array([-a, -b, 1.0])
-    n /= np.linalg.norm(n)
-    axis = np.cross(n, [0, 0, 1.0])
-    s, c = np.linalg.norm(axis), n[2]
-    if s < 1e-12:
-        return np.eye(3)
-    k = axis / s
-    K = np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]])
-    return np.eye(3) + s * K + (1 - c) * K @ K
+def level_shear(P, a, b):
+    """Takes the ramp z = a x + b y out of every point's height; x and y, and vertical lines, stay as they are."""
+    L = P.copy()
+    L[..., 2] -= a * P[..., 0] + b * P[..., 1]
+    return L
 
 
 def find_snapshot(png, videos):
@@ -227,14 +223,13 @@ def main():
     # 1. level
     v = speeds(P, fps)
     (a, b), resid, n = fit_floor(P, v, opts["--speed"])
-    R = level_rotation(a, b)
-    L = P @ R.T
+    L = level_shear(P, a, b)
     report["floor_fit"] = {"slope_mm_per_m_x": 1000 * a, "slope_mm_per_m_y": 1000 * b,
-                           "tilt_deg": float(np.degrees(np.arctan(np.hypot(a, b)))), "residual_mm_std": 1000 * resid,
+                           "ramp_deg": float(np.degrees(np.arctan(np.hypot(a, b)))), "residual_mm_std": 1000 * resid,
                            "samples": n}
     if 1000 * resid > PLANE_WARN_MM:
         report["floor_fit"]["warning"] = (f"still foot points sit {1000 * resid:.0f} mm (std) from one plane: did a camera move "
-                                          "during the take, or is the floor uneven?")
+                                          "during the take, or the reconstruction bends the floor?")
         print("WARNING:", report["floor_fit"]["warning"])
 
     # 2. heights from the mark
@@ -266,7 +261,7 @@ def main():
     world = Lout - (Lout[:, 23:24] + Lout[:, 24:25]) / 2
     data["points_m"] = Lout
     data["world"] = np.stack([world[..., 0], -world[..., 2], world[..., 1]], -1)  # as two_cameras.py writes it
-    data.update(contact=C, floor_heights_m=heights, floor_rotation=R, floor_shift_m=shift)
+    data.update(contact=C, floor_heights_m=heights, floor_ramp=np.array([a, b]), floor_shift_m=shift)
     np.savez_compressed(out, **data)
     base = os.path.splitext(out)[0]
     json.dump(report, open(base + ".json", "w"), indent=1)
