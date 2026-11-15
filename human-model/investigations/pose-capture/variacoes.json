@@ -49,6 +49,7 @@
     {"nome": "roupa_sem_encolher", "area": "roupa", "o_que": "sem o aperto de 2% (o cós continua): roupa mais solta", "roupa": {"pecas.*.encolhimento": 0.0}},
     {"nome": "roupa_1mm", "area": "roupa", "o_que": "pano de 1 mm: mais justo à pele, menos folga entre peles", "roupa": {"pecas.*.espessura_mm": 1.0}},
     {"nome": "roupa_3mm", "area": "roupa", "o_que": "pano de 3 mm: mais longe da pele, mais folga", "roupa": {"pecas.*.espessura_mm": 3.0}},
+    {"nome": "comb_suave4q_pano1mm", "area": "combinacao", "o_que": "as duas melhores juntas: captura suavizada em 4 quadros e pano de 1 mm", "movimento": {"suavizacao_quadros": 4}, "roupa": {"pecas.*.espessura_mm": 1.0}},
     {"nome": "roupa_pano_pano", "area": "roupa", "o_que": "contato pano com pano ligado, com a casca grossa e as folgas novas", "sim": {"pano_pano": 1}}
   ]
 }
