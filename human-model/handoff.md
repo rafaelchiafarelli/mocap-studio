@@ -131,7 +131,7 @@ ROUPAS=$R/tet_v11_roupa/roupas_v11i.json $R/_scripts/monta_tet_v11.sh $R/tet_v11
 ## Code
 
 - **All committed on `pose-capture`:** `434ce38`, `2b0de0f`, `3e820d3`, `d5ebe03`, `d1762b4`, `9492a2a`, `37c20e4`. Not pushed.
-- **Not this line's, untouched:** `INTEGRATION-motion-filter.md` deleted, `experiments/anny-mpfb/`, `experiments/mpfb-ganho/`.
+- **Another session's work, committed at Rafael's request (2026-11-15):** `INTEGRATION-motion-filter.md` deleted, `experiments/anny-mpfb/`, `experiments/mpfb-ganho/`.
 
 ## Gotchas found
 

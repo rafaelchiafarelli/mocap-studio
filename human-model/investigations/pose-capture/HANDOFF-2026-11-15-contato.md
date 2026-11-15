@@ -1,6 +1,6 @@
 # Handoff: contact between surfaces, and the filtered motion with held feet
 
-Written 2026-11-15 for the next session and for Rafael. It continues [HANDOFF-2026-11-14-tecidos.md](HANDOFF-2026-11-14-tecidos.md) (items 1 of "Open") and [../../INTEGRATION-motion-filter.md](../../INTEGRATION-motion-filter.md). The as-built is in [CLAUDE.md](CLAUDE.md).
+Written 2026-11-15 for the next session and for Rafael. It continues [HANDOFF-2026-11-14-tecidos.md](HANDOFF-2026-11-14-tecidos.md) (items 1 of "Open") and `INTEGRATION-motion-filter.md` (deleted 2026-11-15; history: `git log -- human-model/INTEGRATION-motion-filter.md`). The as-built is in [CLAUDE.md](CLAUDE.md).
 
 ## Rafael's decisions (2026-11-14)
 
