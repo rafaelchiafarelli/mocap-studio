@@ -80,6 +80,39 @@ def test_turn_and_noise_kept():
     assert np.std(pelvis_roll(Y0)) < 0.8 * np.std(pelvis_roll(Xn))
 
 
+def test_planted_feet():
+    """With both feet planted and the hips swaying, the hips gain leaves the planted ankles where captured, keeps the legs'
+    bones, and lowers the gain only where a leg couldn't reach; at gain 1 nothing moves."""
+    X = body(sway_deg=0.0)
+    X[:, 25, 2] = X[:, 26, 2] = -0.12  # knees bent, so the legs have room to reach
+    t = np.arange(T) / FPS
+    path = np.stack([0.06 * np.sin(2 * np.pi * 1.0 * t), 0.02 * np.sin(2 * np.pi * 0.7 * t), 0.9 + 0.01 * np.sin(2 * np.pi * 2 * t)], 1)
+    rel_mp = X - (X[:, 23:24] + X[:, 24:25]) / 2
+    rel = np.stack([rel_mp[..., 0], rel_mp[..., 2], -rel_mp[..., 1]], -1)
+    P_old = path[:, None] + rel
+    # the captured legs reach the fixed feet: put the feet where the first frame had them, knees by the same IK at gain 1
+    contact = np.zeros((T, 2, 3), bool)
+    contact[:, :, :] = True
+    contact[100:130, 0] = False  # the left foot lifts for a second
+    parts = ac.split_points(path, 0.3, 6.0, FPS)
+    P1, k1, _ = ac.plant_feet(P_old, rel, parts, 1.0, contact, FPS)
+    assert np.abs(P1 - P_old).max() < 1e-9, np.abs(P1 - P_old).max()
+    P3, k3, rep = ac.plant_feet(P_old, rel, parts, 3.0, contact, FPS)
+    on = contact[:, 0].any(1)
+    for s in (0, 1):
+        hip, knee, ank, _, _ = ac.FEET[s]
+        sel = contact[:, s].any(1)
+        assert np.abs(P3[sel, ank] - P_old[sel, ank]).max() < 1e-6 or rep["frames_foot_out_of_reach_at_gain_1"] > 0
+        for a, b in ((hip, knee), (knee, ank)):
+            l_old = np.linalg.norm(P_old[:, a] - P_old[:, b], axis=1)
+            l_new = np.linalg.norm(P3[:, a] - P3[:, b], axis=1)
+            assert np.abs(l_old - l_new)[sel].max() < 1e-6
+    hips_old = (P_old[:, 23] + P_old[:, 24]) / 2
+    hips_new = (P3[:, 23] + P3[:, 24]) / 2
+    assert np.ptp(hips_new[:, 0]) > 1.5 * np.ptp(hips_old[:, 0])  # the gain still shows
+    assert k3.min() >= 1.0 and k3.max() <= 3.0
+
+
 def test_cli_limits():
     for args in (["a", "b", "--hips", "3.5"], ["a", "b", "--gain", "2", "--legs", "2"], ["a", "b", "--noise", "-1"]):
         try:

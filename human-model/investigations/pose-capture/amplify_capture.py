@@ -19,6 +19,13 @@ bones keep their lengths. With two cameras, the hips' path on the floor (points_
 gain. Each part's gain is --gain times its own (--hips, --trunk, --head, --arms, --legs; all 1 by default) and must be from
 0 to 3 (Rafael: past 3 the take is lost). Every gain at 1 returns the capture unchanged.
 
+Planted feet (Rafael, 2026-11-15; with foot_contacts.py's `contact` in IN.npz, two cameras; --no-plant off): the hips' gain
+moved every point with the hips, planted feet too (a planted foot slid 188 mm median at hips gain 3, against 24 as captured,
+and drive_capture.py's IK then dropped the hips up to 174 mm). Now a foot on the floor keeps its captured place (ankle, heel,
+toe; eased in and out over a few frames around each contact) and the leg reaches it: the knee by two bones of the captured
+lengths, in the plane the amplified knee bends in. Where the amplified hips would put a planted foot out of the leg's reach,
+the hips' path takes less gain in those frames (smoothed in time), never less than 1 (as captured). OUT.json says how often.
+
 Gain can only scale what was captured: a part MediaPipe barely saw (the pelvis's tilt, two points under shorts) stays barely
 moving, and OUT.json says so.
 """
@@ -173,14 +180,101 @@ def amplify(X, gains, noise_gain=1.0, base_hz=0.3, noise_hz=6.0, fps=30.0, hips_
         mm = lambda v: float(1000 * np.sqrt(np.mean(np.sum(v ** 2, -1))))
         report["hips_path"] = {"region": "hips", "gain": g, "motion_mm_rms": mm(motion), "motion_mm_rms_after": mm(g * motion),
                                "noise_mm_rms": mm(noise), "noise_mm_rms_after": mm(noise_gain * noise)}
+        report["_path_parts"] = (base, motion, noise_gain * noise)
     return Y, new_path, report
+
+
+FEET = {0: (23, 25, 27, 29, 31), 1: (24, 26, 28, 30, 32)}  # left, right: hip, knee, ankle, heel, toe
+REACH = 0.995  # a planted leg reaches at most this share of its two bones' length
+
+
+def plant_feet(P_old, rel, path_parts, g, contact, fps, ease_frames=2.0):
+    """P_old: (T, 33, 3) captured points; rel: the amplified body about its mid hips; path_parts: base, motion, noise of the hips'
+    path (noise already scaled); g: the hips gain. Returns the points with planted feet held, the hips gain used per frame and a
+    report."""
+    base, motion, noise = path_parts
+    T = len(P_old)
+    on = contact.any(axis=2).astype(float)  # (T, 2) a foot on the floor by any of its points
+    w = np.maximum(on, np.clip(smooth(on, ease_frames) * 2, 0, 1))  # 1 on the floor, eased to 0 around it
+    lens = {s: (np.linalg.norm(P_old[:, k[1]] - P_old[:, k[0]], axis=1), np.linalg.norm(P_old[:, k[2]] - P_old[:, k[1]], axis=1))
+            for s, k in FEET.items()}
+
+    def points_at(k):
+        return (base + k[:, None] * motion + noise)[:, None] + rel
+
+    def reachable(P, s):
+        hip, _, ank = FEET[s][:3]
+        A = P[:, ank] + w[:, s, None] * (P_old[:, ank] - P[:, ank])
+        return np.linalg.norm(A - P[:, hip], axis=1) <= REACH * (lens[s][0] + lens[s][1])
+
+    lo = np.full(T, min(1.0, g))
+    k = np.full(T, float(g))
+    if g > 1.0:
+        ok = np.ones(T, bool)
+        P = points_at(k)
+        for s in FEET:
+            ok &= reachable(P, s) | (w[:, s] == 0)
+        hi = k.copy()
+        bad = ~ok
+        lo_b, hi_b = lo.copy(), hi.copy()
+        for _ in range(20):  # bisection, per frame, on the frames out of reach
+            mid = 0.5 * (lo_b + hi_b)
+            Pm = points_at(np.where(bad, mid, k))
+            good = np.ones(T, bool)
+            for s in FEET:
+                good &= reachable(Pm, s) | (w[:, s] == 0)
+            lo_b = np.where(bad & good, mid, lo_b)
+            hi_b = np.where(bad & ~good, mid, hi_b)
+        k = np.where(bad, lo_b, k)
+        # smoothed in time without rising past what each frame allows much: eroded first, then smoothed
+        r = int(np.ceil(3 * ease_frames))
+        er = np.array([k[max(0, t - r): t + r + 1].min() for t in range(T)])
+        k = np.minimum(smooth(er, ease_frames), float(g))
+        k = np.maximum(k, lo)
+    P = points_at(k)
+    unreachable = 0
+    for s, (hip, knee, ank, heel, toe) in FEET.items():
+        sel = w[:, s] > 0
+        for i in (ank, heel, toe):
+            P[sel, i] = P[sel, i] + w[sel, s, None] * (P_old[sel, i] - P[sel, i])
+        # the knee by two bones: hip H, ankle A, in the plane of the amplified knee
+        H, A, Kn = P[sel, hip], P[sel, ank], P[sel, knee]
+        l1, l2 = lens[s][0][sel], lens[s][1][sel]
+        d_vec = A - H
+        d = np.linalg.norm(d_vec, axis=1)
+        far = d > (l1 + l2) * 0.9999
+        unreachable += int(far.sum())
+        d_use = np.minimum(d, (l1 + l2) * 0.9999)
+        u = d_vec / np.maximum(d, 1e-9)[:, None]
+        A = np.where(far[:, None], H + u * d_use[:, None], A)
+        a = (l1 ** 2 - l2 ** 2 + d_use ** 2) / (2 * d_use)
+        hgt = np.sqrt(np.maximum(l1 ** 2 - a ** 2, 0))
+        pole = (Kn - H) - np.sum((Kn - H) * u, 1, keepdims=True) * u
+        pole = pole / np.maximum(np.linalg.norm(pole, axis=1, keepdims=True), 1e-9)
+        P[sel, knee] = H + a[:, None] * u + hgt[:, None] * pole
+        shift = A - P[sel, ank]
+        for i in (ank, heel, toe):
+            P[sel, i] += shift
+    slide = {}
+    for s, name in ((0, "left"), (1, "right")):
+        ank = FEET[s][2]
+        c = on[:, s] > 0
+        slide[name] = float(1000 * np.median(np.linalg.norm(P[c, ank] - P_old[c, ank], axis=1))) if c.any() else 0.0
+    rep = {"frames_hips_gain_lowered": int((k < g - 1e-6).sum()), "hips_gain_min": float(k.min()),
+           "frames_foot_out_of_reach_at_gain_1": unreachable,
+           "planted_ankle_off_capture_mm_median": slide}
+    return P, k, rep
 
 
 def parse(argv):
     opts = {"--gain": 1.0, "--noise": 1.0, "--base-hz": 0.3, "--noise-hz": 6.0, **{f"--{r}": 1.0 for r in REGIONS}}
     pos, i = [], 0
+    opts["--no-plant"] = False
     while i < len(argv):
-        if argv[i] in opts:
+        if argv[i] == "--no-plant":
+            opts["--no-plant"] = True
+            i += 1
+        elif argv[i] in opts:
             opts[argv[i]] = float(argv[i + 1])
             i += 2
         else:
@@ -212,19 +306,32 @@ def main():
         P = fill_gaps(d["points_m"].astype(float))
         hips = (P[:, 23] + P[:, 24]) / 2
     Y, new_hips, report = amplify(X, gains, opts["--noise"], opts["--base-hz"], opts["--noise-hz"], fps, hips)
+    parts = report.pop("_path_parts", None)
     Y = Y - (Y[:, 23:24] + Y[:, 24:25]) / 2  # MediaPipe's world has its origin between the hips
-    Y[missing] = np.nan
-    data["world"] = Y
     if new_hips is not None:
         # world is (P - mid hips) mapped (x, y, z) -> (x, -z, y), as two_cameras.py writes it
-        P_new = new_hips[:, None] + np.stack([Y[..., 0], Y[..., 2], -Y[..., 1]], -1)
+        rel = np.stack([Y[..., 0], Y[..., 2], -Y[..., 1]], -1)
+        P_new = new_hips[:, None] + rel
+        if "contact" in d.files and not opts["--no-plant"]:
+            P_new, k, report["planted_feet"] = plant_feet(P, rel, parts, gains["hips"], d["contact"], fps)
+            report["planted_feet"]["hips_gain_per_frame"] = [round(float(v), 3) for v in k]
+            mid = (P_new[:, 23] + P_new[:, 24]) / 2
+            R_ = P_new - mid[:, None]
+            Y = np.stack([R_[..., 0], -R_[..., 2], R_[..., 1]], -1)
         P_new[~np.isfinite(d["points_m"])] = np.nan
         data["points_m"] = P_new
+    Y[missing] = np.nan
+    data["world"] = Y
     np.savez_compressed(out, **data)
     summary = {"source": src, "gains": gains, "noise_gain": opts["--noise"], "base_hz": opts["--base-hz"],
                "noise_hz": opts["--noise-hz"], "fps": fps, "frames": len(X), "parts": report}
     json.dump(summary, open(os.path.splitext(out)[0] + ".json", "w"), indent=1)
+    if "planted_feet" in report:
+        pf = {k_: v for k_, v in report["planted_feet"].items() if k_ != "hips_gain_per_frame"}
+        print("planted feet:", json.dumps(pf))
     for name, r in report.items():
+        if name == "planted_feet":
+            continue
         unit_ = "mm" if name == "hips_path" else "deg"
         k = f"motion_{unit_}_rms"
         print(f"{name:12s} gain {r['gain']:.2f}  motion {r[k]:6.1f} -> {r[k + '_after']:6.1f} {unit_} rms   "
