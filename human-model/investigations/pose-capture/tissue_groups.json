@@ -1,0 +1,32 @@
+{
+ "_about": "Material per group (limb) for the tetrahedral tissue of the pose-capture investigation (step 11), and the reduced anatomy it is built with. Units: Pa, kg/m3, 1/s, metres. Every group starts from Rafael's rafa8 values (data/body_tissue.json, measured only on the thigh); the breasts and the cavity are by eye. Design: G:\\mocap-studio-downloads\\review\\2026-11-14\\pose_capture\\10_desenho_tecidos.html. Edit to change; a run can override one as group.key=value, as seio_E.fat_young=2000.",
+ "groups": {
+  "braco":     {"fat_young": 4000, "muscle_young": 15000, "skin_young": 100000, "fat_density": 750, "muscle_density": 900, "poisson": 0.45, "damping": 20},
+  "antebraco": {"fat_young": 4000, "muscle_young": 15000, "skin_young": 100000, "fat_density": 750, "muscle_density": 900, "poisson": 0.45, "damping": 20},
+  "tronco":    {"fat_young": 4000, "muscle_young": 15000, "skin_young": 100000, "fat_density": 750, "muscle_density": 900, "poisson": 0.45, "damping": 20},
+  "seio_E":    {"fat_young": 2000, "muscle_young": 15000, "skin_young": 100000, "fat_density": 900, "muscle_density": 900, "poisson": 0.45, "damping": 10},
+  "seio_D":    {"fat_young": 2000, "muscle_young": 15000, "skin_young": 100000, "fat_density": 900, "muscle_density": 900, "poisson": 0.45, "damping": 10},
+  "barriga":   {"fat_young": 4000, "muscle_young": 15000, "skin_young": 100000, "fat_density": 750, "muscle_density": 900, "poisson": 0.45, "damping": 20},
+  "cavidade":  {"fat_young": 3000, "muscle_young": 3000, "skin_young": 3000, "fat_density": 1000, "muscle_density": 1000, "poisson": 0.45, "damping": 20},
+  "bumbum":    {"fat_young": 4000, "muscle_young": 15000, "skin_young": 100000, "fat_density": 750, "muscle_density": 900, "poisson": 0.45, "damping": 20},
+  "coxa":      {"fat_young": 4000, "muscle_young": 15000, "skin_young": 100000, "fat_density": 750, "muscle_density": 900, "poisson": 0.45, "damping": 20},
+  "perna":     {"fat_young": 4000, "muscle_young": 15000, "skin_young": 100000, "fat_density": 750, "muscle_density": 900, "poisson": 0.45, "damping": 20}
+ },
+ "_breasts": "seio_E and seio_D: softer and less damped than the rest, by eye, until Rafael's meu_teste values (2026-11-05) are carried over; fat at real fat's density.",
+ "mesh": {
+  "_about": "Voxel side by depth under the skin (Rafael, 2026-11-14): 3 layers of 3 mm, 3 of 6, 3 of 9, then 12 mm. Six tetrahedra per voxel.",
+  "bands_mm": [[3, 0, 9], [6, 9, 27], [9, 27, 54], [12, 54, 1000]],
+  "skin_mm": 3
+ },
+ "anatomy": {
+  "_about": "Reduced anatomy (memory human-restart-reduced-anatomy): rigid capsules along the rig's limb bones, a rigid spine, rib cage and pelvis core, and the belly's cavity, all by eye.",
+  "bone_radius_m": {"upper_arm": 0.011, "forearm": 0.009, "thigh": 0.014, "shin": 0.012, "spine": 0.02, "shoulder": 0.02},
+  "_shoulder": "shoulder.L/R: a capsule along the rig's shoulder bone stands for clavicle and scapula; without it the shoulders were soft muscle only (malha_v3).",
+  "pectoral_m": 0.015,
+  "abdominal_wall_m": 0.015,
+  "pelvis_below_hip_m": 0.05,
+  "pelvis_tissue_m": 0.025,
+  "breast_skin_fat_m": 0.005,
+  "cap_drive_m": 0.012
+ }
+}
