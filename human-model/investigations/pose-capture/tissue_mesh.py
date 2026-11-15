@@ -48,6 +48,8 @@ SKIN, FAT, MUSCLE, RIGID, CAVITY, BREAST = 0, 1, 2, 3, 4, 5
 LABELS = ("pele", "gordura", "musculo", "rigido", "cavidade", "seio")
 ARM_RADIUS_M = 0.07  # skin within this of the upper arm's axis, and past the shoulder joint, is arm (by eye)
 ARM_PAST_JOINT_M = 0.02
+GLUTEAL_FOLD_M = 0.12  # the fold under the buttock, below the hip joint (by eye)
+BUTTOCK_BEHIND_M = 0.02  # behind the hip joint by this much is buttock
 GROUPS = ("braco", "antebraco", "tronco", "seio_E", "seio_D", "barriga", "cavidade", "bumbum", "coxa", "perna")
 DATA = HERE.parent.parent / "data"
 
@@ -66,7 +68,15 @@ def load_config(overrides):
     return cfg
 
 
+# MPFB's helper bones and the toes belong to a limb; read as trunk, the knees' skin went to the buttocks group (malha_v8)
+HELPERS = {"DEF-knee-helper": "shin", "DEF-elbow-helper": "forearm", "DEF-shoulder-helper": "shoulder", "DEF-pelvis-helper": "pelvis",
+           "toe": "foot", "heel": "foot"}
+
+
 def limb_of(name):
+    for prefix, limb in HELPERS.items():
+        if name.startswith(prefix):
+            return limb
     for limb in ("upper_arm", "forearm", "thigh", "shin", "hand", "foot", "breast", "shoulder", "pelvis"):
         if name.startswith(limb + "."):
             return limb
@@ -108,6 +118,10 @@ def skin_zones(skin, W, names, head, tail):
             zone[i], group[i] = ("upper_arm_front" if off[1] < 0 else "upper_arm_back"), "braco"
         elif limb in ("forearm", "hand"):
             zone[i], group[i] = "forearm", "antebraco"
+        elif limb == "thigh" and p[1] > a[1] + BUTTOCK_BEHIND_M and p[2] > a[2] - GLUTEAL_FOLD_M:
+            # behind the hip joint and above the gluteal fold is buttock: MPFB's weights give most of it to the thigh, which
+            # left the buttocks group a thin band (malha_v9)
+            zone[i], group[i] = "buttocks", "bumbum"
         elif limb == "thigh":
             inner = off[0] * np.sign(a[0]) < 0
             zone[i] = ("thigh_front" if off[1] < 0 else "thigh_back") if abs(off[1]) > abs(off[0]) else ("thigh_inner" if inner else "thigh_outer")
