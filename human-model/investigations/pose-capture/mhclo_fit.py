@@ -91,3 +91,14 @@ def parts(X, faces):
     lab = components(len(X), faces)
     comps = sorted(np.unique(lab), key=lambda c: -X[lab == c, 2].mean())
     return {"cima": lab == comps[0], "baixo": lab == comps[1]}
+
+
+def parts_by_height(X, faces, z_waist):
+    """{'cima', 'baixo', 'toda'}: the connected parts whose mean height is above, below the waist, and all of it; for any
+    garment (one piece is 'toda'; a two-part suit splits at the waist)."""
+    lab = components(len(X), faces)
+    up = np.zeros(len(X), bool)
+    for c in np.unique(lab):
+        sel = lab == c
+        up[sel] = X[sel, 2].mean() > z_waist
+    return {"cima": up, "baixo": ~up, "toda": np.ones(len(X), bool)}

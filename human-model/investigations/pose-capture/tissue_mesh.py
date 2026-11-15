@@ -46,6 +46,16 @@ from hmcore import layers, meshgpu  # noqa: E402
 
 SKIN, FAT, MUSCLE, RIGID, CAVITY, BREAST = 0, 1, 2, 3, 4, 5
 LABELS = ("pele", "gordura", "musculo", "rigido", "cavidade", "seio")
+# lengths that follow the body's size (Rafael, 2026-11-15: any body) are written for the body they were set on, Rafael's MPFB
+# woman, whose rest skin stands REF_HEIGHT_M tall, and multiplied by L(): the body's height over that (1 for her)
+REF_HEIGHT_M = 1.5863181352615356
+BODY_SCALE = 1.0
+
+
+def L(metres):
+    return metres * BODY_SCALE
+
+
 ARM_RADIUS_M = 0.07  # skin within this of the upper arm's axis, and past the shoulder joint, is arm (by eye)
 ARM_PAST_JOINT_M = 0.02
 GLUTEAL_FOLD_M = 0.12  # the fold under the buttock, below the hip joint (by eye)
@@ -103,7 +113,7 @@ def skin_zones(skin, W, names, head, tail):
     bone = np.array(names)[dom]
     B = {n: i for i, n in enumerate(names)}
     z_hip = (head[B["thigh.L"], 2] + head[B["thigh.R"], 2]) / 2
-    z_waist, z_ribs, z_neck = head[B["spine.001"], 2], head[B["spine.002"], 2] + 0.02, head[B["spine.004"], 2]
+    z_waist, z_ribs, z_neck = head[B["spine.001"], 2], head[B["spine.002"], 2] + L(0.02), head[B["spine.004"], 2]
     zone = np.empty(len(skin), object)
     group = np.empty(len(skin), object)
     # arm or trunk by geometry, not by MPFB's weights: those give the upper arm much of the chest's side, which then had no rib
@@ -113,7 +123,7 @@ def skin_zones(skin, W, names, head, tail):
         a, e = head[B[f"upper_arm.{s}"]], tail[B[f"upper_arm.{s}"]]
         u = (e - a) / np.linalg.norm(e - a)
         along = (skin - a) @ u
-        arm_side[s] = (along > -ARM_PAST_JOINT_M) & (segment_distance(skin, a, e) < ARM_RADIUS_M)
+        arm_side[s] = (along > -L(ARM_PAST_JOINT_M)) & (segment_distance(skin, a, e) < L(ARM_RADIUS_M))
     for i, (p, b) in enumerate(zip(skin, bone)):
         limb = limb_of(b)
         if limb in ("upper_arm", "shoulder", "trunk", "breast", "other", "pelvis"):
@@ -128,7 +138,7 @@ def skin_zones(skin, W, names, head, tail):
             zone[i], group[i] = ("upper_arm_front" if off[1] < 0 else "upper_arm_back"), "braco"
         elif limb in ("forearm", "hand"):
             zone[i], group[i] = "forearm", "antebraco"
-        elif limb == "thigh" and p[1] > a[1] + BUTTOCK_BEHIND_M and p[2] > a[2] - GLUTEAL_FOLD_M:
+        elif limb == "thigh" and p[1] > a[1] + L(BUTTOCK_BEHIND_M) and p[2] > a[2] - L(GLUTEAL_FOLD_M):
             # behind the hip joint and above the gluteal fold is buttock: MPFB's weights give most of it to the thigh, which
             # left the buttocks group a thin band (malha_v9)
             zone[i], group[i] = "buttocks", "bumbum"
@@ -137,14 +147,14 @@ def skin_zones(skin, W, names, head, tail):
             zone[i] = ("thigh_front" if off[1] < 0 else "thigh_back") if abs(off[1]) > abs(off[0]) else ("thigh_inner" if inner else "thigh_outer")
             group[i] = "coxa"
         elif limb in ("shin", "foot"):
-            zone[i] = "knee" if np.linalg.norm(p - a) < 0.06 else ("calf_front" if off[1] < 0 else "calf_back")
+            zone[i] = "knee" if np.linalg.norm(p - a) < L(0.06) else ("calf_front" if off[1] < 0 else "calf_back")
             group[i] = "perna"
         else:  # trunk, pelvis, shoulder, breast, neck, head
             ang = np.degrees(np.arctan2(abs(p[0]), -p[1]))  # 0 front, 180 back, about the body's midline
             front, back = ang < 55, ang > 125
-            if p[2] > z_neck + 0.04:
+            if p[2] > z_neck + L(0.04):
                 zone[i], group[i] = "neck", "tronco"
-            elif p[2] < z_hip + 0.06:
+            elif p[2] < z_hip + L(0.06):
                 zone[i] = "buttocks" if back else ("belly" if front else "hips")
                 group[i] = "barriga" if front else "bumbum"
             elif p[2] < z_ribs:
@@ -398,6 +408,11 @@ def main(rest_npz, out_dir, overrides):
     fat_mm = json.loads((DATA / "body_fat_female.json").read_text(encoding="utf-8"))["fat_mm"]
     e = np.load(rest_npz)
     skin, flat, tris = e["skin"].astype(float), e["flat"].astype(float), e["tris"].astype(np.int64)
+    global BODY_SCALE
+    BODY_SCALE = float(np.ptp(skin[:, 2])) / REF_HEIGHT_M
+    if abs(BODY_SCALE - 1.0) < 1e-6:  # her own body, read back in float32
+        BODY_SCALE = 1.0
+    print(f"body {np.ptp(skin[:, 2]):.4f} m tall: lengths scaled by {BODY_SCALE:.4f}", flush=True)
     names, head, tail, W = list(e["bone_names"]), e["bone_head"].astype(float), e["bone_tail"].astype(float), e["weights"]
     # zones, groups and fat thickness are per skin vertex, so they are read at rest and carried to any pose
     zone, group_v, bone_v = skin_zones(skin, W, names, head, tail)
@@ -510,9 +525,9 @@ def main(rest_npz, out_dir, overrides):
     grp[breast] = np.where(cr[breast, 0] > 0, "seio_E", "seio_D")  # left and right at rest: posed, the body may face anywhere
     # cavity: belly, under fat and the abdominal wall, between pelvis and ribs, in front of the spine
     z_hip = (head_r[B["thigh.L"], 2] + head_r[B["thigh.R"], 2]) / 2
-    z_ribs = head_r[B["spine.002"], 2] + 0.02
+    z_ribs = head_r[B["spine.002"], 2] + L(0.02)
     spine_y = np.interp(cr[:, 2], [head_r[B["spine"], 2], head_r[B["spine.004"], 2]], [head_r[B["spine"], 1], head_r[B["spine.004"], 1]])
-    cavity = (np.isin(grp, ["barriga", "tronco"]) & (depth > t_fat + an["abdominal_wall_m"]) & (cr[:, 2] > z_hip + 0.04)
+    cavity = (np.isin(grp, ["barriga", "tronco"]) & (depth > t_fat + an["abdominal_wall_m"]) & (cr[:, 2] > z_hip + L(0.04))
               & (cr[:, 2] < z_ribs) & (cr[:, 1] < spine_y))
     label[cavity] = CAVITY
     grp[cavity] = "cavidade"
@@ -526,14 +541,14 @@ def main(rest_npz, out_dir, overrides):
                 i = B[bn]
                 hit = segment_distance(cen, head[i], tail[i]) < radius
                 rigid_bone[hit & (rigid_bone < 0)] = i
-    chest = (np.isin(grp, ["tronco", "barriga"]) & ~breast & (cr[:, 2] >= z_ribs) & (cr[:, 2] < head_r[B["spine.004"], 2] + 0.03)
+    chest = (np.isin(grp, ["tronco", "barriga"]) & ~breast & (cr[:, 2] >= z_ribs) & (cr[:, 2] < head_r[B["spine.004"], 2] + L(0.03))
              & (depth > t_fat + an["pectoral_m"]))
     # the rib cage is one rigid piece on the chest bone: split between spine.002 and spine.003 it sheared along their border
     # as the trunk twisted, a crease across the back (tecidos_v4, 2026-11-14)
     rigid_bone[chest & (rigid_bone < 0)] = B["spine.003"]
-    hips_x = abs(head_r[B["thigh.L"], 0]) + 0.03
-    pelvis = (np.isin(grp, ["bumbum", "barriga", "tronco"]) & (cr[:, 2] > z_hip - an["pelvis_below_hip_m"]) & (cr[:, 2] < z_hip + 0.08)
-              & (np.abs(cr[:, 0]) < hips_x) & (depth > t_fat + an["pelvis_tissue_m"]) & (cr[:, 1] > spine_y - 0.04) & ~cavity)
+    hips_x = abs(head_r[B["thigh.L"], 0]) + L(0.03)
+    pelvis = (np.isin(grp, ["bumbum", "barriga", "tronco"]) & (cr[:, 2] > z_hip - an["pelvis_below_hip_m"]) & (cr[:, 2] < z_hip + L(0.08))
+              & (np.abs(cr[:, 0]) < hips_x) & (depth > t_fat + an["pelvis_tissue_m"]) & (cr[:, 1] > spine_y - L(0.04)) & ~cavity)
     rigid_bone[pelvis & (rigid_bone < 0)] = B["spine"]
     label[rigid_bone >= 0] = RIGID
     label[(depth < cfg["mesh"]["skin_mm"] / 1000) & (label != RIGID)] = SKIN
@@ -663,7 +678,7 @@ def main(rest_npz, out_dir, overrides):
 
     vol = np.abs(np.einsum("ij,ij->i", np.cross(nodes[tets[:, 1]] - nodes[tets[:, 0]], nodes[tets[:, 2]] - nodes[tets[:, 0]]),
                            nodes[tets[:, 3]] - nodes[tets[:, 0]])) / 6 * weight
-    np.savez_compressed(out / "tecidos.npz", nodes=nodes.astype(np.float32), tets=tets.astype(np.int32), colours=colours,
+    np.savez_compressed(out / "tecidos.npz", body_scale=np.float64(BODY_SCALE), nodes=nodes.astype(np.float32), tets=tets.astype(np.int32), colours=colours,
                         tet_band=tet_band.astype(np.int8), label=label, group=np.array([GROUPS.index(g) for g in grp], np.int8),
                         young=young.astype(np.float32), density=dens.astype(np.float32), poisson=pois.astype(np.float32),
                         node_damping=node_damp.astype(np.float32), weight=weight.astype(np.float32),

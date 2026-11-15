@@ -1,9 +1,12 @@
 """Step 17a: the body dressed at rest (MPFB's A pose), for the tissue and cloth to be simulated together.
 
     python3 human-model/blender_run.py --blend 02_corpo_com_rig.blend \
-        human-model/investigations/pose-capture/dress_rest.py CLOTHES_DIR OUT.blend OUT.npz [GAP_MM]
+        human-model/investigations/pose-capture/dress_rest.py CLOTHES_DIR OUT.blend OUT.npz [GAP_MM] [ROUPAS.json]
 
-CLOTHES_DIR holds MPFB's female_casualsuit01 (CC0): its upper part becomes HM_blusinha, its lower HM_jeans. Each is fitted by
+Without ROUPAS.json, CLOTHES_DIR holds MPFB's female_casualsuit01 (CC0): its upper part becomes HM_blusinha, its lower HM_jeans.
+With it, its `vestir` names the pieces (Rafael, 2026-11-15: any garment, any body): {piece: {"arquivo": MPFB clothes asset,
+"parte": "toda" | "cima" | "baixo"}}, each asset in CLOTHES_DIR/<arquivo>/ (or CLOTHES_DIR itself, if that is the asset's
+folder); "cima" and "baixo" are the asset's connected parts above and below the body's waist (the spine.001 bone's head). Each is fitted by
 its mhclo on HM_body at rest (shape keys on, no pose: exactly MPFB's own fitting), subdivided once (edges ~1 cm), and any
 vertex nearer the skin than GAP_MM (default 3) is pushed out to it. The skin is the one the tissue shows: MPFB's, masked and
 subdivided twice (as tissue_export.py).
@@ -26,8 +29,15 @@ import posed_mesh as pm
 a = sys.argv[sys.argv.index("--") + 1:]
 cdir, out, out_npz = a[0], a[1], a[2]
 GAP = (float(a[3]) if len(a) > 3 else 3.0) / 1000
-SUIT = "female_casualsuit01"
-PIECES = {"blusinha": "cima", "jeans": "baixo"}
+if len(a) > 4:
+    SPEC = {k: v for k, v in json.load(open(a[4], encoding="utf-8"))["vestir"].items() if not k.startswith("_")}
+else:
+    SPEC = {"blusinha": {"arquivo": "female_casualsuit01", "parte": "cima"}, "jeans": {"arquivo": "female_casualsuit01", "parte": "baixo"}}
+
+
+def asset_dir(name):
+    sub = os.path.join(cdir, name)
+    return sub if os.path.isdir(sub) else cdir
 
 rig, body = bpy.data.objects["HM_rig"], bpy.data.objects["HM_body"]
 rig.data.pose_position = "REST"
@@ -35,10 +45,15 @@ pm.set_display(body, False)
 bpy.context.view_layer.update()
 rest = pm.read(body)  # helpers included: the suit hangs partly on them
 
-scale, tri, w, d = mf.read_mhclo(os.path.join(cdir, SUIT + ".mhclo"))
-faces, fuv, vt = mf.read_obj(os.path.join(cdir, SUIT + ".obj"))
-X = mf.fit(rest, scale, tri, w, d)
-part = mf.parts(X, faces)
+z_waist = float((rig.matrix_world @ rig.data.bones["spine.001"].head_local).z)
+assets = {}
+for spec in SPEC.values():
+    n = spec["arquivo"]
+    if n not in assets:
+        scale, tri, w, d = mf.read_mhclo(os.path.join(asset_dir(n), n + ".mhclo"))
+        faces, fuv, vt = mf.read_obj(os.path.join(asset_dir(n), n + ".obj"))
+        X = mf.fit(rest, scale, tri, w, d)
+        assets[n] = (X, faces, fuv, vt, mf.parts_by_height(X, faces, z_waist))
 
 # the shown skin at rest: masked, subdivided twice
 for m in body.modifiers:
@@ -66,36 +81,52 @@ def signed(pts):
 
 tex_dir = os.path.join(os.path.dirname(out), os.path.splitext(os.path.basename(out))[0] + "_texturas")
 os.makedirs(tex_dir, exist_ok=True)
-for t in ("diffuse", "normal"):
-    shutil.copy(os.path.join(cdir, f"{SUIT}_{t}.png"), tex_dir)
 
 
-def image(name, colour):
-    img = bpy.data.images.load(os.path.join(tex_dir, f"{SUIT}_{name}.png"))
+def image(asset, name, colour):
+    src = os.path.join(asset_dir(asset), f"{asset}_{name}.png")
+    if not os.path.exists(src):
+        return None
+    shutil.copy(src, tex_dir)
+    img = bpy.data.images.load(os.path.join(tex_dir, f"{asset}_{name}.png"))
     img.filepath = bpy.path.relpath(img.filepath, start=os.path.dirname(out))
     if not colour:
         img.colorspace_settings.name = "Non-Color"
     return img
 
 
-mat = bpy.data.materials.new("HM_roupa")
-mat.use_nodes = True
-nt = mat.node_tree
-bsdf = nt.nodes.get("Principled BSDF")
-tex = nt.nodes.new("ShaderNodeTexImage")
-tex.image = image("diffuse", True)
-nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
-ntex = nt.nodes.new("ShaderNodeTexImage")
-ntex.image = image("normal", False)
-nmap = nt.nodes.new("ShaderNodeNormalMap")
-nt.links.new(ntex.outputs["Color"], nmap.inputs["Color"])
-nt.links.new(nmap.outputs["Normal"], bsdf.inputs["Normal"])
-bsdf.inputs["Roughness"].default_value = 0.85
-mat.diffuse_color = (0.25, 0.35, 0.6, 1)
+def material(asset):
+    """One material per asset, from its diffuse and normal textures when it has them."""
+    mat = bpy.data.materials.get("HM_roupa_" + asset)
+    if mat:
+        return mat
+    mat = bpy.data.materials.new("HM_roupa_" + asset)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    bsdf = nt.nodes.get("Principled BSDF")
+    diffuse, normal = image(asset, "diffuse", True), image(asset, "normal", False)
+    if diffuse:
+        tex = nt.nodes.new("ShaderNodeTexImage")
+        tex.image = diffuse
+        nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+    if normal:
+        ntex = nt.nodes.new("ShaderNodeTexImage")
+        ntex.image = normal
+        nmap = nt.nodes.new("ShaderNodeNormalMap")
+        nt.links.new(ntex.outputs["Color"], nmap.inputs["Color"])
+        nt.links.new(nmap.outputs["Normal"], bsdf.inputs["Normal"])
+    bsdf.inputs["Roughness"].default_value = 0.85
+    mat.diffuse_color = (0.25, 0.35, 0.6, 1)
+    return mat
 
-arrays, report = {}, {"fonte": SUIT + " (MakeHuman system assets, CC0)", "folga_mm": GAP * 1000}
-for name, which in PIECES.items():
-    keep = part[which]
+
+arrays = {}
+report = {"fonte": sorted({s["arquivo"] for s in SPEC.values()}), "_licenca": "MakeHuman system assets, CC0", "folga_mm": GAP * 1000,
+          "cintura_z_m": round(z_waist, 3)}
+for name, spec in SPEC.items():
+    X, faces, fuv, vt, part = assets[spec["arquivo"]]
+    mat = material(spec["arquivo"])
+    keep = part[spec["parte"]]
     idx = np.flatnonzero(keep)
     remap = -np.ones(len(X), int)
     remap[idx] = np.arange(len(idx))

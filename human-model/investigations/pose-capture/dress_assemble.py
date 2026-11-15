@@ -42,7 +42,14 @@ for ob in dst.objects:
         so.offset = 0.0
         so.use_even_offset = True
 paths[bpy.data.objects["HM_pele_simulada"].modifiers["simulacao"]] = os.path.join(sim_dir, "pele.pc2")
-images = {img: bpy.path.abspath(img.filepath) for img in bpy.data.images if img.name.startswith("female_casualsuit01")}
+# the pieces' textures, whatever the asset (their materials' image nodes)
+images = {}
+for ob in dst.objects:
+    for slot in ob.material_slots:
+        if slot.material and slot.material.use_nodes:
+            for node in slot.material.node_tree.nodes:
+                if node.type == "TEX_IMAGE" and node.image:
+                    images[node.image] = bpy.path.abspath(node.image.filepath)
 bpy.ops.wm.save_as_mainfile(filepath=out)
 for holder, p in list(paths.items()) + list(images.items()):
     holder.filepath = rel(p)

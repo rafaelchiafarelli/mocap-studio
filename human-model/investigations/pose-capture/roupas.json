@@ -1,6 +1,17 @@
 {
   "_sobre": "Clothes as cloth on the step-12 body (dress_cloth.py). Values by eye, starting from Blender's cotton and denim presets; mass from the fabric's weight per square metre. Edit to change.",
   "fonte": "female_casualsuit01 (MakeHuman system assets, CC0): one mesh, its upper part is the top, the lower the jeans",
+  "vestir": {
+    "_sobre": "dress_rest.py's pieces (Rafael, 2026-11-15: any garment): piece -> MPFB clothes asset and which of its connected parts: toda, or cima / baixo (above / below the body's waist, spine.001's head)",
+    "blusinha": {
+      "arquivo": "female_casualsuit01",
+      "parte": "cima"
+    },
+    "jeans": {
+      "arquivo": "female_casualsuit01",
+      "parte": "baixo"
+    }
+  },
   "acomodacao_quadros": 30,
   "pecas": {
     "blusinha": {

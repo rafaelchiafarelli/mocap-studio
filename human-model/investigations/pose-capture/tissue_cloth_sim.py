@@ -37,6 +37,7 @@ from hmcore import xpbd  # noqa: E402
 from tissue_sim import GROUPS, ramp_transforms, write_pc2  # noqa: E402
 from tissue_cloth_solver import ClothTissueSolver  # noqa: E402
 
+REF_CLOTH_EDGE_M = 0.012717410155423754  # the casual suit subdivided once (top and jeans): the cloth the rules below were set on
 PARTS = ("tronco", "braco_E", "braco_D", "perna_E", "perna_D")  # left is +x
 
 
@@ -106,6 +107,7 @@ def main(tissue_npz, bones_npz, cloth_npz, params_json, out_dir, opts):
     o.setdefault("entrada", 1)
     o.setdefault("mao_folga", 1)
     o.setdefault("flexao", "isometrica")
+    o.setdefault("pele_folga", 1)
     m, mo, cl = np.load(tissue_npz), np.load(bones_npz), np.load(cloth_npz)
     P = json.load(open(params_json, encoding="utf-8"))["solver_tetraedros"]
     assert int(m["pose_frame"]) < 1, "the mesh must be built at rest (tissue_mesh.py without pose=)"
@@ -167,11 +169,26 @@ def main(tissue_npz, bones_npz, cloth_npz, params_json, out_dir, opts):
     cloth_x = np.concatenate(xs)
     cloth_piece = np.concatenate(piece_ids)
     cloth_tris, cloth_vn = np.concatenate(ctris), np.concatenate(vns)
+    # lengths set on Rafael's body and the casual suit, made general (Rafael, 2026-11-15: any garment, any body): the rules for
+    # skin under cloth depend on the cloth's resolution (how far apart its vertices are), the arm's reach on the body's size
+    # (tissue_mesh.py's body_scale; 1 for her body and for meshes from before it was saved)
+    edge = float(np.median(np.concatenate([np.linalg.norm(cl[f"{n}_verts"].astype(float)[cl[f"{n}_tris"][:, i]] -
+                                                          cl[f"{n}_verts"].astype(float)[cl[f"{n}_tris"][:, (i + 1) % 3]], axis=1)
+                                           for n in pieces for i in range(3)])))
+    cloth_scale = edge / REF_CLOTH_EDGE_M
+    if abs(cloth_scale - 1.0) < 1e-6:  # the suit itself, read back in float32
+        cloth_scale = 1.0
+    body_scale = float(m["body_scale"]) if "body_scale" in m.files else 1.0
+    print(f"cloth's median edge {edge * 1000:.1f} mm (rules scaled by {cloth_scale:.3f}); body scale {body_scale:.3f}", flush=True)
     # skin points under the cloth at rest: within 30 mm of a cloth vertex and on its inner side
     dist, near_c = cKDTree(cloth_x).query(sub_rest)
     # (or within 12 mm on the outer side: at rest the nipples' tips already came through between the cloth's vertices)
-    under = (dist < 0.03) & ((np.einsum("ij,ij->i", sub_rest - cloth_x[near_c], cloth_vn[near_c]) < 0) | (dist < 0.012))
+    under = (dist < 0.03 * cloth_scale) & ((np.einsum("ij,ij->i", sub_rest - cloth_x[near_c], cloth_vn[near_c]) < 0)
+                                           | (dist < 0.012 * cloth_scale))
     covered = np.flatnonzero(under)
+    # room for the cloth between two parts' skins: the cloth over a point at rest keeps its thickness from each skin
+    room = np.zeros(len(sub_rest))
+    room[under] = 2 * np.concatenate(thick)[near_c[under]]
 
     # skin: points from their tetrahedra, triangles, parts
     st, sb = m["sub_tet"], m["sub_bary"].astype(float)
@@ -187,7 +204,7 @@ def main(tissue_npz, bones_npz, cloth_npz, params_json, out_dir, opts):
     tpart = vpart[tris[:, 0]]
     if o["sob_pano"] == "tronco":
         # only the trunk's skin away from the armpits (5 cm from any arm point at rest): there the rule fought the sleeve (teste_5)
-        far_arm = cKDTree(sub_rest[(vpart == 1) | (vpart == 2)]).query(sub_rest[covered])[0] > 0.05
+        far_arm = cKDTree(sub_rest[(vpart == 1) | (vpart == 2)]).query(sub_rest[covered])[0] > 0.05 * body_scale
         covered = covered[(vpart[covered] == 0) & far_arm]
     elif o["sob_pano"] == "nao":
         covered = covered[:0]
@@ -269,7 +286,8 @@ def main(tissue_npz, bones_npz, cloth_npz, params_json, out_dir, opts):
                                cap_ids=cap_ids, cap_bones=cap_bones, cap_w=cap_w, entry=bool(o["entrada"]),
                                hand_covered=np.flatnonzero(under) if o["mao_folga"] else None,
                                hinges=np.concatenate(hinges) if hinges else None, hinge_K=np.concatenate(hinge_K) if hinges else None,
-                               hinge_compliance=np.concatenate(hinge_c) if hinges else None)
+                               hinge_compliance=np.concatenate(hinge_c) if hinges else None, under_reach=0.02 * cloth_scale,
+                               skin_room=room if o["pele_folga"] else None)
     if shell:
         print("thick shell:", json.dumps(shell), flush=True)
     all_rest = np.concatenate([nodes, cloth_x])

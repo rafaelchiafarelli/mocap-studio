@@ -275,7 +275,10 @@ def _drive_blend(x: wp.array(dtype=wp.vec3), ids: wp.array(dtype=int), bones: wp
 def _skin_contact(mesh: wp.uint64, ids: wp.array(dtype=int), x: wp.array(dtype=wp.vec3), inv_mass: wp.array(dtype=float),
                   sx: wp.array(dtype=wp.vec3), sub_rest: wp.array(dtype=wp.vec3), tris: wp.array(dtype=wp.vec3i),
                   sn: wp.array(dtype=wp.vec4i), sw: wp.array(dtype=wp.vec4), orient: float, thick: float, far_rest: float,
-                  max_dist: float, dx: wp.array(dtype=wp.vec3), cnt: wp.array(dtype=float), depth: wp.array(dtype=float)):
+                  max_dist: float, dx: wp.array(dtype=wp.vec3), cnt: wp.array(dtype=float), depth: wp.array(dtype=float),
+                  room: wp.array(dtype=float)):
+    """Skin of one part against another part's skin, both pushed apart (through their tetrahedra) to `thick` plus the room the
+    cloth needs between them: each side that lay under cloth at rest adds that cloth's thickness on both of its faces (room)."""
     k = wp.tid()
     j = ids[k]
     p = sx[j]
@@ -298,6 +301,10 @@ def _skin_contact(mesh: wp.uint64, ids: wp.array(dtype=int), x: wp.array(dtype=w
             return
         depth[j] = d
         C = d - thick
+        if thick > 0.0:
+            # a forearm across the belly left the top's hem 1 mm of room where it needs its thickness from each skin: pinched,
+            # it tore and wrapped the wrist (tet_v11h, late in the dance)
+            C = d - thick - room[j] - (u * room[t[0]] + v * room[t[1]] + (1.0 - u - v) * room[t[2]])
         if C < 0.0:
             nj = sn[j]
             wj = sw[j]
@@ -495,7 +502,7 @@ class ClothTissueSolver(GradedSolver):
                  sn, sw, sub_rest, tris, part, vertex_part, skin_thick, far_rest, cloth_tris=None, covered=None, cloth_tri_part=None, cloth_passes=2,
                  cloth_piece=None, far_rest_cloth=0.0, hand_rest=None, hand_tris=None, hand_side=None,
                  cap_ids=None, cap_bones=None, cap_w=None, entry=True, entry_reach=0.02, hand_covered=None,
-                 hinges=None, hinge_K=None, hinge_compliance=None, device="cuda:0"):
+                 hinges=None, hinge_K=None, hinge_compliance=None, under_reach=0.02, skin_room=None, device="cuda:0"):
         self.c0 = len(nodes)
         all_nodes = np.concatenate([np.asarray(nodes, float), np.asarray(cloth_x, float)])
         damping = np.concatenate([np.asarray(node_damping, np.float32), np.asarray(cloth_damping, np.float32)])
@@ -509,6 +516,9 @@ class ClothTissueSolver(GradedSolver):
         self.rest_len, self.compliance = a(rest, float), a(compliance, float)
         self.cloth_thick, self.cloth_mu = a(cloth_thick, float), a(cloth_mu, float)
         self.cloth_passes = cloth_passes
+        self.under_reach = float(under_reach)  # skin under cloth: cloth over the point at rest within this, looked for this far
+        # per skin point, the room cloth over it needs between it and another part's skin (0 where it was bare at rest)
+        self.room = a(np.zeros(len(sn)) if skin_room is None else skin_room, float)
         # the thick shell's bending, per hinge (indices into cloth_x); None: bending only by the pairs (distances)
         self.hinges = None
         if hinges is not None and len(hinges):
@@ -628,7 +638,8 @@ class ClothTissueSolver(GradedSolver):
         self._cloth_contact_pass(1.0, measure_only=True)
         for mesh, ids, others in self.part_meshes:
             wp.launch(_skin_contact, len(ids), [mesh.id, ids, self.x, self.inv_mass, self.sx, self.sub_rest, others, self.sn, self.sw,
-                                                self.orient, -1.0, self.far_rest, self.max_dist, self.dxc, self.cnt, self.skin_depth], device=self.device)
+                                                self.orient, -1.0, self.far_rest, self.max_dist, self.dxc, self.cnt, self.skin_depth, self.room],
+                      device=self.device)
         self.dxc.zero_()
         self.cnt.zero_()
         return self.cloth_depth.numpy().copy(), self.skin_depth.numpy().copy()
@@ -715,15 +726,15 @@ class ClothTissueSolver(GradedSolver):
             for mesh, ids, others in self.part_meshes:
                 mesh.refit()
                 wp.launch(_skin_contact, len(ids), [mesh.id, ids, self.x, self.inv_mass, self.sx, self.sub_rest, others, self.sn, self.sw,
-                                                    self.orient, self.skin_thick, self.far_rest, self.max_dist, self.dxc, self.cnt, self.skin_depth],
-                          device=self.device)
+                                                    self.orient, self.skin_thick, self.far_rest, self.max_dist, self.dxc, self.cnt, self.skin_depth,
+                                                    self.room], device=self.device)
             if self.cloth_mesh is not None:
                 wp.launch(_copy_cloth, self.nc, [self.x, self.c0, self.cloth_pts], device=self.device)
                 self.cloth_mesh.refit()
                 if len(self.covered):
                     wp.launch(_skin_under_cloth, len(self.covered), [self.cloth_mesh.id, self.covered, self.x, self.inv_mass, self.c0, self.sx, self.sn, self.sw,
-                                                                     self.ctris, self.sub_rest, self.cloth_rest, 0.02, self.vpart, self.ctri_part,
-                                                                     self.under_thick, 0.02,
+                                                                     self.ctris, self.sub_rest, self.cloth_rest, self.under_reach, self.vpart,
+                                                                     self.ctri_part, self.under_thick, self.under_reach,
                                                                      self.dxc, self.cnt], device=self.device)
                 if self.cloth_cloth:
                     wp.launch(_cloth_cloth, self.nc, [self.cloth_mesh.id, self.x, self.x_prev, self.inv_mass, self.c0, self.ctris, self.cloth_rest,
