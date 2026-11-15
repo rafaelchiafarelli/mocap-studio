@@ -96,7 +96,8 @@ def _push_surface(t: wp.vec3i, u: float, v: float, sn: wp.array(dtype=wp.vec4i),
 def _cloth_contact(mesh: wp.uint64, x: wp.array(dtype=wp.vec3), x_prev: wp.array(dtype=wp.vec3), inv_mass: wp.array(dtype=float), c0: int,
                    sx: wp.array(dtype=wp.vec3), sx_prev: wp.array(dtype=wp.vec3), tris: wp.array(dtype=wp.vec3i),
                    sn: wp.array(dtype=wp.vec4i), sw: wp.array(dtype=wp.vec4), orient: float, thick: wp.array(dtype=float), mu: wp.array(dtype=float),
-                   max_dist: float, dx: wp.array(dtype=wp.vec3), cnt: wp.array(dtype=float), depth: wp.array(dtype=float)):
+                   max_dist: float, dx: wp.array(dtype=wp.vec3), cnt: wp.array(dtype=float), depth: wp.array(dtype=float),
+                   x_out: wp.array(dtype=wp.vec3), entry: int, entry_reach: float):
     i = wp.tid()
     c = c0 + i
     p = x[c]
@@ -115,6 +116,24 @@ def _cloth_contact(mesh: wp.uint64, x: wp.array(dtype=wp.vec3), x_prev: wp.array
         if wp.abs(d) < FACING * wp.length(p - cp):
             return
         depth[i] = wp.min(depth[i], d)
+        # inside: back out where it came in (the face nearest its last place outside every part), not through the nearest face,
+        # which past the middle of a forearm is the far side's: pinched between forearm and waist, the hem went through and
+        # wrapped the forearm like a bracelet (tet_v10)
+        if entry == 1 and d < 0.0:
+            q2 = wp.mesh_query_point_no_sign(mesh, x_out[i], max_dist)
+            if q2.result:
+                t2 = tris[q2.face]
+                a2 = sx[t2[0]]
+                b2 = sx[t2[1]]
+                e2 = sx[t2[2]]
+                cp2 = q2.u * a2 + q2.v * b2 + (1.0 - q2.u - q2.v) * e2
+                if wp.length(cp2 - p) < entry_reach:
+                    t = t2
+                    u = q2.u
+                    v = q2.v
+                    cp = cp2
+                    nrm = wp.normalize(wp.cross(b2 - a2, e2 - a2)) * orient
+                    d = wp.dot(p - cp, nrm)
         C = d - thick[i]
         if C < 0.0:
             W = inv_mass[c] + _surface_weight(t, u, v, sn, sw, inv_mass)
@@ -134,6 +153,14 @@ def _cloth_contact(mesh: wp.uint64, x: wp.array(dtype=wp.vec3), x_prev: wp.array
 
 
 @wp.kernel
+def _remember_outside(x: wp.array(dtype=wp.vec3), c0: int, depth: wp.array(dtype=float), in_hand: wp.array(dtype=float),
+                      x_out: wp.array(dtype=wp.vec3)):
+    i = wp.tid()
+    if depth[i] >= 0.0 and in_hand[i] >= 0.0:
+        x_out[i] = x[c0 + i]
+
+
+@wp.kernel
 def _fill(a: wp.array(dtype=float), v: float):
     a[wp.tid()] = v
 
@@ -148,10 +175,12 @@ def _lerp_pts(a: wp.array(dtype=wp.vec3), b: wp.array(dtype=wp.vec3), t: float, 
 def _out_of_hand(mesh: wp.uint64, pts: wp.array(dtype=wp.vec3), hand: wp.array(dtype=wp.vec3), htris: wp.array(dtype=wp.vec3i),
                  rest: wp.array(dtype=wp.vec3), hand_rest: wp.array(dtype=wp.vec3), far_rest: float, orient: float, thick: float,
                  max_dist: float, sn: wp.array(dtype=wp.vec4i), sw: wp.array(dtype=wp.vec4), skin: int, c0: int,
-                 inv_mass: wp.array(dtype=float), dx: wp.array(dtype=wp.vec3), cnt: wp.array(dtype=float), inside: wp.array(dtype=float)):
+                 inv_mass: wp.array(dtype=float), dx: wp.array(dtype=wp.vec3), cnt: wp.array(dtype=float), inside: wp.array(dtype=float),
+                 x_out: wp.array(dtype=wp.vec3), entry: int, entry_reach: float, gap: wp.array(dtype=float)):
     """A hand, moved by the skeleton, pushes skin points (skin = 1: through their tetrahedra) or cloth vertices (skin = 0) out to
     `thick` from its surface; the hand doesn't yield. Points that lay near the hand at rest (the wrist's skin, a long sleeve's cuff)
-    are not contact."""
+    are not contact. A cloth vertex inside goes back out where it came in (entry, as in _cloth_contact): a finger is as thin as
+    the cloth's push, and through its far side the hem wove between the fingers."""
     i = wp.tid()
     p = pts[i]
     q = wp.mesh_query_point_no_sign(mesh, p, max_dist)
@@ -171,7 +200,22 @@ def _out_of_hand(mesh: wp.uint64, pts: wp.array(dtype=wp.vec3), hand: wp.array(d
         if wp.abs(d) < FACING * wp.length(p - cp):
             return
         inside[i] = wp.min(inside[i], d)
+        if entry == 1 and skin == 0 and d < 0.0:
+            q2 = wp.mesh_query_point_no_sign(mesh, x_out[i], max_dist)
+            if q2.result:
+                t2 = htris[q2.face]
+                a2 = hand[t2[0]]
+                b2 = hand[t2[1]]
+                e2 = hand[t2[2]]
+                cp2 = q2.u * a2 + q2.v * b2 + (1.0 - q2.u - q2.v) * e2
+                if wp.length(cp2 - p) < entry_reach:
+                    nrm = wp.normalize(wp.cross(b2 - a2, e2 - a2)) * orient
+                    d = wp.dot(p - cp2, nrm)
         C = d - thick
+        if skin == 1 and thick > 0.0:
+            # skin under the cloth keeps room for it from the hand (the cloth's thickness on each side), else the cloth caught
+            # between hand and skin had nowhere to go and tore
+            C = d - gap[i]
         if C < 0.0:
             if skin == 1:
                 nj = sn[i]
@@ -429,7 +473,7 @@ class ClothTissueSolver(GradedSolver):
                  cloth_x, cloth_mass, pairs, rest, compliance, cloth_damping, cloth_thick, cloth_mu,
                  sn, sw, sub_rest, tris, part, vertex_part, skin_thick, far_rest, cloth_tris=None, covered=None, cloth_tri_part=None, cloth_passes=2,
                  cloth_piece=None, far_rest_cloth=0.0, hand_rest=None, hand_tris=None, hand_side=None,
-                 cap_ids=None, cap_bones=None, cap_w=None, device="cuda:0"):
+                 cap_ids=None, cap_bones=None, cap_w=None, entry=True, entry_reach=0.02, hand_covered=None, device="cuda:0"):
         self.c0 = len(nodes)
         all_nodes = np.concatenate([np.asarray(nodes, float), np.asarray(cloth_x, float)])
         damping = np.concatenate([np.asarray(node_damping, np.float32), np.asarray(cloth_damping, np.float32)])
@@ -474,6 +518,10 @@ class ClothTissueSolver(GradedSolver):
             self.cloth_part_meshes.append((wp.Mesh(points=self.sx, indices=a(own.ravel(), int, np.int32)), a(own, wp.vec3i, np.int32)))
         self.orient = 1.0
         self.max_dist = 0.05
+        # each cloth vertex's last place outside every part's skin, for pushing it back out where it came in (entry)
+        self.entry, self.entry_reach = int(bool(entry)), float(entry_reach)
+        self.x_out = a(cloth_x, wp.vec3)
+        self.no_hand = wp.full(self.nc, 1.0, dtype=float, device=device)
         # the cuts' nodes, blended like the skin next to them (_drive_blend)
         self.caps = None
         if cap_ids is not None and len(cap_ids):
@@ -490,6 +538,12 @@ class ClothTissueSolver(GradedSolver):
                 ht = np.asarray(hand_tris)[np.asarray(hand_side)[np.asarray(hand_tris)[:, 0]] == sd]
                 self.hands.append((wp.Mesh(points=self.hand_x, indices=a(ht.ravel(), int, np.int32)), a(ht, wp.vec3i, np.int32)))
             self.hand_cloth_thick = float(np.median(cloth_thick))
+            # per skin point, the room it keeps from a hand: the skin's own, plus the cloth's thickness on both sides if the
+            # point lay under cloth at rest (hand_covered)
+            g = np.full(len(sn), float(skin_thick), np.float32)
+            if hand_covered is not None:
+                g[np.asarray(hand_covered)] = float(skin_thick) + 2.0 * self.hand_cloth_thick
+            self.hand_gap = a(g, float)
             self.skin_in_hand = wp.zeros(self.ns, dtype=float, device=device)
             self.cloth_in_hand = wp.zeros(self.nc, dtype=float, device=device)
         # the cloth as a mesh, for skin points that lay under it at rest (cloth_tris wound outward, covered: those points)
@@ -532,7 +586,8 @@ class ClothTissueSolver(GradedSolver):
         for mesh, ptris in self.cloth_part_meshes:
             mesh.refit()
             wp.launch(_cloth_contact, self.nc, [mesh.id, self.x, self.x_prev, self.inv_mass, self.c0, self.sx, self.sx_prev, ptris,
-                                                self.sn, self.sw, self.orient, thick, mu, self.max_dist, self.dxc, self.cnt, self.cloth_depth],
+                                                self.sn, self.sw, self.orient, thick, mu, self.max_dist, self.dxc, self.cnt, self.cloth_depth,
+                                                self.x_out, 0 if measure_only else self.entry, self.entry_reach],
                       device=self.device)
         if measure_only:
             self.dxc.zero_()
@@ -580,12 +635,13 @@ class ClothTissueSolver(GradedSolver):
             mesh.refit()
             wp.launch(_out_of_hand, self.ns, [mesh.id, self.sx, self.hand_x, ht, self.sub_rest, self.hand_rest, self.far_rest, self.orient,
                                               th_skin, self.max_dist, self.sn, self.sw, 1, self.c0, self.inv_mass, self.dxc, self.cnt,
-                                              self.skin_in_hand], device=self.device)
+                                              self.skin_in_hand, self.x_out, 0, self.entry_reach, self.hand_gap], device=self.device)
             if self.cloth_mesh is not None:
                 wp.launch(_copy_cloth, self.nc, [self.x, self.c0, self.cloth_pts], device=self.device)
                 wp.launch(_out_of_hand, self.nc, [mesh.id, self.cloth_pts, self.hand_x, ht, self.cloth_rest, self.hand_rest, self.far_rest,
                                                   self.orient, th_cloth, self.max_dist, self.sn, self.sw, 0, self.c0, self.inv_mass,
-                                                  self.dxc, self.cnt, self.cloth_in_hand], device=self.device)
+                                                  self.dxc, self.cnt, self.cloth_in_hand, self.x_out, self.entry if push else 0,
+                                                  self.entry_reach, self.hand_gap], device=self.device)
         if not push:
             self.dxc.zero_()
             self.cnt.zero_()
@@ -645,6 +701,8 @@ class ClothTissueSolver(GradedSolver):
                                                       self.cloth_piece, self.cloth_thick, self.far_rest_cloth, 0, self.dxc, self.cnt, self.cloth_close],
                                   device=self.device)
             self._hand_pass((k + 1) / substeps)
+            wp.launch(_remember_outside, self.nc, [self.x, self.c0, self.cloth_depth, self.cloth_in_hand if self.hands else self.no_hand,
+                                                   self.x_out], device=self.device)
             wp.launch(_apply_mean, self.n, [self.x, self.dxc, self.cnt], device=self.device)
             wp.launch(_velocity_relative_nodes, self.n, [self.x, self.x_prev, self.v, self.inv_mass, self.all_rest, self.node_bone, self.T0, self.T1,
                                                          self.frame, h, self.node_damping], device=self.device)

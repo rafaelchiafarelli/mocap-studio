@@ -82,6 +82,8 @@ def main(tissue_npz, bones_npz, cloth_npz, params_json, out_dir, opts):
         k, v = item.split("=")
         o[k] = v if k in ("pecas", "sob_pano", "corpo") else int(v)
     o.setdefault("costura_rigida", 0)
+    o.setdefault("entrada", 1)
+    o.setdefault("mao_folga", 1)
     m, mo, cl = np.load(tissue_npz), np.load(bones_npz), np.load(cloth_npz)
     P = json.load(open(params_json, encoding="utf-8"))["solver_tetraedros"]
     assert int(m["pose_frame"]) < 1, "the mesh must be built at rest (tissue_mesh.py without pose=)"
@@ -231,7 +233,8 @@ def main(tissue_npz, bones_npz, cloth_npz, params_json, out_dir, opts):
                                cloth_piece=cloth_piece if o["pano_pano"] else None,
                                far_rest_cloth=P.get("pano_pano_longe_em_repouso_mm", 25.0) / 1000,
                                hand_rest=hand_rest, hand_tris=hand_tris, hand_side=hand_side,
-                               cap_ids=cap_ids, cap_bones=cap_bones, cap_w=cap_w)
+                               cap_ids=cap_ids, cap_bones=cap_bones, cap_w=cap_w, entry=bool(o["entrada"]),
+                               hand_covered=np.flatnonzero(under) if o["mao_folga"] else None)
     all_rest = np.concatenate([nodes, cloth_x])
     all_bone = np.concatenate([m["node_bone"], cloth_bone])
     solver.drive(m["driven"], nodes[m["driven"]], all_rest=all_rest, bone=m["drive_bone"], all_bone=all_bone, n_bones=T.shape[1])
