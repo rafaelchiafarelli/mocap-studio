@@ -40,7 +40,10 @@ for ob in dst.objects:
         so = ob.modifiers.new("espessura", "SOLIDIFY")
         so.thickness = fabric[ob.name[3:]]["espessura_mm"] / 1000
         so.offset = 0.0
-        so.use_even_offset = True
+        # even thickness divides the offset by the fold's cosine: at a sharp fold it shot needles metres long (tet_v11i first
+        # assembly); plain offset, clamped to the edges' length
+        so.use_even_offset = False
+        so.thickness_clamp = 1.0
 paths[bpy.data.objects["HM_pele_simulada"].modifiers["simulacao"]] = os.path.join(sim_dir, "pele.pc2")
 # the pieces' textures, whatever the asset (their materials' image nodes)
 images = {}
