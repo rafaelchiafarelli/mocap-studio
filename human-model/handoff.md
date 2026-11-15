@@ -152,4 +152,4 @@ Runner `investigations/pose-capture/experimentos.py`, catalogue `variacoes.json`
   - worse: `mov_suave_1q` (snags 26/45), `cm_sem_folga_pele` (43 right), `tec_gordura_mole` (2x inverted), `tec_pele_50kpa` (11%, max 470%), `tec_pele_300kpa` (2x inverted), `cm_passos_80` (3x inverted), `roupa_3mm` (13.7%), `roupa_pano_pano` (9.3%);
   - within noise: hands, wrist frequency, loose feet, ramp 60, caps 20 mm, skin gap 3 mm, damping, real density, cloth bending, traction, friction.
   - **`cm_passos_320` blew up** (937,000 inverted, 6.7 s per frame): twice the substeps should be steadier. Likely a solver defect (something that scales with h); not investigated.
-- Next obvious run: `mov_suave_4q` + `roupa_1mm` together.
+- `comb_suave4q_pano1mm` (smoothing 4 frames + 1 mm cloth): top stretch 4.3%, snags 0/1, 3,400 inverted: better than either alone, the best result so far; waiting for Rafael's look.
