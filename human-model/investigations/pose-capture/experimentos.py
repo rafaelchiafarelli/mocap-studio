@@ -105,7 +105,10 @@ def set_dotted(d, path, value):
 def stage_body(v):
     if not v.get("corpo"):
         return {k: BASE[k] for k in ("rig", "rest", "dressed", "cloth")}, False
-    src = Path(v["corpo"])
+    src = v["corpo"]
+    if len(src) > 2 and src[1] == ":":  # a Windows path, as Rafael writes it: G:\... -> /mnt/g/...
+        src = "/mnt/" + src[0].lower() + src[2:].replace("\\", "/")
+    src = Path(src)
     f = WORK / f"corpo_{key(str(src), src.stat().st_mtime)}"
     log = f / "log.txt"
     out = {"rig": f / "corpo_com_rig.blend", "rest": f / "corpo_repouso.npz", "dressed": f / "vestida_repouso.blend",
