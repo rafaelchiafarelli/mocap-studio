@@ -1,0 +1,51 @@
+{
+  "_sobre": "Variações para experimentos.py (Rafael, 2026-11-15: entender quais variações podem melhorar o processo; um .blend por variação). A base é o tet_v11i: corpo 02_corpo_com_rig, movimento do tet_v9 (ganhos neutros, mãos pêndulo, pés presos), malha_v10 em repouso, roupas.json como está, pano_pano=0. Cada variação muda só o que estiver nela.",
+  "_como_acrescentar": {
+    "nome": "curto, sem espaços; vira o nome do .blend (exp_<nome>.blend)",
+    "area": "movimento, contato_malha, tecido, roupa, corpo ou rafael",
+    "o_que": "uma frase: o que muda e o que se espera ver",
+    "corpo": "um .blend com um humano MPFB chamado Human, sem rig: refaz rig, tecido, roupa e movimento para ele",
+    "movimento": {"suavizacao_quadros": "gaussiana da captura, em quadros (base 2)", "sem_pes_presos": "true: os pés não ficam presos", "maos": "'capturadas' (sem pêndulo) ou 'pendulo' (base)", "maos_json": "mudanças no maos.json, ex.: {\"punho.frequencia_hz\": 2}"},
+    "malha": "mudanças no tissue_groups.json, ex.: {\"*.fat_young\": 2000} (todos os grupos), {\"seio_E.damping\": 10}, {\"anatomy.cap_drive_m\": 0.02}",
+    "roupa": "mudanças em roupas.json solver_tetraedros, ex.: {\"pecas.blusinha.atrito\": 0.2}, {\"pecas.*.espessura_mm\": 1}, {\"pele_pele_mm\": 3}",
+    "sim": "opções do tissue_cloth_sim.py, ex.: {\"substeps\": 320, \"ramp\": 60, \"entrada\": 0}",
+    "quadros": "opcional: só os primeiros N quadros da dança (mais rápido)"
+  },
+  "variacoes": [
+    {"nome": "base_v11i", "area": "base", "o_que": "a base, refeita pelo executor, para comparar com as outras nas mesmas condições"},
+
+    {"nome": "mov_suave_1q", "area": "movimento", "o_que": "captura menos suavizada (1 quadro): mais detalhe do movimento, mais tremor", "movimento": {"suavizacao_quadros": 1}},
+    {"nome": "mov_suave_4q", "area": "movimento", "o_que": "captura mais suavizada (4 quadros): menos tremor, movimento mais macio", "movimento": {"suavizacao_quadros": 4}},
+    {"nome": "mov_maos_capturadas", "area": "movimento", "o_que": "mãos como o MediaPipe as viu, sem pêndulo (como no tet_v8)", "movimento": {"maos": "capturadas"}},
+    {"nome": "mov_punho_2hz", "area": "movimento", "o_que": "punho mais solto: a mão segue a captura mais devagar e balança mais", "movimento": {"maos_json": {"punho.frequencia_hz": 2.0}}},
+    {"nome": "mov_punho_5hz", "area": "movimento", "o_que": "punho mais firme: a mão fica mais perto da captura", "movimento": {"maos_json": {"punho.frequencia_hz": 5.0}}},
+    {"nome": "mov_pes_soltos", "area": "movimento", "o_que": "sem pés presos: os pés seguem a captura, sem IK e sem o quadril descer", "movimento": {"sem_pes_presos": true}},
+
+    {"nome": "cm_passos_80", "area": "contato_malha", "o_que": "metade dos passos por quadro: mais rápido, tecido e pano mais moles do que o pedido", "sim": {"substeps": 80}},
+    {"nome": "cm_passos_320", "area": "contato_malha", "o_que": "o dobro dos passos: mais preciso e mais lento; se mudar pouco, 160 basta", "sim": {"substeps": 320}},
+    {"nome": "cm_rampa_60", "area": "contato_malha", "o_que": "o dobro do tempo para baixar os braços da pose A: menos tetraedros invertidos no começo?", "sim": {"ramp": 60}},
+    {"nome": "cm_pele_pele_3mm", "area": "contato_malha", "o_que": "peles de partes diferentes a 3 mm (base 1 mm): menos cruzamento, mais empurrão", "roupa": {"pele_pele_mm": 3.0}},
+    {"nome": "cm_sem_folga_pele", "area": "contato_malha", "o_que": "sem a folga para o pano entre duas peles (como o tet_v11h)", "sim": {"pele_folga": 0}},
+    {"nome": "cm_tampas_20mm", "area": "contato_malha", "o_que": "nós presos ao osso até 20 mm do corte (base 12): punho e tornozelo mais firmes", "malha": {"anatomy.cap_drive_m": 0.02}},
+
+    {"nome": "tec_gordura_mole", "area": "tecido", "o_que": "gordura com metade da elasticidade (2 kPa): cai mais e balança mais devagar", "malha": {"*.fat_young": 2000}},
+    {"nome": "tec_gordura_firme", "area": "tecido", "o_que": "gordura com o dobro da elasticidade (8 kPa): balança menos", "malha": {"*.fat_young": 8000}},
+    {"nome": "tec_amortecimento_10", "area": "tecido", "o_que": "metade do amortecimento: mais balanços depois de cada movimento", "malha": {"*.damping": 10}},
+    {"nome": "tec_amortecimento_40", "area": "tecido", "o_que": "o dobro do amortecimento: um tranco e para", "malha": {"*.damping": 40}},
+    {"nome": "tec_volume_049", "area": "tecido", "o_que": "Poisson 0,49 (tecido real): apertado, estufa para os lados", "malha": {"*.poisson": 0.49}},
+    {"nome": "tec_densidade_real", "area": "tecido", "o_que": "densidades reais: gordura 900, músculo 1.060 kg/m³ (base 750 e 900)", "malha": {"*.fat_density": 900, "*.muscle_density": 1060}},
+    {"nome": "tec_pele_50kpa", "area": "tecido", "o_que": "pele mais mole (50 kPa): a gordura empurra a pele, menos vinco nas dobras?", "malha": {"*.skin_young": 50000}},
+    {"nome": "tec_pele_300kpa", "area": "tecido", "o_que": "pele mais firme (300 kPa): segura mais a gordura, mais vinco?", "malha": {"*.skin_young": 300000}},
+
+    {"nome": "roupa_flexao_baixa", "area": "roupa", "o_que": "malha e brim 3 vezes menos rígidos à flexão (perto do mínimo medido da malha)", "roupa": {"pecas.blusinha.flexao_B_gf_cm2_cm": 0.0067, "pecas.jeans.flexao_B_gf_cm2_cm": 0.091}},
+    {"nome": "roupa_flexao_alta", "area": "roupa", "o_que": "2,5 vezes mais rígidos à flexão (malha no máximo medido, 0,05)", "roupa": {"pecas.blusinha.flexao_B_gf_cm2_cm": 0.05, "pecas.jeans.flexao_B_gf_cm2_cm": 0.68}},
+    {"nome": "roupa_tracao_baixa", "area": "roupa", "o_que": "metade da resistência à tração: estica mais", "roupa": {"pecas.blusinha.tracao_N_m": 150, "pecas.jeans.tracao_N_m": 1500}},
+    {"nome": "roupa_tracao_alta", "area": "roupa", "o_que": "o dobro da resistência à tração: estica menos, empurra mais a pele", "roupa": {"pecas.blusinha.tracao_N_m": 600, "pecas.jeans.tracao_N_m": 6000}},
+    {"nome": "roupa_atrito_baixo", "area": "roupa", "o_que": "metade do atrito com a pele: o pano escorrega mais, enrosca menos?", "roupa": {"pecas.*.atrito": 0.2}},
+    {"nome": "roupa_atrito_alto", "area": "roupa", "o_que": "o dobro do atrito: o pano segue mais a pele", "roupa": {"pecas.blusinha.atrito": 0.8, "pecas.jeans.atrito": 1.2}},
+    {"nome": "roupa_sem_encolher", "area": "roupa", "o_que": "sem o aperto de 2% (o cós continua): roupa mais solta", "roupa": {"pecas.*.encolhimento": 0.0}},
+    {"nome": "roupa_1mm", "area": "roupa", "o_que": "pano de 1 mm: mais justo à pele, menos folga entre peles", "roupa": {"pecas.*.espessura_mm": 1.0}},
+    {"nome": "roupa_3mm", "area": "roupa", "o_que": "pano de 3 mm: mais longe da pele, mais folga", "roupa": {"pecas.*.espessura_mm": 3.0}},
+    {"nome": "roupa_pano_pano", "area": "roupa", "o_que": "contato pano com pano ligado, com a casca grossa e as folgas novas", "sim": {"pano_pano": 1}}
+  ]
+}

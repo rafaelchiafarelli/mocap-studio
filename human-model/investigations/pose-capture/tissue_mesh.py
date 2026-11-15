@@ -82,9 +82,16 @@ def load_config(overrides):
         if item.startswith("densidade_neutra="):
             cfg["densidade_neutra"] = float(item.split("=")[1])
             continue
-        name, value = item.split("=")
-        group, key = name.split(".")
-        cfg["groups"][group][key] = float(value)
+        name, value = item.split("=", 1)
+        group, key = name.split(".", 1)
+        if group == "*":  # every group (experimentos.py: one value for the whole body)
+            for g in cfg["groups"].values():
+                if isinstance(g, dict) and key in g:
+                    g[key] = float(value)
+        elif group in cfg["groups"]:
+            cfg["groups"][group][key] = float(value)
+        else:  # a section, anatomy.<key> or mesh.<key>: the value as JSON (a number or a list)
+            cfg[group][key] = json.loads(value)
     return cfg
 
 
