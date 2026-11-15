@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parâmetros por região</title>
+<style>
+:root {
+  --bg: #fbfaf7; --ink: #1f2328; --muted: #5d6670; --line: #d9d5cc; --card: #ffffff;
+  --bone: #c9c2ae; --muscle: #c4584f; --muscle-fill: #f2d3cf; --fat: #e0b43c; --fat-fill: #fbefc6; --skin: #b9785c;
+  --breast: #d0628c; --cavity: #6f8fb8;
+  --tag-eye: #fff1d6; --tag-eye-ink: #7a4b00; --tag-model: #e3f0e5; --tag-model-ink: #24572e;
+  --tag-phys: #e4edf9; --tag-phys-ink: #1f4f86; --tag-meas: #efe7f8; --tag-meas-ink: #5b3591;
+  --warn: #fdeaea; --warn-ink: #8a1f1f;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17191c; --ink: #e8e6e1; --muted: #a1a7ae; --line: #343840; --card: #1f2226;
+    --bone: #8f8a7c; --muscle: #e07a70; --muscle-fill: #4a2522; --fat: #e2bb4f; --fat-fill: #3d3520; --skin: #e0a58a;
+    --breast: #f0a3c0; --cavity: #8fb0dc;
+    --tag-eye: #3d3020; --tag-eye-ink: #f2c77a; --tag-model: #1f3524; --tag-model-ink: #9fd8aa;
+    --tag-phys: #1d2d42; --tag-phys-ink: #9cc3f0; --tag-meas: #2e2440; --tag-meas-ink: #c9adf0;
+    --warn: #3d2020; --warn-ink: #f2a3a3;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17191c; --ink: #e8e6e1; --muted: #a1a7ae; --line: #343840; --card: #1f2226;
+  --bone: #8f8a7c; --muscle: #e07a70; --muscle-fill: #4a2522; --fat: #e2bb4f; --fat-fill: #3d3520; --skin: #e0a58a;
+  --breast: #f0a3c0; --cavity: #8fb0dc;
+  --tag-eye: #3d3020; --tag-eye-ink: #f2c77a; --tag-model: #1f3524; --tag-model-ink: #9fd8aa;
+  --tag-phys: #1d2d42; --tag-phys-ink: #9cc3f0; --tag-meas: #2e2440; --tag-meas-ink: #c9adf0;
+  --warn: #3d2020; --warn-ink: #f2a3a3;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1060px; margin: 0 auto; padding: 28px 16px 60px; }
+h1 { font-size: 26px; margin: 0 0 6px; }
+h2 { font-size: 19px; margin: 34px 0 10px; }
+h3 { margin: 0 0 6px; font-size: 16px; }
+p.lead { color: var(--muted); margin: 0 0 14px; max-width: 820px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+.card p, .card li { font-size: 13.5px; }
+.card ul { margin: 6px 0 0; padding-left: 18px; }
+.card li { margin: 2px 0; }
+.sub { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+.tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 14px; }
+.tag { display: inline-block; border-radius: 999px; padding: 1px 9px; font-size: 12px; white-space: nowrap; }
+.eye { background: var(--tag-eye); color: var(--tag-eye-ink); }
+.model { background: var(--tag-model); color: var(--tag-model-ink); }
+.phys { background: var(--tag-phys); color: var(--tag-phys-ink); }
+.meas { background: var(--tag-meas); color: var(--tag-meas-ink); }
+table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); font-size: 13px; }
+th, td { text-align: left; padding: 6px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mini th, .mini td { padding: 4px 7px; font-size: 12.5px; }
+.scroll { overflow-x: auto; }
+.note { color: var(--muted); font-size: 13px; margin-top: 8px; }
+.bar { display: flex; height: 12px; border-radius: 3px; overflow: hidden; margin: 6px 0 2px; }
+.bar span { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; background: var(--c); }
+.alert { background: var(--warn); color: var(--warn-ink); border-radius: 8px; padding: 10px 12px; font-size: 13.5px; }
+code { font-size: 12.5px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 860px) { .grid3 { grid-template-columns: 1fr; } }
+.fig { margin: 4px 0 8px; }
+.fig figcaption { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.camadas { display: flex; gap: 10px; align-items: center; margin: 4px 0 8px; }
+.camadas img { width: 38%; height: auto; border: 1px solid var(--line); border-radius: 6px; }
+.camadas span { font-size: 12px; color: var(--muted); }
+.marks { margin: 4px 0 0; padding-left: 22px; font-size: 13px; }
+.marks li { margin: 1px 0; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin: 0 3px 0 6px; }
+</style>
+</head>
+<body>
+<main>
+<h1>Parâmetros do tecido, região por região</h1>
+<p class="lead">O que cada número configura no tecido de tetraedros (passos 11 e 12 da investigação <code>pose-capture</code>), com os valores em uso, de onde vieram e o que se vê ao mudá-los. Os desenhos e os números medidos são da malha <code>malha_v10_repouso_para_desenho</code>, montada em repouso (braços abertos) para os cortes ficarem legíveis, com as mesmas regras da malha da dança.</p>
+<div class="tags"><span class="tag eye">a olho</span><span class="tag model">do modelo</span><span class="tag phys">física / literatura</span><span class="tag meas">medido aqui</span></div>
+
+<h2>Onde mudar</h2>
+<div class="card">
+  <ul>
+    <li><b>Arquivo:</b> <code>human-model/investigations/pose-capture/tissue_groups.json</code>. Cada região é um bloco em <code>"groups"</code>, e a anatomia reduzida fica em <code>"anatomy"</code>.</li>
+    <li><b>Numa rodada só, sem editar o arquivo:</b> <code>seio_E.fat_young=2000</code>, <code>coxa.damping=10</code> e assim por diante, no fim do comando do <code>tissue_mesh.py</code>.</li>
+    <li><b>Densidade neutra (o que você perguntou):</b> <code>"densidade_neutra": 1000</code> no arquivo, ou <code>densidade_neutra=1000</code> no comando, dá a mesma densidade a todo o tecido mole e ignora as densidades por região. Com <code>null</code>, valem as das regiões.</li>
+    <li>Material e anatomia entram na construção da malha (<code>tissue_mesh.py</code>, uns 3 minutos). A simulação (<code>tissue_sim.py</code>, uns 1,5 minuto) lê o que a malha gravou.</li>
+  </ul>
+</div>
+
+<h2>Onde fica cada região</h2>
+<p class="lead">Cada cor é um bloco do <code>tissue_groups.json</code>: tudo o que está nessa cor usa os valores daquele bloco. Os seios e a cavidade ficam por dentro, por isso não aparecem na pele. A pele que cobre os seios é do tronco.</p>
+<div class="grid">
+  <div class="card"><figure class="fig"><svg viewBox="0 0 900 620" role="img" aria-label="A pele por região, de frente" style="width:100%;height:auto;color:var(--ink)"><image href="13_parametros_imagens/mapa_frente.png" x="235" y="0" width="429" height="620"/><line x1="449" y1="109" x2="225" y2="97" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="449" cy="109" r="3.5" fill="currentColor"/><text x="221" y="103" text-anchor="end" font-size="17" fill="currentColor">tronco</text><line x1="297" y1="173" x2="225" y2="201" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="297" cy="173" r="3.5" fill="currentColor"/><text x="221" y="207" text-anchor="end" font-size="17" fill="currentColor">antebraço</text><line x1="370" y1="266" x2="225" y2="304" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="370" cy="266" r="3.5" fill="currentColor"/><text x="221" y="310" text-anchor="end" font-size="17" fill="currentColor">bumbum</text><line x1="404" y1="347" x2="225" y2="407" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="404" cy="347" r="3.5" fill="currentColor"/><text x="221" y="413" text-anchor="end" font-size="17" fill="currentColor">coxa</text><line x1="384" y1="487" x2="225" y2="511" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="384" cy="487" r="3.5" fill="currentColor"/><text x="221" y="517" text-anchor="end" font-size="17" fill="currentColor">perna</text><line x1="549" y1="115" x2="675" y2="201" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="549" cy="115" r="3.5" fill="currentColor"/><text x="679" y="207" text-anchor="start" font-size="17" fill="currentColor">braço</text><line x1="450" y1="262" x2="675" y2="407" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="450" cy="262" r="3.5" fill="currentColor"/><text x="679" y="413" text-anchor="start" font-size="17" fill="currentColor">barriga</text></svg><figcaption>A pele por região, de frente</figcaption></figure></div>
+  <div class="card"><figure class="fig"><svg viewBox="0 0 900 620" role="img" aria-label="A pele por região, de costas" style="width:100%;height:auto;color:var(--ink)"><image href="13_parametros_imagens/mapa_costas.png" x="235" y="0" width="429" height="620"/><line x1="349" y1="119" x2="225" y2="97" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="349" cy="119" r="3.5" fill="currentColor"/><text x="221" y="103" text-anchor="end" font-size="17" fill="currentColor">braço</text><line x1="392" y1="231" x2="225" y2="201" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="392" cy="231" r="3.5" fill="currentColor"/><text x="221" y="207" text-anchor="end" font-size="17" fill="currentColor">barriga</text><line x1="396" y1="295" x2="225" y2="304" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="396" cy="295" r="3.5" fill="currentColor"/><text x="221" y="310" text-anchor="end" font-size="17" fill="currentColor">bumbum</text><line x1="403" y1="370" x2="225" y2="407" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="403" cy="370" r="3.5" fill="currentColor"/><text x="221" y="413" text-anchor="end" font-size="17" fill="currentColor">coxa</text><line x1="384" y1="487" x2="225" y2="511" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="384" cy="487" r="3.5" fill="currentColor"/><text x="221" y="517" text-anchor="end" font-size="17" fill="currentColor">perna</text><line x1="450" y1="131" x2="675" y2="201" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="450" cy="131" r="3.5" fill="currentColor"/><text x="679" y="207" text-anchor="start" font-size="17" fill="currentColor">tronco</text><line x1="607" y1="177" x2="675" y2="407" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="607" cy="177" r="3.5" fill="currentColor"/><text x="679" y="413" text-anchor="start" font-size="17" fill="currentColor">antebraço</text></svg><figcaption>A pele por região, de costas</figcaption></figure></div>
+</div>
+<p class="note">Estes desenhos revelaram dois erros, já corrigidos: a pele dos joelhos caía no grupo do bumbum, porque o MPFB tem ossos auxiliares no joelho que eu não reconhecia, e quase toda a nádega estava no grupo da coxa, porque o MPFB dá o peso dela ao osso da coxa. Agora a pele atrás da articulação do quadril, até 12 cm abaixo dela (a dobra do glúteo, a olho), é bumbum. As versões erradas ficaram guardadas como <code>13_parametros_imagens_ERRADO_*</code>.</p>
+
+<h2>Por dentro: um corte de frente, no meio do corpo</h2>
+<p class="lead">O mesmo corte de três formas: por região, por tecido (que parâmetro vale em cada camada) e pelo tamanho dos tetraedros. O cinza é rígido: segue o osso e não usa nenhum parâmetro de tecido.</p>
+<div class="card"><figure class="fig"><svg viewBox="0 0 900 620" role="img" aria-label="Corte de frente, no meio do corpo: cada cor é uma região (um bloco do tissue_groups.json)" style="width:100%;height:auto;color:var(--ink)"><image href="13_parametros_imagens/frontal_grupos.png" x="278" y="0" width="345" height="620"/><line x1="429" y1="56" x2="268" y2="97" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="429" cy="56" r="3.5" fill="currentColor"/><text x="264" y="103" text-anchor="end" font-size="17" fill="currentColor">tronco</text><line x1="383" y1="107" x2="268" y2="201" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="383" cy="107" r="3.5" fill="currentColor"/><text x="264" y="207" text-anchor="end" font-size="17" fill="currentColor">braço</text><line x1="297" y1="164" x2="268" y2="304" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="297" cy="164" r="3.5" fill="currentColor"/><text x="264" y="310" text-anchor="end" font-size="17" fill="currentColor">antebraço</text><line x1="379" y1="245" x2="268" y2="407" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="379" cy="245" r="3.5" fill="currentColor"/><text x="264" y="413" text-anchor="end" font-size="17" fill="currentColor">barriga</text><line x1="399" y1="402" x2="268" y2="511" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="399" cy="402" r="3.5" fill="currentColor"/><text x="264" y="517" text-anchor="end" font-size="17" fill="currentColor">coxa</text><line x1="452" y1="141" x2="632" y2="118" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="452" cy="141" r="3.5" fill="currentColor"/><text x="636" y="124" text-anchor="start" font-size="17" fill="currentColor">rígido (osso)</text><line x1="478" y1="233" x2="632" y2="242" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="478" cy="233" r="3.5" fill="currentColor"/><text x="636" y="248" text-anchor="start" font-size="17" fill="currentColor">cavidade</text><line x1="528" y1="272" x2="632" y2="366" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="528" cy="272" r="3.5" fill="currentColor"/><text x="636" y="372" text-anchor="start" font-size="17" fill="currentColor">bumbum</text><line x1="519" y1="491" x2="632" y2="490" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="519" cy="491" r="3.5" fill="currentColor"/><text x="636" y="496" text-anchor="start" font-size="17" fill="currentColor">perna</text></svg><figcaption>Corte de frente, no meio do corpo: cada cor é uma região (um bloco do tissue_groups.json)</figcaption></figure></div>
+<div class="card" style="margin-top:16px"><figure class="fig"><svg viewBox="0 0 900 266" role="img" aria-label="O mesmo corte por tecido: cada camada usa os parâmetros indicados, com os valores da sua região" style="width:100%;height:auto;color:var(--ink)"><image href="13_parametros_imagens/frontal_tecidos.png" x="376" y="0" width="148" height="266"/><line x1="421" y1="212" x2="366" y2="127" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="421" cy="212" r="3.5" fill="currentColor"/><text x="362" y="133" text-anchor="end" font-size="17" fill="currentColor">músculo: muscle_young, muscle_density</text><line x1="451" y1="5" x2="534" y2="47" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="451" cy="5" r="3.5" fill="currentColor"/><text x="538" y="53" text-anchor="start" font-size="17" fill="currentColor">pele: skin_young, fat_density</text><line x1="451" y1="61" x2="534" y2="101" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="451" cy="61" r="3.5" fill="currentColor"/><text x="538" y="107" text-anchor="start" font-size="17" fill="currentColor">rígido: segue o osso</text><line x1="462" y1="100" x2="534" y2="154" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="462" cy="100" r="3.5" fill="currentColor"/><text x="538" y="160" text-anchor="start" font-size="17" fill="currentColor">cavidade: material próprio</text><line x1="470" y1="182" x2="534" y2="207" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="470" cy="182" r="3.5" fill="currentColor"/><text x="538" y="213" text-anchor="start" font-size="17" fill="currentColor">gordura: fat_young, fat_density</text></svg><figcaption>O mesmo corte por tecido: cada camada usa os parâmetros indicados, com os valores da sua região</figcaption></figure></div>
+<div class="card" style="margin-top:16px"><figure class="fig"><svg viewBox="0 0 900 620" role="img" aria-label="O mesmo corte pelo tamanho dos tetraedros: finos junto da pele, grossos no fundo" style="width:100%;height:auto;color:var(--ink)"><image href="13_parametros_imagens/frontal_camadas.png" x="278" y="0" width="345" height="620"/><line x1="290" y1="164" x2="268" y2="149" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="290" cy="164" r="3.5" fill="currentColor"/><text x="264" y="155" text-anchor="end" font-size="17" fill="currentColor">tetraedros de 3 mm</text><line x1="449" y1="185" x2="268" y2="304" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="449" cy="185" r="3.5" fill="currentColor"/><text x="264" y="310" text-anchor="end" font-size="17" fill="currentColor">tetraedros de 9 mm</text><line x1="396" y1="435" x2="268" y2="459" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="396" cy="435" r="3.5" fill="currentColor"/><text x="264" y="465" text-anchor="end" font-size="17" fill="currentColor">tetraedros de 6 mm</text><line x1="470" y1="254" x2="632" y2="304" stroke="currentColor" stroke-width="1.2" opacity="0.65"/><circle cx="470" cy="254" r="3.5" fill="currentColor"/><text x="636" y="310" text-anchor="start" font-size="17" fill="currentColor">tetraedros de 12 mm</text></svg><figcaption>O mesmo corte pelo tamanho dos tetraedros: finos junto da pele, grossos no fundo</figcaption></figure></div>
+<div class="grid" style="margin-top:16px">
+  <div class="card"><figure class="fig"><svg viewBox="0 0 900 560" role="img" aria-label="Corte de lado, pelo seio e pela nádega esquerdos (frente à direita)" style="width:100%;height:auto"><image href="13_parametros_imagens/lateral_tecidos.png" x="339" y="0" width="222" height="560"/><circle cx="405" cy="17" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="405" y="24" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">1</text><circle cx="456" cy="124" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="456" y="131" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">2</text><circle cx="521" cy="156" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="521" y="163" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">3</text><circle cx="452" cy="269" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="452" y="276" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">4</text><circle cx="448" cy="392" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="448" y="399" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">5</text><circle cx="446" cy="520" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="446" y="527" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">6</text></svg><figcaption>Corte de lado, pelo seio e pela nádega esquerdos (frente à direita)</figcaption><ol class="marks"><li>pele: skin_young, fat_density</li><li>rígido: segue o osso</li><li>seio: grupo seio_E / seio_D</li><li>cavidade: material próprio</li><li>músculo: muscle_young, muscle_density</li><li>gordura: fat_young, fat_density</li></ol></figure></div>
+  <div class="card"><h3>Como ler as cores de tecido</h3><ul>
+    <li><span class="sw" style="background:rgb(185,120,92)"></span><b>pele</b>, a primeira camada de 3 mm: <code>skin_young</code> e <code>fat_density</code> da região.</li>
+    <li><span class="sw" style="background:rgb(240,205,110)"></span><b>gordura</b>, até a espessura da tabela de gordura: <code>fat_young</code> e <code>fat_density</code>.</li>
+    <li><span class="sw" style="background:rgb(205,95,85)"></span><b>músculo</b>, o resto até o osso: <code>muscle_young</code> e <code>muscle_density</code>.</li>
+    <li><span class="sw" style="background:rgb(215,100,145)"></span><b>seio</b>: os blocos <code>seio_E</code> e <code>seio_D</code> (<code>fat_young</code>, <code>fat_density</code>).</li>
+    <li><span class="sw" style="background:rgb(120,150,190)"></span><b>cavidade</b>: o bloco <code>cavidade</code>.</li>
+    <li><span class="sw" style="background:rgb(170,166,150)"></span><b>rígido</b>: osso, caixa torácica, pelve e ombros. Segue o esqueleto.</li>
+    <li>Em todas as camadas moles: <code>poisson</code> e <code>damping</code> da região.</li></ul>
+    <p class="note">No corte por tamanho: <span class="sw" style="background:rgb(140,92,194)"></span>3 mm <span class="sw" style="background:rgb(90,150,210)"></span>6 mm <span class="sw" style="background:rgb(90,180,120)"></span>9 mm <span class="sw" style="background:rgb(200,160,60)"></span>12 mm.</p></div>
+</div>
+
+<h2>Os sete parâmetros de cada região</h2>
+<div class="scroll"><table>
+  <tr><th>Parâmetro</th><th>Chave</th><th>O que configura</th><th>Maior</th><th>Menor</th><th>Faixa razoável</th></tr>
+  <tr><td>Elasticidade da gordura</td><td><code>fat_young</code> (Pa)</td><td>Quanto a gordura resiste a mudar de forma</td><td>Cai menos, balança mais rápido e menos longe</td><td>Cai mais, balança devagar e longe; abaixo de ~1.000 escorre</td><td class="num">1.000–10.000</td></tr>
+  <tr><td>Elasticidade do músculo</td><td><code>muscle_young</code> (Pa)</td><td>O músculo relaxado sob a gordura</td><td>A região fica firme, só a gordura balança</td><td>Tudo balança junto, como carne mole</td><td class="num">10.000–50.000</td></tr>
+  <tr><td>Elasticidade da pele</td><td><code>skin_young</code> (Pa)</td><td>A primeira camada de 3 mm, que segura o resto</td><td>Contém a gordura: menos queda e menos balanço, mais vinco nas dobras</td><td>A gordura empurra a pele para fora e cai mais</td><td class="num">50.000–300.000</td></tr>
+  <tr><td>Densidade da gordura</td><td><code>fat_density</code> (kg/m³)</td><td>Peso da gordura e da pele</td><td>Mais peso: cai mais e atrasa mais em relação ao osso</td><td>Mais leve: acompanha o osso</td><td class="num">750–950</td></tr>
+  <tr><td>Densidade do músculo</td><td><code>muscle_density</code> (kg/m³)</td><td>Peso do músculo</td><td>Idem, mais fundo</td><td>Idem</td><td class="num">900–1.060</td></tr>
+  <tr><td>Volume (Poisson)</td><td><code>poisson</code></td><td>Quanto o tecido resiste a mudar de volume</td><td>Perto de 0,5: apertado, estufa para os lados</td><td>Apertado, só afunda</td><td class="num">0,40–0,49</td></tr>
+  <tr><td>Amortecimento</td><td><code>damping</code> (1/s)</td><td>Quanto do balanço morre por segundo, sempre em relação ao osso em que o tecido se apoia (não freia o membro inteiro, como o ar faria)</td><td>Um tranco e para</td><td>Balança várias vezes depois de cada movimento</td><td class="num">5–60</td></tr>
+</table></div>
+<p class="note">Em cada região, a pele e a gordura usam <code>fat_density</code>, e o músculo usa <code>muscle_density</code>. As peças rígidas não usam nenhum desses: seguem o osso.</p>
+
+<h2>Por região</h2>
+<p class="lead">Em cada carta, um corte atravessado da região, com cada camada apontada e os parâmetros que valem nela, e ao lado o mesmo corte pelo tamanho dos tetraedros.</p>
+<div class="grid">
+
+  <div class="card">
+    <h3>Braço <code>braco</code> (E e D juntos)</h3>
+    <p class="sub">Do ombro ao cotovelo. A pele a até 7 cm do eixo do braço, além da articulação do ombro, é braço; o resto da lateral do peito é tronco.</p>
+    <figure class="fig"><svg viewBox="0 0 900 560" role="img" aria-label="Braço esquerdo, atravessado no meio" style="width:100%;height:auto"><image href="13_parametros_imagens/corte_braco.png" x="159" y="0" width="581" height="560"/><circle cx="436" cy="132" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="436" y="139" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">1</text><circle cx="262" cy="235" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="262" y="242" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">2</text><circle cx="394" cy="247" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="394" y="254" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">3</text><circle cx="503" cy="301" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="503" y="308" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">4</text></svg><figcaption>Braço esquerdo, atravessado no meio</figcaption><ol class="marks"><li>gordura: fat_young, fat_density</li><li>pele: skin_young, fat_density</li><li>músculo: muscle_young, muscle_density</li><li>rígido: segue o osso</li></ol></figure><div class="camadas"><img src="13_parametros_imagens/corte_braco_camadas.png" alt="tamanho dos tetraedros no mesmo corte"><span>o mesmo corte pelo tamanho dos tetraedros: roxo 3 mm, azul 6, verde 9, amarelo 12</span></div>
+    <p class="note">2,9 L: pele 0,35, gordura 0,90, músculo 1,61 · 2,4 kg <span class="tag meas">medido</span></p>
+    <table class="mini"><tr><td>Gordura (mulher / homem)</td><td>frente 8 / 5 mm, trás 15 / 8 mm <span class="tag eye">a olho</span></td></tr>
+      <tr><td>Por dentro</td><td>úmero: cápsula rígida de 11 mm de raio no osso do braço <span class="tag eye">a olho</span></td></tr>
+      <tr><td>Valores</td><td>gordura 4.000 · músculo 15.000 · pele 100.000 Pa · 750 / 900 kg/m³ · 0,45 · 20/s <span class="tag eye">rafa8</span></td></tr></table>
+    <ul><li><b>Ao mexer:</b> a parte de trás, mais gorda, é a que balança. Para um "tchauzinho" mais solto, baixe <code>fat_young</code> e <code>damping</code>.</li></ul>
+  </div>
+
+  <div class="card">
+    <h3>Antebraço <code>antebraco</code></h3>
+    <p class="sub">Do cotovelo ao pulso. A pele que o MPFB move mais pelo antebraço ou pela mão.</p>
+    <figure class="fig"><svg viewBox="0 0 900 560" role="img" aria-label="Antebraço esquerdo, atravessado no meio" style="width:100%;height:auto"><image href="13_parametros_imagens/corte_antebraco.png" x="166" y="0" width="569" height="560"/><circle cx="376" cy="153" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="376" y="160" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">1</text><circle cx="602" cy="274" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="602" y="281" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">2</text><circle cx="379" cy="283" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="379" y="290" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">3</text><circle cx="492" cy="312" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="492" y="319" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">4</text></svg><figcaption>Antebraço esquerdo, atravessado no meio</figcaption><ol class="marks"><li>pele: skin_young, fat_density</li><li>gordura: fat_young, fat_density</li><li>músculo: muscle_young, muscle_density</li><li>rígido: segue o osso</li></ol></figure><div class="camadas"><img src="13_parametros_imagens/corte_antebraco_camadas.png" alt="tamanho dos tetraedros no mesmo corte"><span>o mesmo corte pelo tamanho dos tetraedros: roxo 3 mm, azul 6, verde 9, amarelo 12</span></div>
+    <p class="note">1,1 L: pele 0,24, gordura 0,27, músculo 0,60 · 0,9 kg <span class="tag meas">medido</span></p>
+    <table class="mini"><tr><td>Gordura</td><td>6 / 4 mm <span class="tag eye">a olho</span></td></tr>
+      <tr><td>Por dentro</td><td>rádio e ulna: uma cápsula de 9 mm <span class="tag eye">a olho</span></td></tr>
+      <tr><td>Valores</td><td>como o braço <span class="tag eye">rafa8</span></td></tr></table>
+    <ul><li><b>Ao mexer:</b> quase nada balança aqui, o que é o real. Mudar os valores daqui faz pouca diferença.</li><li>No pulso, a pele simulada encontra a da mão, que segue o esqueleto. Há uma emenda ali. Medido em 15/11: a borda simulada fica a no máximo 1,4 mm da mão; a linha que aparecia era da montagem (a mão sem subdivisão, por baixo da pele lisa), corrigida no tet_v11.</li></ul>
+  </div>
+
+  <div class="card">
+    <h3>Tronco <code>tronco</code></h3>
+    <p class="sub">Peito, costas, ombros, pescoço e a pele que cobre os seios (os volumes dos seios são grupos à parte).</p>
+    <figure class="fig"><svg viewBox="0 0 900 495" role="img" aria-label="Tronco na altura das axilas, acima dos seios, visto de cima (frente em cima)" style="width:100%;height:auto"><image href="13_parametros_imagens/corte_tronco.png" x="0" y="0" width="900" height="495"/><circle cx="228" cy="60" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="228" y="67" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">1</text><circle cx="675" cy="91" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="675" y="98" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">2</text><circle cx="417" cy="252" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="417" y="259" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">3</text><circle cx="737" cy="261" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="737" y="268" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">4</text><circle cx="118" cy="350" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="118" y="357" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">5</text></svg><figcaption>Tronco na altura das axilas, acima dos seios, visto de cima (frente em cima)</figcaption><ol class="marks"><li>pele: skin_young, fat_density</li><li>seio: grupo seio_E / seio_D</li><li>rígido: segue o osso</li><li>músculo: muscle_young, muscle_density</li><li>gordura: fat_young, fat_density</li></ol></figure><div class="camadas"><img src="13_parametros_imagens/corte_tronco_camadas.png" alt="tamanho dos tetraedros no mesmo corte"><span>o mesmo corte pelo tamanho dos tetraedros: roxo 3 mm, azul 6, verde 9, amarelo 12</span></div>
+    <p class="note">11,3 L: pele 1,23, gordura 3,44, músculo 6,62 · 9,5 kg <span class="tag meas">medido</span></p>
+    <table class="mini"><tr><td>Gordura</td><td>peito 10 / 8, costas em cima 12 / 10, embaixo 18 / 14, flancos 22 / 20, pescoço 8 / 8 mm <span class="tag eye">a olho</span></td></tr>
+      <tr><td>Por dentro</td><td>caixa torácica rígida, uma peça só no spine.003, a partir de 15 mm abaixo da gordura (o "peitoral"); coluna (cápsula de 20 mm); ombros (cápsula de 20 mm no lugar de clavícula e escápula) <span class="tag eye">a olho</span></td></tr>
+      <tr><td>Valores</td><td>como o braço <span class="tag eye">rafa8</span></td></tr></table>
+    <ul><li><b>Atenção:</b> a pele e a gordura fina por cima dos seios são deste grupo. Para soltar o seio, mude também <code>tronco.skin_young</code>, ou crie um grupo para a pele do seio.</li>
+      <li>É onde se concentram os vincos (veja abaixo).</li></ul>
+  </div>
+
+  <div class="card">
+    <h3>Seios <code>seio_E</code> e <code>seio_D</code></h3>
+    <p class="sub">Cada um é o volume entre a pele de verdade e a do mesmo corpo com o tamanho de seio do MPFB no mínimo e os controles de seio desligados, menos 5 mm de gordura sob a pele.</p>
+    <figure class="fig"><svg viewBox="0 0 900 560" role="img" aria-label="Na altura dos seios, visto de cima (frente em cima)" style="width:100%;height:auto"><image href="13_parametros_imagens/corte_seios.png" x="111" y="0" width="679" height="560"/><circle cx="231" cy="45" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="231" y="52" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">1</text><circle cx="263" cy="117" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="263" y="124" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">2</text><circle cx="538" cy="332" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="538" y="339" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">3</text><circle cx="177" cy="413" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="177" y="420" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">4</text><circle cx="482" cy="471" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="482" y="478" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">5</text></svg><figcaption>Na altura dos seios, visto de cima (frente em cima)</figcaption><ol class="marks"><li>pele: skin_young, fat_density</li><li>seio: grupo seio_E / seio_D</li><li>rígido: segue o osso</li><li>gordura: fat_young, fat_density</li><li>músculo: muscle_young, muscle_density</li></ol></figure><div class="camadas"><img src="13_parametros_imagens/corte_seios_camadas.png" alt="tamanho dos tetraedros no mesmo corte"><span>o mesmo corte pelo tamanho dos tetraedros: roxo 3 mm, azul 6, verde 9, amarelo 12</span></div>
+    <p class="note">1,12 L e 1,11 L · 1,0 kg cada <span class="tag meas">medido</span></p>
+    <table class="mini"><tr><td>Por dentro</td><td>nada rígido. A base encosta no peitoral e na caixa torácica; a pele e a gordura fina por cima são do tronco</td></tr>
+      <tr><td>Valores</td><td>gordura 2.000 Pa · 900 kg/m³ · 0,45 · 10/s <span class="tag eye">a olho</span> (mais mole e menos amortecido que o resto; seus valores do "simulador do seio", de 05/11, ainda não foram trazidos)</td></tr></table>
+    <ul><li><b>Medido:</b> com o peso, o seio cai uns 25 mm a partir do formato do MPFB, e na dança balança até uns 50 mm.</li>
+      <li><b>Ao mexer:</b> <code>fat_young</code> controla quanto cai e o ritmo, <code>damping</code> quantas vezes balança, <code>fat_density</code> o atraso. E e D podem ser diferentes.</li>
+      <li>O formato do MPFB já é o seio em pé, com o peso. A simulação aplica a gravidade outra vez por cima, e por isso ele cai além do que deveria. Falta calcular uma forma de repouso compensada.</li></ul>
+  </div>
+
+  <div class="card">
+    <h3>Barriga <code>barriga</code></h3>
+    <p class="sub">A frente do abdome, entre o quadril e as costelas, e os flancos de baixo.</p>
+    <figure class="fig"><svg viewBox="0 0 900 560" role="img" aria-label="Barriga e cavidade, visto de cima (frente em cima)" style="width:100%;height:auto"><image href="13_parametros_imagens/corte_barriga.png" x="28" y="0" width="843" height="560"/><circle cx="441" cy="242" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="441" y="249" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">1</text><circle cx="108" cy="310" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="108" y="317" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">2</text><circle cx="457" cy="402" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="457" y="409" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">3</text><circle cx="344" cy="406" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="344" y="413" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">4</text><circle cx="246" cy="505" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="246" y="512" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">5</text></svg><figcaption>Barriga e cavidade, visto de cima (frente em cima)</figcaption><ol class="marks"><li>cavidade: material próprio</li><li>gordura: fat_young, fat_density</li><li>rígido: segue o osso</li><li>músculo: muscle_young, muscle_density</li><li>pele: skin_young, fat_density</li></ol></figure><div class="camadas"><img src="13_parametros_imagens/corte_barriga_camadas.png" alt="tamanho dos tetraedros no mesmo corte"><span>o mesmo corte pelo tamanho dos tetraedros: roxo 3 mm, azul 6, verde 9, amarelo 12</span></div>
+    <p class="note">5,7 L: pele 0,38, gordura 2,51, músculo 2,78 · 4,7 kg <span class="tag meas">medido</span></p>
+    <table class="mini"><tr><td>Gordura</td><td>25 / 25 mm, flancos 22 / 20 mm <span class="tag eye">a olho</span></td></tr>
+      <tr><td>Por dentro</td><td>parede do abdome (músculo de 15 mm) sobre a cavidade dos órgãos <span class="tag eye">a olho</span></td></tr>
+      <tr><td>Valores</td><td>como o braço <span class="tag eye">rafa8</span></td></tr></table>
+    <ul><li><b>Ao mexer:</b> a barriga balança como um saco d'água porque a cavidade empurra a parede. A gordura daqui e a cavidade se somam. Num homem com barriga, como a sua, este grupo e a cavidade são os que mais contam.</li></ul>
+  </div>
+
+  <div class="card">
+    <h3>Cavidade <code>cavidade</code></h3>
+    <p class="sub">Os órgãos da barriga: abaixo da parede do abdome, entre o quadril e as costelas, na frente da coluna.</p>
+    <figure class="fig"><svg viewBox="0 0 900 560" role="img" aria-label="Barriga e cavidade, visto de cima (frente em cima)" style="width:100%;height:auto"><image href="13_parametros_imagens/corte_barriga.png" x="28" y="0" width="843" height="560"/><circle cx="441" cy="242" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="441" y="249" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">1</text><circle cx="108" cy="310" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="108" y="317" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">2</text><circle cx="457" cy="402" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="457" y="409" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">3</text><circle cx="344" cy="406" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="344" y="413" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">4</text><circle cx="246" cy="505" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="246" y="512" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">5</text></svg><figcaption>Barriga e cavidade, visto de cima (frente em cima)</figcaption><ol class="marks"><li>cavidade: material próprio</li><li>gordura: fat_young, fat_density</li><li>rígido: segue o osso</li><li>músculo: muscle_young, muscle_density</li><li>pele: skin_young, fat_density</li></ol></figure><div class="camadas"><img src="13_parametros_imagens/corte_barriga_camadas.png" alt="tamanho dos tetraedros no mesmo corte"><span>o mesmo corte pelo tamanho dos tetraedros: roxo 3 mm, azul 6, verde 9, amarelo 12</span></div>
+    <p class="note">2,45 L · 2,45 kg <span class="tag meas">medido</span></p>
+    <table class="mini"><tr><td>Valores</td><td>um material só: 3.000 Pa, 1.000 kg/m³, 0,45, 20/s <span class="tag eye">a olho</span>. Aqui <code>fat_young</code>, <code>muscle_young</code> e <code>skin_young</code> são o mesmo número.</td></tr></table>
+    <ul><li><b>Ao mexer:</b> o volume (<code>poisson</code>) é o que mais importa: perto de 0,49 a barriga só muda de forma, sem encolher, como um balão d'água.</li>
+      <li>Fica no fundo, então tem tetraedros grandes (só 12.700): é um bloco mole, sem detalhe.</li></ul>
+  </div>
+
+  <div class="card">
+    <h3>Bumbum <code>bumbum</code></h3>
+    <p class="sub">A nádega: atrás da articulação do quadril, até 12 cm abaixo dela (a dobra do glúteo), e os lados do quadril até uns 6 cm acima da articulação.</p>
+    <figure class="fig"><svg viewBox="0 0 900 540" role="img" aria-label="Quadril e nádegas, visto de cima (frente em cima)" style="width:100%;height:auto"><image href="13_parametros_imagens/corte_bumbum.png" x="0" y="0" width="900" height="540"/><circle cx="160" cy="59" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="160" y="66" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">1</text><circle cx="755" cy="223" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="755" y="230" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">2</text><circle cx="630" cy="299" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="630" y="306" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">3</text><circle cx="447" cy="375" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="447" y="382" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">4</text></svg><figcaption>Quadril e nádegas, visto de cima (frente em cima)</figcaption><ol class="marks"><li>pele: skin_young, fat_density</li><li>músculo: muscle_young, muscle_density</li><li>rígido: segue o osso</li><li>gordura: fat_young, fat_density</li></ol></figure><div class="camadas"><img src="13_parametros_imagens/corte_bumbum_camadas.png" alt="tamanho dos tetraedros no mesmo corte"><span>o mesmo corte pelo tamanho dos tetraedros: roxo 3 mm, azul 6, verde 9, amarelo 12</span></div>
+    <p class="note">5,5 L: pele 0,37, gordura 2,68, músculo 2,41 · 4,5 kg <span class="tag meas">medido</span></p>
+    <table class="mini"><tr><td>Gordura</td><td>nádegas 30 / 18, quadril 30 / 14 mm <span class="tag eye">a olho</span></td></tr>
+      <tr><td>Por dentro</td><td>pelve: um bloco rígido no osso "spine" (a raiz), a partir de 25 mm abaixo da gordura, de 5 cm abaixo a 8 cm acima da articulação da coxa <span class="tag eye">a olho</span></td></tr>
+      <tr><td>Valores</td><td>como o braço <span class="tag eye">rafa8</span></td></tr></table>
+    <ul><li><b>Ao mexer:</b> é onde o rebolado da dança aparece como tecido. Mais mole e menos amortecido, a nádega sacode mais atrasada em relação à pelve.</li></ul>
+  </div>
+
+  <div class="card">
+    <h3>Coxa <code>coxa</code> (E e D)</h3>
+    <p class="sub">Da virilha ao joelho.</p>
+    <figure class="fig"><svg viewBox="0 0 900 560" role="img" aria-label="Coxa esquerda, atravessada no meio" style="width:100%;height:auto"><image href="13_parametros_imagens/corte_coxa.png" x="196" y="0" width="508" height="560"/><circle cx="338" cy="146" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="338" y="153" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">1</text><circle cx="268" cy="181" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="268" y="188" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">2</text><circle cx="478" cy="253" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="478" y="260" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">3</text><circle cx="443" cy="373" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="443" y="380" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">4</text></svg><figcaption>Coxa esquerda, atravessada no meio</figcaption><ol class="marks"><li>gordura: fat_young, fat_density</li><li>pele: skin_young, fat_density</li><li>rígido: segue o osso</li><li>músculo: muscle_young, muscle_density</li></ol></figure><div class="camadas"><img src="13_parametros_imagens/corte_coxa_camadas.png" alt="tamanho dos tetraedros no mesmo corte"><span>o mesmo corte pelo tamanho dos tetraedros: roxo 3 mm, azul 6, verde 9, amarelo 12</span></div>
+    <p class="note">10,8 L: pele 0,82, gordura 4,39, músculo 5,62 · 9,0 kg <span class="tag meas">medido</span></p>
+    <table class="mini"><tr><td>Gordura</td><td>frente 15 / 8, trás 25 / 12, dentro 25 / 12, fora 22 / 10 mm <span class="tag eye">a olho</span></td></tr>
+      <tr><td>Por dentro</td><td>fêmur: cápsula de 14 mm <span class="tag eye">a olho</span></td></tr>
+      <tr><td>Valores</td><td>como o braço <span class="tag meas">rafa8, os únicos medidos (na coxa, 07/11)</span></td></tr></table>
+    <ul><li><b>Ao mexer:</b> a parte de trás e a de dentro tremem a cada passo. Com rafa8, a coxa sozinha balançou 15,5 mm por passo.</li></ul>
+  </div>
+
+  <div class="card">
+    <h3>Perna <code>perna</code> (E e D)</h3>
+    <p class="sub">Do joelho ao tornozelo.</p>
+    <figure class="fig"><svg viewBox="0 0 900 560" role="img" aria-label="Perna esquerda, atravessada na panturrilha" style="width:100%;height:auto"><image href="13_parametros_imagens/corte_perna.png" x="175" y="0" width="550" height="560"/><circle cx="338" cy="115" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="338" y="122" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">1</text><circle cx="474" cy="225" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="474" y="232" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">2</text><circle cx="282" cy="270" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="282" y="277" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">3</text><circle cx="412" cy="364" r="17" fill="#fff" stroke="#1f2328" stroke-width="2"/><text x="412" y="371" text-anchor="middle" font-size="20" font-weight="700" fill="#1f2328">4</text></svg><figcaption>Perna esquerda, atravessada na panturrilha</figcaption><ol class="marks"><li>pele: skin_young, fat_density</li><li>músculo: muscle_young, muscle_density</li><li>gordura: fat_young, fat_density</li><li>rígido: segue o osso</li></ol></figure><div class="camadas"><img src="13_parametros_imagens/corte_perna_camadas.png" alt="tamanho dos tetraedros no mesmo corte"><span>o mesmo corte pelo tamanho dos tetraedros: roxo 3 mm, azul 6, verde 9, amarelo 12</span></div>
+    <p class="note">4,5 L: pele 0,63, gordura 1,37, músculo 2,54 · 3,8 kg <span class="tag meas">medido</span></p>
+    <table class="mini"><tr><td>Gordura</td><td>joelho 12 / 8, frente 5 / 4, panturrilha 12 / 7 mm <span class="tag eye">a olho</span></td></tr>
+      <tr><td>Por dentro</td><td>tíbia: cápsula de 12 mm <span class="tag eye">a olho</span></td></tr>
+      <tr><td>Valores</td><td>como o braço <span class="tag eye">rafa8</span></td></tr></table>
+    <ul><li><b>Ao mexer:</b> só a panturrilha treme, curto, quando o pé bate. No tornozelo há uma emenda com o pé, que segue o esqueleto.</li></ul>
+  </div>
+
+</div>
+
+<h2>O que não é por região</h2>
+<div class="scroll"><table>
+  <tr><th>Parâmetro</th><th>Onde</th><th>Valor</th><th>O que faz</th></tr>
+  <tr><td>Camadas da malha</td><td><code>mesh.bands_mm</code></td><td class="num">3×3, 3×6, 3×9 mm, depois 12</td><td>Tamanho dos tetraedros por profundidade sob a pele <span class="tag eye">Rafael</span></td></tr>
+  <tr><td>Espessura da pele</td><td><code>mesh.skin_mm</code></td><td class="num">3 mm</td><td>A primeira camada, com <code>skin_young</code></td></tr>
+  <tr><td>Peitoral, parede do abdome</td><td><code>anatomy.pectoral_m</code>, <code>abdominal_wall_m</code></td><td class="num">15 mm, 15 mm</td><td>O músculo entre a gordura e a caixa torácica / a cavidade</td></tr>
+  <tr><td>Raios das cápsulas rígidas</td><td><code>anatomy.bone_radius_m</code></td><td class="num">braço 11, antebraço 9, coxa 14, perna 12, coluna 20, ombro 20 mm</td><td>A parte que segue o osso sem ceder</td></tr>
+  <tr><td>Gordura sob a pele do seio</td><td><code>anatomy.breast_skin_fat_m</code></td><td class="num">5 mm</td><td>Entre a pele e o volume do seio</td></tr>
+  <tr><td>Passos por quadro</td><td><code>substeps=</code> no <code>tissue_sim.py</code></td><td class="num">160</td><td>Precisão. Medido: 160, 320 e 640 dão o mesmo resultado</td></tr>
+  <tr><td>Assentar antes da dança</td><td><code>hold=</code></td><td class="num">15 quadros (0,5 s)</td><td>O tecido assenta com o peso antes da dança começar</td></tr>
+  <tr><td>Colagem entre camadas</td><td><code>GLUE_COMPLIANCE</code> em <code>tissue_solver.py</code></td><td class="num">1e-8 m/N</td><td>Uma folga mínima. Com zero, a simulação explodia</td></tr>
+  <tr><td>Densidade neutra</td><td><code>densidade_neutra</code></td><td class="num">desligada</td><td>Uma só densidade para todo o tecido mole</td></tr>
+  <tr><td>Quanto a pele cede no contato</td><td><code>cede_mm=</code></td><td class="num">5 mm</td><td>Entre partes (tronco, braços, pernas). Além disso, a sobra fica visível e é contada como erro do esqueleto <span class="tag eye">Rafael, 14/11</span></td></tr>
+  <tr><td>Pele com pele, com roupa</td><td><code>pele_pele_mm</code>, <code>pele_folga=</code></td><td class="num">1 mm + 2×2 mm sob pano</td><td>Distância entre a pele de duas partes; onde havia pano em repouso, mais a espessura dele dos dois lados <span class="tag meas">15/11</span></td></tr>
+  <tr><td>Medidas que seguem o tamanho do corpo</td><td><code>body_scale</code></td><td class="num">1 neste corpo</td><td>Raio do braço, dobra do glúteo e as outras distâncias das regiões escalam com a altura do corpo (referência: este corpo, 1,586 m)</td></tr>
+</table></div>
+
+<h2>A roupa (desde 14/11)</h2>
+<p class="lead">O pano é simulado junto com os tetraedros (passo 17): cada vértice do pano tem a massa real do tecido e empurra a pele, que empurra de volta. Arquivo: <code>human-model/investigations/pose-capture/roupas.json</code>, bloco <code>solver_tetraedros</code> (por peça) e <code>vestir</code> (quais peças, de qual arquivo do MPFB). O desenho de cada regra está em <code>10_desenho_tecidos.html</code>, seção "A roupa".</p>
+<div class="scroll"><table>
+  <tr><th>Parâmetro</th><th>Chave</th><th>O que configura</th><th>Maior</th><th>Menor</th><th>Blusinha · Jeans</th></tr>
+  <tr><td>Gramatura</td><td><code>gramatura_g_m2</code></td><td>A massa do pano</td><td>Mais pesado: cai mais, atrasa, puxa a pele</td><td>Mais leve: segue a pele</td><td class="num">160 · 400 g/m²</td></tr>
+  <tr><td>Tração</td><td><code>tracao_N_m</code></td><td>Quanto o pano resiste a esticar</td><td>Estica menos; empurra mais a pele</td><td>Estica e rasga na tela</td><td class="num">300 · 3.000 N/m</td></tr>
+  <tr><td>Flexão</td><td><code>flexao_B_gf_cm2_cm</code></td><td>Quanto resiste a dobrar (casca grossa)</td><td>Dobras largas, menos vincos</td><td>Amarrota em dobrinhas</td><td class="num">0,02 · 0,273 (medido)</td></tr>
+  <tr><td>Espessura</td><td><code>espessura_mm</code></td><td>A distância da pele e o que se mostra</td><td>Pano mais longe da pele, mais folga entre peles</td><td>Mais justo</td><td class="num">2 · 2 mm</td></tr>
+  <tr><td>Atrito</td><td><code>atrito</code></td><td>Quanto o pano escorrega na pele</td><td>Segue a pele; pode ser arrastado pelo braço</td><td>Escorrega</td><td class="num">0,4 · 0,6</td></tr>
+  <tr><td>Encolhimento</td><td><code>encolhimento</code>, <code>encolhimento_cos</code></td><td>O aperto do pano no corpo</td><td>Justo, segura no lugar</td><td>Solto, escorrega</td><td class="num">2% · 2%, cós 6%</td></tr>
+  <tr><td>Amortecimento</td><td><code>amortecimento_1_s</code></td><td>Quanto do balanço do pano morre por segundo</td><td>Pano parado</td><td>Pano balança</td><td class="num">1 · 1 /s</td></tr>
+</table></div>
+<div class="scroll" style="margin-top:12px"><table>
+  <tr><th>Regra de contato</th><th>Opção</th><th>O que faz</th></tr>
+  <tr><td>Pano sobre a pele</td><td>sempre</td><td>O pano fica a <code>espessura_mm</code> da pele de cada parte (tronco, braços, pernas), e a pele cede de volta</td></tr>
+  <tr><td>Saída por onde entrou</td><td><code>entrada=1</code></td><td>Um vértice que entrou num braço ou numa mão volta pelo lado em que estava (sem isso, a barra virava pulseira)</td></tr>
+  <tr><td>Espaço sob a mão</td><td><code>mao_folga=1</code></td><td>A mão deixa o espaço do pano sobre a pele coberta</td></tr>
+  <tr><td>Pele sob o pano</td><td><code>sob_pano=tronco</code></td><td>A pele do tronco que estava sob a blusa não atravessa o pano</td></tr>
+  <tr><td>Pano com pano</td><td><code>pano_pano=0</code></td><td>Desligado: ligado, ficou pior (espeto no jeans, blusa mais amarrotada)</td></tr>
+</table></div>
+<div class="scroll" style="margin-top:12px"><table>
+  <tr><th>Medido na dança inteira</th><th>tet_v10</th><th>tet_v11i</th></tr>
+  <tr><td>Estiramento da blusa, p95 (mediana dos quadros)</td><td class="num">16%</td><td class="num">7,5%</td></tr>
+  <tr><td>Estiramento máximo da blusa</td><td class="num">386%</td><td class="num">115%</td></tr>
+  <tr><td>Quadros com espeto no pano (blusa)</td><td class="num">274</td><td class="num">4</td></tr>
+  <tr><td>Quadros com a blusa dando mais de meia volta no antebraço (E · D)</td><td class="num">96 · 48</td><td class="num">0 · 10</td></tr>
+  <tr><td>Tetraedros invertidos (mediana, de 3,3 milhões)</td><td class="num">3.800</td><td class="num">5.200</td></tr>
+</table></div>
+<p class="note">Ainda abertos: cacos da barra perto do punho direito no fim da dança, um rasgo nas costas na diagonal do ombro (onde a pele tem o vinco diagonal) e a manga espremida na axila.</p>
+
+<h2>Os vincos: o que testamos hoje</h2>
+<p class="lead">Para comparar sem depender só do olho, contei as arestas da pele simulada dobradas mais de 25° onde a pele do esqueleto, no mesmo ponto, está quase lisa (menos de 10°), em 12 quadros da dança (<code>creases.py</code>).</p>
+<div class="scroll"><table>
+  <tr><th>Rodada</th><th>O que muda</th><th>Arestas vincadas</th></tr>
+  <tr><td><code>sim_v5</code></td><td>A atual (o vídeo 12)</td><td class="num">26.892</td></tr>
+  <tr><td><code>sim_v6</code></td><td>Densidade (900) e amortecimento (20/s) iguais em todo o tecido mole</td><td class="num">26.331 (−2%)</td></tr>
+  <tr><td><code>sim_v7</code></td><td>Sobreposição entre camadas contada uma vez só. Até aqui ela pesava e resistia 1,5 vez, um erro meu que foi corrigido</td><td class="num">26.661 (−1%)</td></tr>
+</table></div>
+<div class="alert" style="margin-top:12px">Densidade e amortecimento não explicam os vincos. Já no primeiro quadro, antes da dança, há uns 1.070 vértices vincados entre 1,18 e 1,24 m de altura. Eles ficam onde o braço encontra o tronco (640) e no alto do peito, junto à caixa torácica (415). Com os braços junto ao corpo, a pele do braço e a do flanco se cruzam, e ao construir a malha nessa pose os dois volumes viram um bloco só, fundido. O vinco nasce nessa emenda. A causa provável é a falta de contato: braço e tronco precisam ser volumes separados que se encostam.</div>
+<p class="note">Arquivos: <code>11_tecidos\sim_v5_costelas_uma_peca</code>, <code>sim_v6_densidade_amortecimento_uniformes</code>, <code>sim_v7_sobreposicao_corrigida</code>; a pele do esqueleto para comparar: <code>11_tecidos\pele_esqueleto_subdividida.npz</code>.</p>
+
+</main>
+</body>
+</html>
