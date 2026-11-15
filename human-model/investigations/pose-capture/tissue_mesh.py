@@ -51,6 +51,16 @@ ARM_PAST_JOINT_M = 0.02
 GLUTEAL_FOLD_M = 0.12  # the fold under the buttock, below the hip joint (by eye)
 BUTTOCK_BEHIND_M = 0.02  # behind the hip joint by this much is buttock
 GROUPS = ("braco", "antebraco", "tronco", "seio_E", "seio_D", "barriga", "cavidade", "bumbum", "coxa", "perna")
+# Parts: separate volumes that touch and collide instead of fusing (contact, Rafael 2026-11-14). Arm and trunk built with the
+# arms down overlapped and the mesh fused them into one volume, creasing the flank (sim_v8). Index 5 and 6 are the hands,
+# colliders that follow the skeleton.
+PARTS = ("tronco", "braco_E", "braco_D", "perna_E", "perna_D", "mao_E", "mao_D")
+# Two parts are joined (one node) where they stay together when the pose changes: the node taken back to MPFB's A pose by each
+# part's own skinning (its nearest skin vertex of that part) lands within this of itself. Farther apart, they only touch in this
+# pose (the arm lowered onto the flank), and the node is split (by eye). Judged by the nearest skin points' A-pose distance instead,
+# deep hip nodes were split and the hip cut open inside (malha_v15).
+JOIN_M = 0.02
+CONTACT_CLEAR_OF_JOIN_M = 0.009  # contact surfaces start this far from any joined node (three 3 mm voxels)
 DATA = HERE.parent.parent / "data"
 
 
@@ -181,9 +191,10 @@ def band_grid(lo, hi, h, a, b, half_in, skin_q, closed_q, chunk_z=40):
     return origin, shape, mask
 
 
-def find_tets(points, origin, h, mask, nodes, tets, tet_voxel, vox):
+def find_tets(points, origin, h, mask, nodes, tets, tet_voxel, vox, vpart=None, ppart=None):
     """For each point, the band's tetrahedron holding it (best of the 6 in its voxel, or of its included neighbours if its voxel
-    isn't), with barycentric weights, possibly a little outside. -1 where nothing is near."""
+    isn't), with barycentric weights, possibly a little outside. -1 where nothing is near. With vpart (each voxel's part) and
+    ppart (each point's, -1 for any), only voxels of the point's own part: an arm's skin is never tied to the trunk."""
     where = -np.ones(mask.shape, np.int64)
     where[tuple(vox.T)] = np.arange(len(vox))
     cell = np.floor((points - origin) / h).astype(int)
@@ -197,6 +208,8 @@ def find_tets(points, origin, h, mask, nodes, tets, tet_voxel, vox):
         vi = -np.ones(len(points), np.int64)
         vi[ok] = where[tuple(c[ok].T)]
         has = vi >= 0
+        if vpart is not None:
+            has[has] &= (ppart[has] < 0) | (vpart[vi[has]] == ppart[has])
         if off != (0, 0, 0):
             has &= score < -1e-6  # neighbours only for points not already inside a tetrahedron
         if not has.any():
@@ -209,6 +222,161 @@ def find_tets(points, origin, h, mask, nodes, tets, tet_voxel, vox):
             sel = np.flatnonzero(has)[better]
             best_t[sel], best_w[sel], score[sel] = t[better], w[better], s[better]
     return best_t, best_w, score
+
+
+PART_DEPTH_MAX_M = 0.15  # past this inside a part's skin, the point is not counted as that part's
+
+
+def voxel_parts(centres, skin, patch, skin_part, nearest_part):
+    """Each voxel's part: the one whose own skin, closed with caps where it meets the other parts, it lies deepest inside. Where two
+    skinned parts overlap (the arm pressed into the flank), the nearest skin interleaved them (trunk islands inside the arm,
+    malha_v12); by depth the split falls halfway through the overlap. The caps matter: through the arm's open end at the shoulder,
+    judged by the skin's normal, the chest read as inside the arm (malha_v13). Inside no part, the nearest skin's part."""
+    best = np.full(len(centres), -1.0)
+    part = nearest_part.copy()
+    tri_part = np.array([np.bincount(skin_part[t], minlength=8).argmax() for t in patch])
+    for p in range(5):
+        t = patch[tri_part == p]
+        if not len(t):
+            continue
+        cv, ct = layers.capped(skin, t)
+        m = meshgpu.Mesh(cv, ct)
+        inside = m.inside(centres).astype(bool)
+        d, _, _ = m.closest(centres)
+        d = np.where(inside & (d < PART_DEPTH_MAX_M), d, -1.0)
+        win = d > best
+        part[win], best[win] = p, d[win]
+    return part
+
+
+def clean_islands(vox, shape, vpart, nearest_part, rounds=4):
+    """Each part keeps its largest connected piece; voxels of its other pieces go to the part most of their neighbours belong to.
+    The leg's cap at the hip reached across to the other side and left islands of one leg inside the other and the trunk; their
+    surfaces, deep in the body, collided and blew the simulation up (malha_v16)."""
+    from scipy import ndimage
+    grid = np.full(shape, -1, np.int16)
+    grid[tuple(vox.T)] = vpart
+    offs = np.array([[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]])
+    moved = 0
+    for _ in range(rounds):
+        changed = 0
+        for p in range(5):
+            lab, n = ndimage.label(grid == p)
+            if n <= 1:
+                continue
+            sizes = np.bincount(lab.ravel())
+            sizes[0] = 0
+            small = (lab > 0) & (lab != sizes.argmax())
+            idx = np.argwhere(small)
+            if not len(idx):
+                continue
+            nb = idx[:, None, :] + offs[None]
+            ok = (nb >= 0).all(2) & (nb < np.array(shape)).all(2)
+            lab_nb = np.full(ok.shape, -1)
+            lab_nb[ok] = grid[tuple(nb[ok].T)]
+            lab_nb[lab_nb == p] = -1
+            votes = np.stack([(lab_nb == q).sum(1) for q in range(5)], 1)
+            new = np.where(votes.max(1) > 0, votes.argmax(1), p)
+            grid[tuple(idx.T)] = new
+            changed += int((new != p).sum())
+        moved += changed
+        if not changed:
+            break
+    return grid[tuple(vox.T)].astype(vpart.dtype), moved
+
+
+def part_of_skin(group_v, skin_rest):
+    """Each skin vertex's part: the arms (braco, antebraco) and legs (coxa, perna) per side, the rest trunk."""
+    left = skin_rest[:, 0] > 0
+    part = np.zeros(len(group_v), np.int8)
+    arm, leg = np.isin(group_v, ["braco", "antebraco"]), np.isin(group_v, ["coxa", "perna"])
+    part[arm & left], part[arm & ~left] = 1, 2
+    part[leg & left], part[leg & ~left] = 3, 4
+    return part
+
+
+def split_parts(nodes, tets, tet_part, skin_posed, skin_W, T_pose, skin_part):
+    """Nodes shared by tetrahedra of two parts are duplicated, one copy per part, unless the two parts are joined there: the node,
+    taken back to the A pose by each part's skinning (the weights of that part's nearest skin vertex, T_pose the bones), lands
+    within JOIN_M of itself. Returns nodes, tets, each node's part (-1 joined) and how many nodes were split and joined."""
+    from scipy.spatial import cKDTree
+    NP = 8
+    key = tets.ravel().astype(np.int64) * NP + np.repeat(tet_part, 4)
+    uk = np.unique(key)
+    n_of, p_of = uk // NP, (uk % NP).astype(np.int8)
+    count = np.bincount(n_of, minlength=len(nodes))
+    node_part = np.full(len(nodes), -1, np.int8)
+    single = count[n_of] == 1
+    node_part[n_of[single]] = p_of[single]
+    multi = ~single
+    # the A-pose skin point nearest each (node, part)
+    rest_pt = np.zeros((len(uk), 3))
+    for p in np.unique(p_of[multi]):
+        sel = multi & (p_of == p)
+        ids = np.flatnonzero(skin_part == p)
+        _, j = cKDTree(skin_posed[ids]).query(nodes[n_of[sel]])
+        w = skin_W[ids[j]]
+        w = w / np.maximum(w.sum(axis=1, keepdims=True), 1e-9)
+        M = np.einsum("nb,bij->nij", w, T_pose)
+        p4 = np.concatenate([nodes[n_of[sel]], np.ones((int(sel.sum()), 1))], axis=1)
+        rest_pt[sel] = np.einsum("nij,nj->ni", np.linalg.inv(M), p4)[:, :3]
+    # per node, the largest A-pose distance between its parts' skin points
+    spread = np.zeros(len(nodes))
+    mi = np.flatnonzero(multi)
+    starts = np.flatnonzero(np.r_[True, n_of[mi][1:] != n_of[mi][:-1]])
+    for a, b in zip(starts, np.r_[starts[1:], len(mi)]):
+        pts = rest_pt[mi[a:b]]
+        spread[n_of[mi[a]]] = np.max(np.linalg.norm(pts[:, None] - pts[None], axis=2))
+    joined = (count > 1) & (spread < JOIN_M)
+    # leg and trunk are always joined (2026-11-15): split in patches over the hip, with no contact between them (tangled at the
+    # groin and under the buttock), the skin across them tore at the side of the hip (sim_v9). Only arm/trunk and leg/leg split.
+    has = np.zeros((len(nodes), NP), bool)
+    has[n_of, p_of] = True
+    leg_trunk_only = (count > 1) & has[:, 0] & (has[:, 3] | has[:, 4]) & ~has[:, 1] & ~has[:, 2]
+    joined |= leg_trunk_only
+    keeper = np.full(len(nodes), 99, np.int64)
+    np.minimum.at(keeper, n_of, p_of.astype(np.int64))
+    new_index = n_of.copy()
+    split_pair = multi & ~joined[n_of] & (p_of != keeper[n_of])
+    new_index[split_pair] = len(nodes) + np.arange(int(split_pair.sum()))
+    keep_first = multi & ~joined[n_of] & (p_of == keeper[n_of])
+    node_part[n_of[keep_first]] = p_of[keep_first]
+    nodes = np.concatenate([nodes, nodes[n_of[split_pair]]])
+    node_part = np.concatenate([node_part, p_of[split_pair]])
+    tets = new_index[np.searchsorted(uk, key)].reshape(-1, 4)
+    return nodes, tets, node_part, int(((count > 1) & ~joined).sum()), int(joined.sum())
+
+
+def contact_surface(bands, b_index, tets_global, tet_part, node_part):
+    """Each part's real surface in one band, outward: faces used by one of the part's tetrahedra whose outside holds no tissue of the
+    same part in any band (the bands' own inner and outer limits are not surfaces). Faces whose nodes are all joined are left out."""
+    bd = bands[b_index]
+    out_f, out_p = [], []
+    nodes_all = np.concatenate([b["nodes"] for b in bands])
+    for p in range(5):
+        sel = tet_part == p
+        if not sel.any():
+            continue
+        f = layers.boundary_faces(tets_global[sel])
+        if not len(f):
+            continue
+        v = nodes_all[f]
+        n = np.cross(v[:, 1] - v[:, 0], v[:, 2] - v[:, 0])
+        n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
+        probe = v.mean(axis=1) + n * bd["h"] * 0.5
+        tissue = np.zeros(len(f), bool)
+        for b in bands:
+            c = np.floor((probe - b["origin"]) / b["h"]).astype(int)
+            ok = (c >= 0).all(1) & (c < np.array(b["mask"].shape)).all(1)
+            hit = np.zeros(len(f), bool)
+            hit[ok] = b["mask"][tuple(c[ok].T)]
+            vi = np.full(len(f), -1)
+            vi[hit] = b["where"][tuple(c[hit].T)]
+            tissue |= hit & (b["vpart"][np.maximum(vi, 0)] == p)
+        keep = ~tissue & ~(node_part[f] < 0).all(axis=1)
+        out_f.append(f[keep])
+        out_p.append(np.full(int(keep.sum()), p, np.int8))
+    return np.concatenate(out_f), np.concatenate(out_p)
 
 
 def lbs(points, weights, T):
@@ -233,6 +401,8 @@ def main(rest_npz, out_dir, overrides):
     names, head, tail, W = list(e["bone_names"]), e["bone_head"].astype(float), e["bone_tail"].astype(float), e["weights"]
     # zones, groups and fat thickness are per skin vertex, so they are read at rest and carried to any pose
     zone, group_v, bone_v = skin_zones(skin, W, names, head, tail)
+    skin_rest = skin.copy()
+    skin_part = part_of_skin(group_v, skin_rest)
     head_r, tail_r = head.copy(), tail.copy()
     sv, sf = e["sub_verts"].astype(float), e["sub_faces"].astype(np.int64)
     pose = next((o[5:] for o in overrides if o.startswith("pose=")), None)
@@ -278,13 +448,25 @@ def main(rest_npz, out_dir, overrides):
         h, a, b = h_mm / 1000, a_mm / 1000, b_mm / 1000
         origin, shape, mask = band_grid(lo, hi, h, a, b, h / 2, skin_q, closed_q)
         nodes, tets, tet_voxel, vox = layers.tetrahedra(mask, origin, h)
+        # each voxel's part: the part whose skin it is deepest inside (voxel_parts)
+        _, vf, vuv = skin_q.closest(origin + (vox + 0.5) * h)
+        vfv = patch[vf]
+        vpart = skin_part[vfv[np.arange(len(vfv)), np.column_stack([vuv[:, 0], vuv[:, 1], 1 - vuv.sum(1)]).argmax(axis=1)]]
+        vpart = voxel_parts(origin + (vox + 0.5) * h, skin, patch, skin_part, vpart)
+        vpart, n_island = clean_islands(vox, mask.shape, vpart, None)
+        nodes, tets, node_part, n_split, n_joined = split_parts(nodes, tets, vpart[tet_voxel], skin, W, T_rest, skin_part)
+        where = -np.ones(mask.shape, np.int64)
+        where[tuple(vox.T)] = np.arange(len(vox))
         bands.append(dict(h=h, a=a, b=b, origin=origin, shape=shape, mask=mask, nodes=nodes, tets=tets, tet_voxel=tet_voxel, vox=vox,
-                          base=node_base))
+                          base=node_base, vpart=vpart, node_part=node_part, where=where, split=n_split, joined=n_joined, islands=n_island))
         node_base += len(nodes)
-        print(f"band {h_mm} mm: {len(vox)} voxels, {len(tets)} tetrahedra, {len(nodes)} nodes", flush=True)
+        print(f"band {h_mm} mm: {len(vox)} voxels, {len(tets)} tetrahedra, {len(nodes)} nodes, {n_split} split between parts, "
+              f"{n_joined} joined, {n_island} island voxels moved", flush=True)
     nodes = np.concatenate([bd["nodes"] for bd in bands])
     tets = np.concatenate([bd["tets"] + bd["base"] for bd in bands])
     tet_band = np.concatenate([np.full(len(bd["tets"]), k) for k, bd in enumerate(bands)])
+    tet_part = np.concatenate([bd["vpart"][bd["tet_voxel"]] for bd in bands]).astype(np.int8)
+    node_part = np.concatenate([bd["node_part"] for bd in bands])
     colours = np.concatenate([((bd["vox"][:, 0] % 2) * 4 + (bd["vox"][:, 1] % 2) * 2 + bd["vox"][:, 2] % 2)[bd["tet_voxel"]] * 6
                               + np.arange(len(bd["tets"])) % 6 for bd in bands]).astype(np.int32)
 
@@ -295,7 +477,8 @@ def main(rest_npz, out_dir, overrides):
         f, c = bands[k], bands[k + 1]
         d, _, _ = skin_q.closest(f["nodes"])
         inner = np.flatnonzero(d >= c["a"] - f["h"] * 0.5 - 1e-6)
-        t, w, s = find_tets(f["nodes"][inner], c["origin"], c["h"], c["mask"], c["nodes"], c["tets"], c["tet_voxel"], c["vox"])
+        t, w, s = find_tets(f["nodes"][inner], c["origin"], c["h"], c["mask"], c["nodes"], c["tets"], c["tet_voxel"], c["vox"],
+                            c["vpart"], f["node_part"][inner])
         ok = t >= 0
         emb_node.append(inner[ok] + f["base"])
         emb_tets.append(c["tets"][t[ok]] + c["base"])
@@ -381,7 +564,8 @@ def main(rest_npz, out_dir, overrides):
 
     # 6. skin ties, drives, damping bones
     b0 = bands[0]
-    st, sw, ss = find_tets(skin[ids], b0["origin"], b0["h"], b0["mask"], b0["nodes"], b0["tets"], b0["tet_voxel"], b0["vox"])
+    st, sw, ss = find_tets(skin[ids], b0["origin"], b0["h"], b0["mask"], b0["nodes"], b0["tets"], b0["tet_voxel"], b0["vox"],
+                           b0["vpart"], skin_part[ids])
     skin_untied = int((st < 0).sum())  # MPFB's own skin is only measured here; the shown skin is the subdivided one below
     # the subdivided skin (what is shown): its vertices nearest a vertex of the cut skin, whole faces only, tied the same way
     from scipy.spatial import cKDTree
@@ -391,7 +575,25 @@ def main(rest_npz, out_dir, overrides):
     keep_v = in_patch[nearest]
     sub_t, sub_w, sub_s = np.full(len(sv), -1), np.zeros((len(sv), 4)), np.full(len(sv), -np.inf)
     kv = np.flatnonzero(keep_v)
-    sub_t[kv], sub_w[kv], sub_s[kv] = find_tets(sv[kv], b0["origin"], b0["h"], b0["mask"], b0["nodes"], b0["tets"], b0["tet_voxel"], b0["vox"])
+    sub_t[kv], sub_w[kv], sub_s[kv] = find_tets(sv[kv], b0["origin"], b0["h"], b0["mask"], b0["nodes"], b0["tets"], b0["tet_voxel"], b0["vox"],
+                                                b0["vpart"], skin_part[nearest[kv]])
+    # skin past the split between two overlapping parts (the arm's skin inside the flank's half) has no tetrahedron of its part
+    # in reach: tie it, a little outside, to one at the nearest node of its own part, so its faces don't leave holes
+    lost = kv[sub_t[kv] < 0]
+    sub_far = 0
+    if len(lost):
+        lp = skin_part[nearest[lost]]
+        b0_part = b0["node_part"]
+        tet_of = np.full(len(b0["nodes"]), -1, np.int64)
+        tet_of[b0["tets"].ravel()] = np.repeat(np.arange(len(b0["tets"])), 4)
+        for p in np.unique(lp):
+            own = np.flatnonzero((b0_part == p) | (b0_part < 0))
+            sel = lost[lp == p]
+            dist_n, j = cKDTree(b0["nodes"][own]).query(sv[sel])
+            t = tet_of[own[j]]
+            sub_t[sel] = t
+            sub_w[sel] = layers.barycentric(sv[sel], b0["nodes"][b0["tets"][t]])
+            sub_far = max(sub_far, float(dist_n.max()))
     keep_v &= sub_t >= 0
     faces_ok = keep_v[sf].all(axis=1)
     used = np.unique(sf[faces_ok])
@@ -413,9 +615,46 @@ def main(rest_npz, out_dir, overrides):
     driven = np.flatnonzero(drive_bone >= 0)
     # each node damps against the bone it rests on: the nearest driven node's. MPFB's weights gave the flank to the upper arm,
     # and damping against the arm dragged the flank with it (tecidos_v1)
+    # within the node's own part (a joined node may rest on either): across the split, the flank would rest on the arm's bone
     from scipy.spatial import cKDTree as _Tree
-    _, nearest_driven = _Tree(nodes[driven]).query(nodes)
-    node_bone = drive_bone[driven][nearest_driven]
+    node_bone = np.zeros(n, np.int64)
+    for p in range(5):
+        dp = driven[(node_part[driven] == p) | (node_part[driven] < 0)]
+        mine = (node_part == p) | ((node_part < 0) & (p == 0))
+        if len(dp) and mine.any():
+            _, j = _Tree(nodes[dp]).query(nodes[mine])
+            node_bone[mine] = drive_bone[dp][j]
+
+    # contact: each part's real surfaces, and the nodes on them that are not joined
+    # only the 3 mm band: contact is skin against skin; the deep splits between parts don't collide
+    coll_tris, coll_part = contact_surface(bands, 0, tets[tet_band == 0], tet_part[tet_band == 0], node_part)
+    # next to a join (shoulder, hip) each part's surface wraps into the other's: as a joint bends, those read as inside each other
+    # and the pushes, against tissue that holds them together, blew the simulation up (malha_v17). They are joined anyway: left out.
+    joined_ids = np.flatnonzero(node_part < 0)
+    near_join = np.zeros(n, bool)
+    if len(joined_ids):
+        dj, _ = cKDTree(nodes[joined_ids]).query(nodes[np.unique(coll_tris)])
+        near_join[np.unique(coll_tris)[dj < CONTACT_CLEAR_OF_JOIN_M]] = True
+    coll_keep = ~near_join[coll_tris].any(axis=1)
+    coll_tris, coll_part = coll_tris[coll_keep], coll_part[coll_keep]
+    qn = np.unique(coll_tris)
+    qn = qn[node_part[qn] >= 0]
+    # the hands: MPFB's skin under the hand and finger bones, posed with the body and moved by the skeleton in the simulation
+    hand_bones = {s: [i for i, nm in enumerate(names) if nm.endswith("." + s) and (nm.startswith(("hand.", "f_", "thumb", "palm")))] for s in "LR"}
+    hand_v, hand_t, hand_part = [], [], []
+    base_h = 0
+    for s, p in (("L", 5), ("R", 6)):
+        hv = np.flatnonzero(W[:, hand_bones[s]].sum(axis=1) > 0.5)
+        mask_v = np.zeros(len(skin), bool)
+        mask_v[hv] = True
+        ht = tris[mask_v[tris].all(axis=1)]
+        local = -np.ones(len(skin), np.int64)
+        local[hv] = np.arange(len(hv)) + base_h
+        hand_v.append(hv)
+        hand_t.append(local[ht])
+        hand_part.append(np.full(len(hv), p, np.int8))
+        base_h += len(hv)
+    hand_v, hand_t, hand_part = np.concatenate(hand_v), np.concatenate(hand_t), np.concatenate(hand_part)
     node_damp = np.zeros(n)
     cnt = np.zeros(n)
     np.add.at(node_damp, tets.ravel(), np.repeat(damp_t, 4))
@@ -434,12 +673,21 @@ def main(rest_npz, out_dir, overrides):
                         bone_names=np.array(names), patch=patch.astype(np.int32),
                         sub_ids=used.astype(np.int32), sub_faces=sub_faces_local.astype(np.int32), sub_rest=sv[used].astype(np.float32),
                         sub_tet=sub_t[used].astype(np.int32), sub_bary=sub_w[used].astype(np.float32),
-                        T_rest=T_rest.astype(np.float32), pose_frame=-1 if pose_frame is None else pose_frame)
+                        T_rest=T_rest.astype(np.float32), pose_frame=-1 if pose_frame is None else pose_frame,
+                        tet_part=tet_part, node_part=node_part, coll_tris=coll_tris.astype(np.int32), coll_part=coll_part,
+                        coll_nodes=qn.astype(np.int32), hand_rest=skin_rest[hand_v].astype(np.float32), hand_w=W[hand_v].astype(np.float32),
+                        hand_tris=hand_t.astype(np.int32), hand_part=hand_part)
     report = {"seconds": round(time.time() - t_start, 1), "built_in_frame": pose_frame, "nodes": int(n), "tetrahedra": int(len(tets)),
               "per_band": [{"voxel_mm": bd["h"] * 1000, "tetrahedra": int(len(bd["tets"])), "nodes": int(len(bd["nodes"]))} for bd in bands],
               "glue": glue_report, "driven_nodes": int(len(driven)),
+              "parts": {"join_m": JOIN_M, "split_nodes_per_band": [bd["split"] for bd in bands], "joined_nodes_per_band": [bd["joined"] for bd in bands],
+                        "island_voxels_moved_per_band": [bd["islands"] for bd in bands], "contact_band_mm": [bands[0]["h"] * 1000], "contact_clear_of_join_m": CONTACT_CLEAR_OF_JOIN_M,
+                        "tetrahedra": {PARTS[p]: int((tet_part == p).sum()) for p in range(5)},
+                        "contact_triangles": {PARTS[p]: int((coll_part == p).sum()) for p in range(5)}, "contact_nodes": int(len(qn)),
+                        "hand_vertices": int(len(hand_v)), "hand_triangles": int(len(hand_t))},
               "skin_vertices": int(len(ids)), "skin_tie_worst_min_bary": float(ss[st >= 0].min()), "skin_vertices_untied": skin_untied,
               "shown_skin_vertices": int(len(used)), "shown_skin_faces": int(faces_ok.sum()), "shown_tie_worst_min_bary": float(sub_s[used].min()),
+              "shown_tied_past_split": int(len(lost)), "shown_tied_past_split_farthest_mm": round(sub_far * 1000, 1),
               "volume_l": {LABELS[k]: round(float(vol[label == k].sum() * 1000), 2) for k in range(len(LABELS))},
               "volume_l_per_group": {g: round(float(vol[(grp == g) & (label != RIGID)].sum() * 1000), 2) for g in GROUPS},
               "breast_volume_ml": {s: round(float(vol[grp == f"seio_{s}"].sum() * 1e6)) for s in "ED"},
@@ -447,15 +695,15 @@ def main(rest_npz, out_dir, overrides):
               "config": cfg}
     (out / "tecidos.json").write_text(json.dumps(report, indent=1, ensure_ascii=False), encoding="utf-8")
     print(json.dumps({k: v for k, v in report.items() if k != "config"}, indent=1, ensure_ascii=False))
-    sections(out / "cortes", cr, label, grp, tet_band, bands, head_r, B)
+    sections(out / "cortes", cr, label, grp, tet_band, bands, head_r, B, tet_part)
 
 
-def sections(folder, cen, label, grp, tet_band, bands, head, B):
+def sections(folder, cen, label, grp, tet_band, bands, head, B, tet_part=None):
     """Slices through the tetrahedra's centres, coloured by label and by band, as PNGs."""
     from PIL import Image, ImageDraw
     colors = {SKIN: (185, 120, 92), FAT: (240, 205, 110), MUSCLE: (205, 95, 85), RIGID: (200, 194, 174), CAVITY: (120, 150, 190), BREAST: (215, 100, 145)}
     band_c = [(140, 92, 194), (90, 150, 210), (90, 180, 120), (200, 160, 60)]
-    cuts = {"coxa": head[B["thigh.L"], 2] - 0.18, "quadril": (head[B["thigh.L"], 2] + head[B["spine.001"], 2]) / 2,
+    cuts = {"axila": head[B["upper_arm.L"], 2] - 0.06, "coxa": head[B["thigh.L"], 2] - 0.18, "quadril": (head[B["thigh.L"], 2] + head[B["spine.001"], 2]) / 2,
             "barriga": head[B["spine.001"], 2] + 0.03, "peito": head[B["breast.L"], 2], "braco": head[B["upper_arm.L"], 2] - 0.12}
     px = 2000  # pixels per metre
     for name, z in cuts.items():
@@ -465,7 +713,11 @@ def sections(folder, cen, label, grp, tet_band, bands, head, B):
         p = cen[sel]
         x0, y0 = p[:, 0].min() - 0.02, p[:, 1].min() - 0.02
         wid, hei = int((p[:, 0].max() - x0 + 0.02) * px), int((p[:, 1].max() - y0 + 0.02) * px)
-        for what, col in (("rotulo", lambda i: colors[int(label[sel][i])]), ("faixa", lambda i: band_c[int(tet_band[sel][i])])):
+        views = [("rotulo", lambda i: colors[int(label[sel][i])]), ("faixa", lambda i: band_c[int(tet_band[sel][i])])]
+        if tet_part is not None:
+            part_c = [(200, 194, 174), (90, 150, 210), (40, 70, 150), (90, 180, 120), (40, 110, 60)]
+            views.append(("parte", lambda i: part_c[int(tet_part[sel][i])]))
+        for what, col in views:
             im = Image.new("RGB", (wid, hei), (250, 250, 247))
             dr = ImageDraw.Draw(im)
             order = np.argsort(-tet_band[sel])

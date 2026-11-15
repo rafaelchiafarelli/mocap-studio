@@ -27,7 +27,9 @@ for mat in body.data.materials:
     me.materials.append(mat)
 mc = ob.modifiers.new("simulacao", "MESH_CACHE")
 mc.cache_format = "PC2"
-mc.filepath = bpy.path.relpath(pc2, start=os.path.dirname(out))
+# relative to the open file: saving as OUT remaps it to OUT's folder. Made relative to OUT's folder, the save remapped it a second
+# time, and with the motion in another folder (tet_v7_movimento/) the cache wasn't found and the skin stood still at frame 1
+mc.filepath = bpy.path.relpath(pc2)
 mc.frame_start = bpy.context.scene.frame_start
 mc.forward_axis, mc.up_axis = "POS_Y", "POS_Z"
 

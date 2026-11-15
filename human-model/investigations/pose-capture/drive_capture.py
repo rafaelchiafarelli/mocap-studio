@@ -1,6 +1,6 @@
 """Step 3 of the pose-capture investigation: keys MediaPipe's world landmarks onto the rigged body, with no physics.
 
-    python3 human-model/blender_run.py --blend 02_corpo_com_rig.blend human-model/investigations/pose-capture/drive_capture.py LANDMARKS.npz OUT.blend REPORT.json [SIGMA_FRAMES] [--no-head]
+    python3 human-model/blender_run.py --blend 02_corpo_com_rig.blend human-model/investigations/pose-capture/drive_capture.py LANDMARKS.npz OUT.blend REPORT.json [SIGMA_FRAMES] [--no-head] [--no-pin]
 
 LANDMARKS.npz is capture_pose.py's (one camera) or two_cameras.py's (two). With two, the root's path on the floor is the
 captured hips', scaled by hip height to this body; --no-head keeps the head on the chest.
@@ -24,6 +24,11 @@ Per frame:
 - root: lowered or raised so the lowest point of either foot stays on the floor; horizontally, with one camera, the lower
   foot is held still while it is the lower one (a contact, not a rule per pose), so the body travels as its feet allow;
   with two cameras, it follows the captured hips.
+- planted feet (two cameras with foot_contacts.py's `contact`, unless --no-pin): while a foot's heel or toe is on the floor,
+  its lowest point (heel or toe tip) is held where it landed on the floor plane, and the leg reaches it by two-bone IK in the
+  plane its knee bends in; the foot keeps its captured orientation. Out of reach, the hips are lowered (knees bend) up to
+  MAX_DROP_M; past that the leg straightens and the slip is reported.
+  Without it, a hips path wider than the feet's (motion gain) slid the feet until the next step (Rafael, 2026-11-14).
 Gaps (frames with no capture) are filled by interpolation before smoothing.
 Landmarks are smoothed in time first by a gaussian of SIGMA_FRAMES (default 2 frames, at 60 fps).
 """
@@ -34,7 +39,8 @@ from mathutils import Matrix, Quaternion, Vector
 
 argv = sys.argv[sys.argv.index("--") + 1:]
 NO_HEAD = "--no-head" in argv  # the head follows the chest (a view that loses the head guesses it badly)
-argv = [a for a in argv if a != "--no-head"]
+NO_PIN = "--no-pin" in argv  # don't hold planted feet, even when the capture has foot contacts
+argv = [a for a in argv if a not in ("--no-head", "--no-pin")]
 npz, out, report_path = argv[0], argv[1], argv[2]
 SIGMA = float(argv[3]) if len(argv) > 3 else 2.0
 NOSE_PITCH_DEG = 10.0  # by eye: on a level head the nose tip is a little below the ears
@@ -178,86 +184,203 @@ def foot_low(s):
     return min(pts, key=lambda p: p.z)
 
 
+CONTACT = d["contact"].astype(bool) if ("contact" in d.files and HIPS_M is not None and not NO_PIN) else None  # T, [L, R], [ankle, heel, toe]
+SOLE_POINTS = {s: {"heel": (f"heel.02.{s}", "tail"), "toe": (f"toe.{s}", "tail")} for s in "LR"}
+
+
+def arm_point(bone, end):
+    return getattr(P[bone], end).copy()
+
+
+def two_bone_ik(s, target):
+    """thigh.s and shin.s turned so the ankle (foot.s head) reaches target (armature space), the knee kept in the plane it bends
+    in now; the foot keeps its world orientation. Returns how far short the ankle stays (m)."""
+    foot_rot = cur(f"foot.{s}").copy()
+    hip, knee, ankle = P[f"thigh.{s}"].head.copy(), P[f"shin.{s}"].head.copy(), P[f"foot.{s}"].head.copy()
+    l1, l2 = (knee - hip).length, (ankle - knee).length
+    to = target - hip
+    dist = to.length
+    reach = min(dist, (l1 + l2) * 0.9995)
+    reach = max(reach, abs(l1 - l2) + 1e-4)
+    d = to.normalized()
+    # the bend's side: the knee's offset from the hip-ankle line now; straight, the side the knee bends to at rest
+    m = (knee - hip) - (knee - hip).dot(d) * d
+    if m.length < 1e-4:
+        n = cur(f"thigh.{s}") @ Vector((1, 0, 0))
+        m = SIGNS[s][0] * n.cross(d)
+    m.normalize()
+    cos_a = (l1 * l1 + reach * reach - l2 * l2) / (2 * l1 * reach)
+    a = math.acos(max(-1.0, min(1.0, cos_a)))
+    knee_new = hip + l1 * (math.cos(a) * d + math.sin(a) * m)
+    swing(f"thigh.{s}", Y, knee_new - hip)
+    swing(f"shin.{s}", Y, hip + reach * d - P[f"shin.{s}"].head)
+    head = P[f"foot.{s}"].head.copy()
+    P[f"foot.{s}"].matrix = Matrix.Translation(head) @ foot_rot.to_quaternion().to_matrix().to_4x4()
+    bpy.context.view_layer.update()
+    return max(0.0, dist - reach)
+
+
+SHORT = []  # how far short of its target each held ankle stayed (m)
+
+
+def pin_feet(t, pins, planned_drop):
+    """Planted feet held: pins[s] = (point name, world anchor xy) or None. Updates pins and lowers the root when the held feet are
+    out of the legs' reach (knees bend, hips drop, as a body does), by at least planned_drop (the first pass's drops smoothed in
+    time); a free foot is kept where the capture put it while the hips drop. Returns slip per held side (m), the drop and the
+    drop the held feet needed (m)."""
+    origin = rig.matrix_world.translation.copy()
+    targets, free = {}, {}
+    for i, s in enumerate("LR"):
+        if not CONTACT[t, i, 1:].any():
+            pins[s] = None
+            free[s] = P[f"foot.{s}"].head + origin
+            continue
+        world = {n: rig.matrix_world @ arm_point(*SOLE_POINTS[s][n]) for n in ("heel", "toe")}
+        low = min(world, key=lambda n: world[n].z)
+        if pins[s] is None:
+            pins[s] = (low, Vector((world[low].x, world[low].y)))
+        name, anchor = pins[s]
+        if name != low:
+            # the roll moves from heel to toe (or back): the new point is anchored where the held foot puts it now
+            shift = anchor - Vector((world[name].x, world[name].y))
+            anchor = Vector((world[low].x, world[low].y)) + shift
+            name = low
+        p = world[name]
+        targets[s] = P[f"foot.{s}"].head + origin + Vector((anchor.x - p.x, anchor.y - p.y, 0.0))
+        pins[s] = (name, anchor)
+    # out of reach: lower the hips until each held ankle is within the leg's length
+    drop = 0.0
+    for s, tw in targets.items():
+        hip = P[f"thigh.{s}"].head + origin
+        L = ((P[f"shin.{s}"].head - P[f"thigh.{s}"].head).length + (P[f"foot.{s}"].head - P[f"shin.{s}"].head).length) * REACH
+        h = Vector((hip.x - tw.x, hip.y - tw.y)).length
+        if h < L:
+            drop = max(drop, (hip.z - tw.z) - math.sqrt(L * L - h * h))
+    needed = min(max(drop, 0.0), MAX_DROP_M)
+    drop = max(needed, planned_drop)
+    if drop > 0:
+        rig.location = origin - Vector((0, 0, drop))
+        bpy.context.view_layer.update()
+        for s, tw in free.items():
+            two_bone_ik(s, tw - rig.matrix_world.translation)
+    slip = {}
+    for s, tw in targets.items():
+        short = two_bone_ik(s, tw - rig.matrix_world.translation)
+        SHORT.append(short)
+        name, anchor = pins[s]
+        p = rig.matrix_world @ arm_point(*SOLE_POINTS[s][name])
+        slip[s] = (Vector((p.x, p.y)) - anchor).length
+    return slip, drop, needed
+
+
+def plan_drops(needed, reach_frames=8, sigma=4.0):
+    """The drops each frame needed, made smooth: a running maximum over +-reach_frames (so a peak is never cut), then a gaussian.
+    Taken from the first pass, they stop the hips jumping up when a held foot lifts (71 mm in one frame without it)."""
+    x = np.asarray(needed, float)
+    env = np.array([x[max(0, i - reach_frames): i + reach_frames + 1].max() for i in range(len(x))])
+    return smooth(env[:, None], sigma)[:, 0]
+
+
+REACH = 0.98  # a held leg is kept this much short of straight: a locked knee snaps when the hips move on
+MAX_DROP_M = 0.25  # past this the hips are not lowered further; the foot slips and it is reported
+
+
 BODY_HIP_H = (R["thigh.L"].head_local.z + R["thigh.R"].head_local.z) / 2
 CAPTURED_HIP_H = float(np.median(HIPS_M[:, 2])) if HIPS_M is not None else None
-report = {"no_head": NO_HEAD, "root_from": "two cameras' hips" if HIPS_M is not None else "lower foot held still",
+report = {"no_head": NO_HEAD, "feet_pinned": CONTACT is not None, "pin_slip_mm": [], "hips_drop_mm": [], "root_from": "two cameras' hips" if HIPS_M is not None else "lower foot held still",
           "frames": len(B), "fps": fps, "sigma_frames": SIGMA, "side_check_failures": [], "stance": []}
-root = Vector((0, 0, 0))
-anchor = None  # (side, world xy of its lowest point)
-for t in range(len(B)):
-    for pb in P:
-        pb.rotation_quaternion = (1, 0, 0, 0)
-        pb.location = (0, 0, 0)
-        pb.scale = (1, 1, 1)  # pb.matrix writes leave rounding scale behind; unreset, it grew frame by frame (the left foot's toe reached 1.5 m)
-    rig.location = (0, 0, 0)
-    bpy.context.view_layer.update()
+# with held feet, two passes: the first measures the hips' drop each frame needs, the second applies it smoothed
+PLANNED = None
+for PASS in ((0, 1) if CONTACT is not None else (1,)):
+    if PASS == 1 and CONTACT is not None:
+        PLANNED = plan_drops(NEEDED)
+    NEEDED, SHORT[:] = [], []
+    for key in ("side_check_failures", "stance", "pin_slip_mm", "hips_drop_mm"):
+        report[key] = []
+    root = Vector((0, 0, 0))
+    anchor = None  # (side, world xy of its lowest point)
+    pins = {"L": None, "R": None}
+    for t in range(len(B)):
+        for pb in P:
+            pb.rotation_quaternion = (1, 0, 0, 0)
+            pb.location = (0, 0, 0)
+            pb.scale = (1, 1, 1)  # pb.matrix writes leave rounding scale behind; unreset, it grew frame by frame (the left foot's toe reached 1.5 m)
+        rig.location = (0, 0, 0)
+        bpy.context.view_layer.update()
 
-    pelvis = frame_from(V(t, "hip_l") - V(t, "hip_r"), (V(t, "sh_l") + V(t, "sh_r")) / 2 - (V(t, "hip_l") + V(t, "hip_r")) / 2)
-    chest = frame_from(V(t, "sh_l") - V(t, "sh_r"), (V(t, "sh_l") + V(t, "sh_r")) / 2 - (V(t, "hip_l") + V(t, "hip_r")) / 2)
-    ears = (V(t, "ear_l") + V(t, "ear_r")) / 2
-    fwd = V(t, "nose") - ears
-    hx = (V(t, "ear_l") - V(t, "ear_r")).normalized()
-    fwd = (fwd - fwd.dot(hx) * hx).normalized()
-    fwd = Quaternion(hx, math.radians(NOSE_PITCH_DEG)) @ fwd  # undo the nose's natural drop
-    head = Matrix((hx, -fwd, hx.cross(-fwd))).transposed()
+        pelvis = frame_from(V(t, "hip_l") - V(t, "hip_r"), (V(t, "sh_l") + V(t, "sh_r")) / 2 - (V(t, "hip_l") + V(t, "hip_r")) / 2)
+        chest = frame_from(V(t, "sh_l") - V(t, "sh_r"), (V(t, "sh_l") + V(t, "sh_r")) / 2 - (V(t, "hip_l") + V(t, "hip_r")) / 2)
+        ears = (V(t, "ear_l") + V(t, "ear_r")) / 2
+        fwd = V(t, "nose") - ears
+        hx = (V(t, "ear_l") - V(t, "ear_r")).normalized()
+        fwd = (fwd - fwd.dot(hx) * hx).normalized()
+        fwd = Quaternion(hx, math.radians(NOSE_PITCH_DEG)) @ fwd  # undo the nose's natural drop
+        head = Matrix((hx, -fwd, hx.cross(-fwd))).transposed()
 
-    set_world_rot("spine", pelvis)
-    qp, qc, qh = pelvis.to_quaternion(), chest.to_quaternion(), head.to_quaternion()
-    for i, name in enumerate(CHAIN_CHEST):
-        set_world_rot(name, qp.slerp(qc, (i + 1) / len(CHAIN_CHEST)).to_matrix())
-    for i, name in enumerate(CHAIN_HEAD):
-        set_world_rot(name, (qc if NO_HEAD else qc.slerp(qh, (i + 1) / len(CHAIN_HEAD))).to_matrix())
+        set_world_rot("spine", pelvis)
+        qp, qc, qh = pelvis.to_quaternion(), chest.to_quaternion(), head.to_quaternion()
+        for i, name in enumerate(CHAIN_CHEST):
+            set_world_rot(name, qp.slerp(qc, (i + 1) / len(CHAIN_CHEST)).to_matrix())
+        for i, name in enumerate(CHAIN_HEAD):
+            set_world_rot(name, (qc if NO_HEAD else qc.slerp(qh, (i + 1) / len(CHAIN_HEAD))).to_matrix())
 
-    for s in "LR":
-        k = L2[s]
-        thigh, shin = V(t, f"knee_{k}") - V(t, f"hip_{k}"), V(t, f"ank_{k}") - V(t, f"knee_{k}")
-        swing(f"thigh.{s}", Y, thigh)
-        hinge(f"thigh.{s}", shin, SIGNS[s][0])
-        swing(f"shin.{s}", Y, shin)
-        swing(f"foot.{s}", SOLE[s], V(t, f"toe_{k}") - V(t, f"heel_{k}"))
-        upper, fore = V(t, f"el_{k}") - V(t, f"sh_{k}"), V(t, f"wr_{k}") - V(t, f"el_{k}")
-        swing(f"upper_arm.{s}", Y, upper)
-        hinge(f"upper_arm.{s}", fore, SIGNS[s][1])
-        swing(f"forearm.{s}", Y, fore)
-        knuckles = (V(t, f"index_{k}") + V(t, f"pinky_{k}")) / 2 - V(t, f"wr_{k}")
-        swing(f"hand.{s}", Y, knuckles)
-        across = V(t, f"index_{k}") - V(t, f"pinky_{k}")
-        a = (cur(f"hand.{s}") @ Y).normalized()
-        across = across - across.dot(a) * a
-        now = cur(f"hand.{s}") @ HAND_ACROSS[s]
-        now = now - now.dot(a) * a
-        if across.length > 1e-4 and now.length > 1e-4:
-            twist(f"hand.{s}", a, math.atan2(a.dot(now.normalized().cross(across.normalized())), now.normalized().dot(across.normalized())))
+        for s in "LR":
+            k = L2[s]
+            thigh, shin = V(t, f"knee_{k}") - V(t, f"hip_{k}"), V(t, f"ank_{k}") - V(t, f"knee_{k}")
+            swing(f"thigh.{s}", Y, thigh)
+            hinge(f"thigh.{s}", shin, SIGNS[s][0])
+            swing(f"shin.{s}", Y, shin)
+            swing(f"foot.{s}", SOLE[s], V(t, f"toe_{k}") - V(t, f"heel_{k}"))
+            upper, fore = V(t, f"el_{k}") - V(t, f"sh_{k}"), V(t, f"wr_{k}") - V(t, f"el_{k}")
+            swing(f"upper_arm.{s}", Y, upper)
+            hinge(f"upper_arm.{s}", fore, SIGNS[s][1])
+            swing(f"forearm.{s}", Y, fore)
+            knuckles = (V(t, f"index_{k}") + V(t, f"pinky_{k}")) / 2 - V(t, f"wr_{k}")
+            swing(f"hand.{s}", Y, knuckles)
+            across = V(t, f"index_{k}") - V(t, f"pinky_{k}")
+            a = (cur(f"hand.{s}") @ Y).normalized()
+            across = across - across.dot(a) * a
+            now = cur(f"hand.{s}") @ HAND_ACROSS[s]
+            now = now - now.dot(a) * a
+            if across.length > 1e-4 and now.length > 1e-4:
+                twist(f"hand.{s}", a, math.atan2(a.dot(now.normalized().cross(across.normalized())), now.normalized().dot(across.normalized())))
 
-    # side check: captured left shoulder and posed shoulder.L both on the trunk's +X side
-    cap_side = (V(t, "sh_l") - V(t, "sh_r")).dot(chest.col[0])
-    pose_side = (P["upper_arm.L"].head - P["upper_arm.R"].head).dot(chest.col[0])
-    if cap_side <= 0 or pose_side <= 0:
-        report["side_check_failures"].append(t + 1)
+        # side check: captured left shoulder and posed shoulder.L both on the trunk's +X side
+        cap_side = (V(t, "sh_l") - V(t, "sh_r")).dot(chest.col[0])
+        pose_side = (P["upper_arm.L"].head - P["upper_arm.R"].head).dot(chest.col[0])
+        if cap_side <= 0 or pose_side <= 0:
+            report["side_check_failures"].append(t + 1)
 
-    # feet on the floor, the lower one held still
-    low = {s: foot_low(s) for s in "LR"}
-    stance = min("LR", key=lambda s: low[s].z)
-    if os.environ.get("HM_DEBUG") or t % 20 == 0:
-        print("DBG", t + 1, tuple(round(x, 3) for x in rig.matrix_world.translation), {s: round(low[s].z, 3) for s in "LR"}, stance)
-    root.z = rest_floor - low[stance].z
-    if HIPS_M is not None:
-        # the hips' captured path on the floor, scaled from the captured person to this body by hip height
-        k = BODY_HIP_H / CAPTURED_HIP_H
-        root.x, root.y = (HIPS_M[t, 0] - HIPS_M[0, 0]) * k, (HIPS_M[t, 1] - HIPS_M[0, 1]) * k
-    elif anchor is not None and anchor[0] == stance:
-        root.x += anchor[1].x - low[stance].x - root.x
-        root.y += anchor[1].y - low[stance].y - root.y
-    rig.location = root
-    bpy.context.view_layer.update()
-    if anchor is None or anchor[0] != stance:
-        p = foot_low(stance)
-        anchor = (stance, Vector((p.x, p.y)))
-    report["stance"].append(stance)
+        # feet on the floor, the lower one held still
+        low = {s: foot_low(s) for s in "LR"}
+        stance = min("LR", key=lambda s: low[s].z)
+        if os.environ.get("HM_DEBUG") or t % 20 == 0:
+            print("DBG", t + 1, tuple(round(x, 3) for x in rig.matrix_world.translation), {s: round(low[s].z, 3) for s in "LR"}, stance)
+        root.z = rest_floor - low[stance].z
+        if HIPS_M is not None:
+            # the hips' captured path on the floor, scaled from the captured person to this body by hip height
+            k = BODY_HIP_H / CAPTURED_HIP_H
+            root.x, root.y = (HIPS_M[t, 0] - HIPS_M[0, 0]) * k, (HIPS_M[t, 1] - HIPS_M[0, 1]) * k
+        elif anchor is not None and anchor[0] == stance:
+            root.x += anchor[1].x - low[stance].x - root.x
+            root.y += anchor[1].y - low[stance].y - root.y
+        rig.location = root
+        bpy.context.view_layer.update()
+        if CONTACT is not None:
+            slip, drop, needed = pin_feet(t, pins, 0.0 if PASS == 0 else float(PLANNED[t]))
+            NEEDED.append(needed)
+            report["pin_slip_mm"].append({s: round(v * 1000, 1) for s, v in slip.items()})
+            report["hips_drop_mm"].append(round(drop * 1000, 1))
+            root = rig.location.copy()
+        if anchor is None or anchor[0] != stance:
+            p = foot_low(stance)
+            anchor = (stance, Vector((p.x, p.y)))
+        report["stance"].append(stance)
 
-    for pb in P:
-        pb.keyframe_insert("rotation_quaternion", frame=t + 1)
-    rig.keyframe_insert("location", frame=t + 1)
+        if PASS == 1 or CONTACT is None:
+            for pb in P:
+                pb.keyframe_insert("rotation_quaternion", frame=t + 1)
+            rig.keyframe_insert("location", frame=t + 1)
 
 bpy.ops.wm.save_as_mainfile(filepath=out)
 # the captured woman is taken as 1.70 m tall (Rafael, 2026-11-14); the ear sits at about 0.93 of stature (by eye, anthropometric
@@ -268,5 +391,14 @@ report["capture_to_metres_at_1_70"] = float(1.70 * 0.93 / ear_h)
 report["side_check_ok"] = not report["side_check_failures"]
 report["stance_changes"] = sum(1 for a, b in zip(report["stance"], report["stance"][1:]) if a != b)
 report["root_travel_m"] = [round(x, 3) for x in root]
+if CONTACT is not None:
+    slips = [v for f in report["pin_slip_mm"] for v in f.values()]
+    report["pin_frames_per_foot"] = {s: int(CONTACT[:, i, 1:].any(axis=1).sum()) for i, s in enumerate("LR")}
+    report["pin_slip_mm_max"] = max(slips) if slips else 0.0
+    report["pin_slip_mm_p95"] = float(np.percentile(slips, 95)) if slips else 0.0
+    report["pin_out_of_reach_mm_p95"] = float(np.percentile(SHORT, 95) * 1000) if SHORT else 0.0
+    report["hips_drop_mm_max"] = max(report["hips_drop_mm"])
+    report["hips_drop_mm_p95"] = float(np.percentile(report["hips_drop_mm"], 95))
+    report["pin_out_of_reach_share"] = float(np.mean(np.array(SHORT) > 1e-3)) if SHORT else 0.0
 json.dump(report, open(report_path, "w"))
-print({k: v for k, v in report.items() if k != "stance"})
+print({k: v for k, v in report.items() if k not in ("stance", "pin_slip_mm", "hips_drop_mm")})
