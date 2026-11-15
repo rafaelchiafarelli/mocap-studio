@@ -41,5 +41,33 @@
       "presa_ate_cos_mm": 40.0,
       "_presa": "vertices within this of the waist opening follow the simulated skin (cos)"
     }
+  },
+  "solver_tetraedros": {
+    "_sobre": "the cloth inside the tetrahedral solver (tissue_cloth_sim.py), step 17. Real mass; stiffness of the sheet in N/m, by eye: a T-shirt jersey stretches easily, denim hardly. Contact: the cloth keeps `espessura_mm` from the skin, skin keeps `pele_pele_mm` from skin of another part (arm, trunk, each leg), counted only between points at least `pele_pele_longe_em_repouso_mm` apart at rest (neighbours across a part's border are not contact).",
+    "pele_pele_mm": 1.0,
+    "pele_pele_longe_em_repouso_mm": 30.0,
+    "pecas": {
+      "blusinha": {
+        "gramatura_g_m2": 160,
+        "tracao_N_m": 300.0,
+        "flexao_N_m": 0.5,
+        "encolhimento": 0.02,
+        "espessura_mm": 2.0,
+        "atrito": 0.4,
+        "amortecimento_1_s": 1.0
+      },
+      "jeans": {
+        "gramatura_g_m2": 400,
+        "tracao_N_m": 3000.0,
+        "flexao_N_m": 5.0,
+        "encolhimento": 0.02,
+        "espessura_mm": 2.0,
+        "atrito": 0.6,
+        "amortecimento_1_s": 1.0,
+        "encolhimento_cos": 0.06,
+        "cos_mm": 40.0,
+        "_cos": "the waistband (within cos_mm of the waist opening) is tighter: it holds the jeans on the hips; with 2% everywhere they slid 23 mm down in 10 frames (teste_2)"
+      }
+    }
   }
 }
