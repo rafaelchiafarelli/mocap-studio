@@ -12,6 +12,8 @@
   "coxa":      {"fat_young": 4000, "muscle_young": 15000, "skin_young": 100000, "fat_density": 750, "muscle_density": 900, "poisson": 0.45, "damping": 20},
   "perna":     {"fat_young": 4000, "muscle_young": 15000, "skin_young": 100000, "fat_density": 750, "muscle_density": 900, "poisson": 0.45, "damping": 20}
  },
+ "densidade_neutra": null,
+ "_densidade_neutra": "Rafael, 2026-11-14: a number here (kg/m3, e.g. 1000) gives every soft tetrahedron that one density, in place of the groups' fat_density and muscle_density; null keeps the groups'. Tested at 900 with one damping (20/s) everywhere: the creases fell only 2% (26,331 crease edges against 26,892 over 12 frames).",
  "_breasts": "seio_E and seio_D: softer and less damped than the rest, by eye, until Rafael's meu_teste values (2026-11-05) are carried over; fat at real fat's density.",
  "mesh": {
   "_about": "Voxel side by depth under the skin (Rafael, 2026-11-14): 3 layers of 3 mm, 3 of 6, 3 of 9, then 12 mm. Six tetrahedra per voxel.",

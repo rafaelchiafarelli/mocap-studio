@@ -57,6 +57,9 @@ def load_config(overrides):
     for item in overrides:
         if item.startswith("pose="):
             continue
+        if item.startswith("densidade_neutra="):
+            cfg["densidade_neutra"] = float(item.split("=")[1])
+            continue
         name, value = item.split("=")
         group, key = name.split(".")
         cfg["groups"][group][key] = float(value)
@@ -342,7 +345,11 @@ def main(rest_npz, out_dir, overrides):
     weight = np.ones(len(tets))
     for k, bd in enumerate(bands):
         if k > 0:
-            weight[(tet_band == k) & (depth < bd["a"])] = 0.5  # the overlap with the finer band counts half
+            # where band k reaches into band k-1 (depth a - h/2 to a), both bands' tetrahedra count half, so the overlap counts
+            # once. Until 2026-11-14 only the coarser half was halved: the overlap weighed and resisted 1.5 times (malha_v1 to v6)
+            overlap = (depth >= bd["a"] - bd["h"] / 2) & (depth < bd["a"])
+            weight[(tet_band == k) & overlap] = 0.5
+            weight[(tet_band == k - 1) & overlap] = 0.5
     young, dens, pois, damp_t = np.zeros(len(tets)), np.zeros(len(tets)), np.zeros(len(tets)), np.zeros(len(tets))
     for g in GROUPS:
         sel = grp == g
@@ -351,6 +358,8 @@ def main(rest_npz, out_dir, overrides):
                                [m["skin_young"], m["fat_young"], m["fat_young"]], m["muscle_young"])
         dens[sel] = np.where(np.isin(label[sel], [FAT, BREAST, SKIN]), m["fat_density"], m["muscle_density"])
         pois[sel], damp_t[sel] = m["poisson"], m["damping"]
+    if cfg.get("densidade_neutra"):
+        dens[:] = float(cfg["densidade_neutra"])  # one density for all soft tissue (tissue_groups.json densidade_neutra)
     rigid = label == RIGID
     young[rigid], dens[rigid], pois[rigid] = 1e6, 1100.0, 0.3
     young *= weight

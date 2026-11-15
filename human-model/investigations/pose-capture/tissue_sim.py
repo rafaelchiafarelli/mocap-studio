@@ -1,6 +1,6 @@
 """Step 11d: the graded tissue moved by the captured skeleton, frame by frame, on the GPU.
 
-    human-model/hm.sh --gpu python human-model/investigations/pose-capture/tissue_sim.py TECIDOS.npz OSSOS.npz OUT_DIR [frames=N] [substeps=S] [ramp=F] [hold=F] [stiff=K] [gravity=0]
+    human-model/hm.sh --gpu python human-model/investigations/pose-capture/tissue_sim.py TECIDOS.npz OSSOS.npz OUT_DIR [frames=N] [substeps=S] [ramp=F] [hold=F] [stiff=K] [gravity=0] [uniforme=1]
 
 TECIDOS.npz is tissue_mesh.py's, OSSOS.npz tissue_motion_dump.py's. A mesh built in the motion's first frame starts there
 (ramp 1); otherwise the body starts at rest; over `ramp` frames (default 30) the
@@ -53,7 +53,7 @@ def write_pc2(path, frames, fps):
 def main(tissue_npz, bones_npz, out_dir, opts):
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    o = {"frames": 0, "substeps": 160, "ramp": 30, "hold": 15, "stiff": 1, "gravity": 1}
+    o = {"frames": 0, "substeps": 160, "ramp": 30, "hold": 15, "stiff": 1, "gravity": 1, "uniforme": 0}
     if "pose_frame" in np.load(tissue_npz).files and int(np.load(tissue_npz)["pose_frame"]) == 1:
         o["ramp"] = 1  # already in the first frame
     for item in opts:
@@ -71,7 +71,11 @@ def main(tissue_npz, bones_npz, out_dir, opts):
     wp.init()
     t0 = time.time()
     young = np.where(m["label"] == 3, m["young"], m["young"] * o["stiff"])  # stiff=K: soft tissue K times stiffer, for diagnosis
-    solver = GradedSolver(nodes, tets, m["colours"], m["density"], young, m["poisson"], m["node_damping"],
+    density, node_damping = m["density"], m["node_damping"]
+    if o["uniforme"]:  # diagnosis: one density (900 kg/m3, times the overlap weight) and one damping (20/s) for all soft tissue
+        density = np.where(m["label"] == 3, density, 900.0 * m["weight"])
+        node_damping = np.full_like(node_damping, 20.0)
+    solver = GradedSolver(nodes, tets, m["colours"], density, young, m["poisson"], node_damping,
                           m["emb_node"], m["emb_tets"], m["emb_w"])
     if not o["gravity"]:
         solver.gravity = wp.vec3(0.0, 0.0, 0.0)
